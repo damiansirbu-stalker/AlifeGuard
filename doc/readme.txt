@@ -59,21 +59,17 @@ Compatibility:
 Works with AlifePlus, ZCP, Warfare, GAMMA, and any other A-Life or warfare mod. Does not modify base scripts. Only releases entities through the standard engine API.
 
 Development:
-Written against X-Ray Monolith engine source, Demonized exes source code,
-and Anomaly 1.5.3 unpacked gamedata. Code patterns and engine usage validated against established work
-by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb). The
-code is validated in real time by a multi-stage pipeline: luacheck, selene,
-tree-sitter AST analysis, contract rules, cross-file dependency
-resolution, cyclomatic complexity analysis, crash and vulnerability pattern
-detection, lua54 integration testing with X-Ray engine stubs, gitleaks
-secret scanning. Full report in doc/test-report.log.
+Source: https://github.com/damiansirbu-stalker/AlifeGuard
+Releases: https://github.com/damiansirbu-stalker/AlifeGuard/releases
+Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.
+Code patterns and engine usage validated against established work by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb).
+The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.
+Full report in doc/test-report.log.
 
 Known Issues:
-Extremely rare crash on entity release (Perform_reject assertion). This is an
-engine bug in X-Ray's inventory parent tracking - the same code path used by
-all similar mods: Grok Dynamic Despawner, Night Mutants (xcvb), Phantoms
-(xcvb), Guards Spawner (xcvb), Dynamic Anomalies (Demonized), Boomsticks and
-Sharpsticks despawn scripts (Mich). No script-side fix exists.
+Extremely rare crash on entity release (Perform_reject assertion).
+This is an engine bug in X-Ray's inventory parent tracking - the same code path used by all similar mods: Grok Dynamic Despawner, Night Mutants (xcvb), Phantoms (xcvb), Guards Spawner (xcvb), Dynamic Anomalies (Demonized), Boomsticks and Sharpsticks despawn scripts (Mich).
+No script-side fix exists.
 
 Credits:
 Stalker_Boss - Russian translation
