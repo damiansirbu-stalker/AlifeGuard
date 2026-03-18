@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+    <!-- ==================== MAIN MENU ==================== -->
+    <string id="ui_mcm_menu_ag">
+        <text>AlifeGuard</text>
+    </string>
+
+    <!-- ==================== TAB NAMES ==================== -->
+    <string id="ui_mcm_menu_general">
+        <text>General</text>
+    </string>
+
+    <!-- ==================== GENERAL TAB ==================== -->
+    <string id="ui_mcm_ag_title">
+        <text>AlifeGuard</text>
+    </string>
+    <string id="ui_mcm_ag_version">
+        <text>%c[d_cyan]1.0.4</text>
+    </string>
+    <string id="ui_mcm_ag_general_info">
+        <text>A-Life needs breathing room. Too many entities online kills performance. AlifeGuard maintains target entity count by releasing farthest unprotected NPCs back to offline simulation. They continue existing, just not rendered.</text>
+    </string>
+
+    <!-- General - Actions -->
+    <string id="ui_mcm_ag_hdr_actions">
+        <text>Diagnostics</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_show_status">
+        <text>Show status</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_show_status_desc">
+        <text>Display current entity counts and protection statistics via PDA.</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_manual_cleanup">
+        <text>Force cleanup</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_manual_cleanup_desc">
+        <text>Immediately cull excess entities. Use if framerate drops unexpectedly.</text>
+    </string>
+
+    <!-- General - Population Reset -->
+    <string id="ui_mcm_ag_hdr_population">
+        <text>Population Reset</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_delete_common">
+        <text>Delete common squads</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_delete_common_desc">
+        <text>Remove all common (respawnable) squads from the world. Story and quest squads are kept. Smart terrains will repopulate naturally over time.</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_delete_all">
+        <text>Delete all squads</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_delete_all_desc">
+        <text>Remove ALL squads including story squads. Use only if common delete is not enough. May break active quests.</text>
+    </string>
+
+
+    <!-- General - Entity limits -->
+    <string id="ui_mcm_ag_hdr_online">
+        <text>Entity Limits</text>
+    </string>
+    <string id="ui_mcm_ag_general_enabled">
+        <text>Enable online guard</text>
+    </string>
+    <string id="ui_mcm_ag_general_enabled_desc">
+        <text>Limit active entities around you. Farthest go offline first. Traders, companions, quest targets - protected.</text>
+    </string>
+    <string id="ui_mcm_ag_general_max">
+        <text>Maximum online</text>
+    </string>
+    <string id="ui_mcm_ag_general_max_desc">
+        <text>How many stalkers and mutants can be active simultaneously. Lower = better framerate in dense areas. 40 is balanced.</text>
+    </string>
+    <string id="ui_mcm_ag_general_check_interval">
+        <text>Check interval (sec)</text>
+    </string>
+    <string id="ui_mcm_ag_general_check_interval_desc">
+        <text>How often to check entity counts. Lower = more responsive but slight performance cost. 30s is balanced.</text>
+    </string>
+
+    <!-- General - Protection -->
+    <string id="ui_mcm_ag_hdr_protection">
+        <text>Protection Rules</text>
+    </string>
+    <string id="ui_mcm_ag_general_check_tasks">
+        <text>Protect task NPCs</text>
+    </string>
+    <string id="ui_mcm_ag_general_check_tasks_desc">
+        <text>NPCs involved in active tasks cannot be removed. Disable if the Zone should be indifferent to your objectives.</text>
+    </string>
+    <string id="ui_mcm_ag_general_prioritize_distant">
+        <text>Remove farthest first</text>
+    </string>
+    <string id="ui_mcm_ag_general_prioritize_distant_desc">
+        <text>Cull distant entities first. If disabled, random selection - chaotic but occasionally removes nearby NPCs.</text>
+    </string>
+
+    <!-- General - Notifications -->
+    <string id="ui_mcm_ag_hdr_notifications">
+        <text>Notifications</text>
+    </string>
+    <string id="ui_mcm_ag_general_pda">
+        <text>PDA messages</text>
+    </string>
+    <string id="ui_mcm_ag_general_pda_desc">
+        <text>Show cleanup statistics via PDA when entities are culled.</text>
+    </string>
+
+    <!-- General - Developer -->
+    <string id="ui_mcm_ag_hdr_advanced">
+        <text>Developer</text>
+    </string>
+    <string id="ui_mcm_ag_general_debug_log">
+        <text>Debug logging</text>
+    </string>
+    <string id="ui_mcm_ag_general_debug_log_desc">
+        <text>Write detailed logs to logs/alifeguard.log. Entity counts, release decisions, timing. Performance cost when enabled.</text>
+    </string>
+</string_table>

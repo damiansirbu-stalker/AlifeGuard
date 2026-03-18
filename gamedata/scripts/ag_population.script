@@ -1,0 +1,327 @@
+--- ag_population: Population control - despawn farthest entities when online count exceeds threshold
+
+local _VERSION = "1.0.4"
+
+function version()
+    return _VERSION
+end
+
+local pairs, ipairs, math_sqrt, math_random, math_ceil, tostring, string = pairs, ipairs, math.sqrt, math.random, math.ceil, tostring, string
+local clock = os.clock
+local is_stalker, is_monster = IsStalker, IsMonster
+
+local log = xlog.get_logger("AG.POPULATION", { outfile = "alifeguard.log" })
+local _dbg = false
+local function _prot(fmt, ...) if _dbg then log.debug(fmt, ...) end end
+
+local last_check_time = 0
+local level_load_time = 0
+local LEVEL_LOAD_GRACE_PERIOD = 30
+
+local cfg = {
+    enabled = true,
+    max = 40,
+    check_interval = 30,
+    check_tasks = true,
+    prioritize_distant = true,
+    pda = true,
+    debug_log = false,
+}
+
+-- ==================== CONFIG ====================
+
+local function load_config()
+    if not ag_mcm or not ag_mcm.cfg then return end
+
+    local mcm = ag_mcm.cfg
+    cfg.enabled = mcm.enabled
+    cfg.max = mcm.max
+    cfg.check_interval = mcm.check_interval
+    cfg.check_tasks = mcm.check_tasks
+    cfg.prioritize_distant = mcm.prioritize_distant
+    cfg.pda = mcm.pda
+    cfg.debug_log = mcm.debug_log
+
+    -- Configure logger + debug guard based on debug_log setting
+    log.set_level(cfg.debug_log and "DEBUG" or "INFO")
+    _dbg = cfg.debug_log
+
+    if cfg.debug_log then
+        log.info("Config: OnlineGuard[%s max=%d interval=%ds] pda=%s debug=%s",
+            tostring(cfg.enabled), cfg.max, cfg.check_interval,
+            tostring(cfg.pda), tostring(cfg.debug_log))
+    end
+end
+
+-- ==================== PDA NOTIFICATIONS ====================
+
+local function send_pda(msg)
+    local actor = db and db.actor
+    if not actor then return end
+    news_manager.send_tip(actor, msg, nil, nil, 5000)
+end
+
+local cleanup_messages = {
+    "Zone thinned out. Breathe easier for now.",
+    "Population control active. Distant contacts released.",
+    "A-Life adjusted. %d entities moved offline.",
+    "The Zone reshuffles. Some stalkers walked into the fog.",
+}
+
+local function notify_cleanup(removed, _stalkers, _mutants)
+    if not cfg.pda or removed == 0 then return end
+
+    local template = cleanup_messages[math_random(#cleanup_messages)]
+    local msg = string.format(template, removed)
+    send_pda(msg)
+end
+
+-- ==================== PROTECTION CHECKS ====================
+
+local function _is_bounty_or_hostage(id)
+    if not axr_task_manager then return false end
+    for _, npc_id in pairs(axr_task_manager.bounties_by_id) do
+        if npc_id == id then _prot("    PROTECTED bounty ID:%d", id); return true end
+    end
+    for _, npc_id in pairs(axr_task_manager.hostages_by_id) do
+        if npc_id == id then _prot("    PROTECTED hostage ID:%d", id); return true end
+    end
+    return false
+end
+
+local function _is_entity_protected(obj, id, is_stalker)
+    local section = _dbg and obj:section() or nil
+    if xcreature.is_unscriptable(obj) then
+        _prot("    UNSCRIPTABLE xcreature ID:%d [%s]", id, section)
+        return true
+    end
+    if is_stalker and cfg.check_tasks and xcreature.is_task_giver(obj) then
+        _prot("    TASK_GIVER xcreature ID:%d [%s]", id, section)
+        return true
+    end
+    if is_stalker and _is_bounty_or_hostage(id) then return true end
+    return false
+end
+
+-- ==================== ENTITY RELEASE ====================
+
+local function safe_release(entity_id)
+    if not entity_id then return false end
+    if not alife_object(entity_id) then return false end
+    alife_release_id(entity_id)
+    return true
+end
+
+local function _count_release(ent)
+    if ent.is_stalker then return 1, 0, "stalker" end
+    return 0, 1, "mutant"
+end
+
+-- ==================== ONLINE GUARD ====================
+
+local function count_and_collect_online()
+    if not (db and db.actor) then return 0, 0, 0, 0, {} end
+
+    local actor = db.actor
+    local actor_id = actor:id()
+    local actor_pos = actor:position()
+    local stats = { total = 0, stalkers = 0, mutants = 0, protected = 0 }
+    local entities = {}
+
+    for obj in game_objects_iter() do
+        local id = obj:id()
+        if id == actor_id then goto next end
+
+        local obj_is_stalker
+        if is_stalker(obj) then
+            obj_is_stalker = true
+        elseif is_monster(obj) then
+            obj_is_stalker = false
+        else
+            goto next
+        end
+
+        if not obj:alive() then goto next end
+
+        if obj_is_stalker then
+            stats.stalkers = stats.stalkers + 1
+        else
+            stats.mutants = stats.mutants + 1
+        end
+
+        stats.total = stats.total + 1
+        local protected = _is_entity_protected(obj, id, obj_is_stalker)
+        if protected then stats.protected = stats.protected + 1 end
+
+        local obj_pos = obj:position()
+
+        entities[#entities + 1] = {
+            id = id,
+            dist_sq = obj_pos and actor_pos:distance_to_sqr(obj_pos) or 0,
+            is_stalker = obj_is_stalker,
+            protected = protected,
+            section = _dbg and obj:section() or nil,
+        }
+
+        ::next::
+    end
+
+    return stats.total, stats.stalkers, stats.mutants, stats.protected, entities
+end
+
+local function despawn_online_to_target(entities, current_count, target)
+    if current_count <= target then
+        log.debug("  ONLINE: %d <= %d target - OK", current_count, target)
+        return 0, 0, 0
+    end
+    if not entities then return 0, 0, 0 end
+
+    local to_remove = current_count - target
+    log.debug("  ONLINE: %d > %d target - need to remove %d", current_count, target, to_remove)
+
+    -- Sort: farthest first
+    if cfg.prioritize_distant then
+        entities = xtable.sort(entities, function(a, b) return a.dist_sq > b.dist_sq end)
+    else
+        entities = xtable.shuffle(entities)
+    end
+
+    -- Release unprotected entities (already sorted by distance)
+    local removed, removed_stalkers, removed_mutants = 0, 0, 0
+    local protected_count = 0
+
+    for _, ent in ipairs(entities) do
+        if ent.protected then
+            protected_count = protected_count + 1
+            goto continue
+        end
+        if removed >= to_remove then goto continue end
+        if not safe_release(ent.id) then goto continue end
+        removed = removed + 1
+        local st, mt, label = _count_release(ent)
+        removed_stalkers = removed_stalkers + st
+        removed_mutants = removed_mutants + mt
+        log.debug("    Released %s ID:%d [%s] at %.0fm", label, ent.id, ent.section or "?", math_sqrt(ent.dist_sq))
+        ::continue::
+    end
+
+    log.debug("  ONLINE: Removed %d entities (%d stalkers, %d mutants, skipped %d protected)",
+        removed, removed_stalkers, removed_mutants, protected_count)
+    return removed, removed_stalkers, removed_mutants
+end
+
+-- ==================== MAIN UPDATE ====================
+
+local function actor_on_update()
+    if not cfg.enabled then return end
+    if not db or not db.actor then return end
+
+    local tg = clock()
+    if tg - level_load_time < LEVEL_LOAD_GRACE_PERIOD then return end
+    if tg - last_check_time < cfg.check_interval then return end
+    last_check_time = tg
+
+    log.debug("========== ALIFEGUARD POPULATION CHECK ==========")
+    local total_timer = xprofiler.new()
+    total_timer:start()
+
+    local count_timer = xprofiler.new()
+    count_timer:start()
+    local total, stalkers, mutants, protected, entities = count_and_collect_online()
+    count_timer:stop()
+    log.debug("ONLINE: %d/%d (stalkers:%d mutants:%d protected:%d) [count:%.1fms]",
+        total, cfg.max, stalkers, mutants, protected, count_timer:get_ms())
+
+    if total > cfg.max then
+        local action_timer = xprofiler.new()
+        action_timer:start()
+        local removed, removed_stalkers, removed_mutants = despawn_online_to_target(entities, total, cfg.max)
+        action_timer:stop()
+        log.info("ONLINE ACTION: removed %d [%.1fms]", removed, action_timer:get_ms())
+        notify_cleanup(removed, removed_stalkers, removed_mutants)
+    end
+
+    total_timer:stop()
+    log.debug("TOTAL: %.1fms", total_timer:get_ms())
+end
+
+-- ==================== LEVEL CHANGE ====================
+
+local function on_level_change()
+    level_load_time = clock()
+end
+
+function on_option_change()
+    load_config()
+end
+
+-- ==================== LIFECYCLE ====================
+
+local function is_in_game()
+    return level and level.present and level.present() == true
+end
+
+function on_game_start()
+    load_config()
+    level_load_time = clock()
+
+    RegisterScriptCallback("actor_on_update", actor_on_update)
+    RegisterScriptCallback("on_option_change", on_option_change)
+    RegisterScriptCallback("actor_on_first_update", on_level_change)
+end
+
+-- ==================== MCM BUTTON FUNCTIONS ====================
+
+function show_status()
+    if not is_in_game() or not db or not db.actor then return end
+
+    load_config()
+
+    local total, stalkers, mutants, protected = count_and_collect_online()
+
+    news_manager.send_tip(db.actor, "--- AlifeGuard " .. _VERSION .. " Status ---", nil, nil, 8000)
+    news_manager.send_tip(db.actor, string.format("Online: %d/%d (stalkers:%d mutants:%d protected:%d)",
+        total, cfg.max, stalkers, mutants, protected), nil, nil, 8000)
+end
+
+function manual_cleanup()
+    if not is_in_game() or not db or not db.actor then return end
+
+    local tg = clock()
+    if tg - level_load_time < LEVEL_LOAD_GRACE_PERIOD then
+        local remaining = math_ceil(LEVEL_LOAD_GRACE_PERIOD - (tg - level_load_time))
+        news_manager.send_tip(db.actor, "AlifeGuard: Please wait " .. remaining .. "s after level load", nil, nil, 5000)
+        return
+    end
+
+    load_config()
+
+    local removed_online = 0
+
+    if cfg.enabled and cfg.max > 0 then
+        local total, _, _, _, entities = count_and_collect_online()
+        if total > cfg.max then
+            removed_online = despawn_online_to_target(entities, total, cfg.max)
+        end
+    end
+
+    news_manager.send_tip(db.actor, "--- AlifeGuard Cleanup ---", nil, nil, 10000)
+    news_manager.send_tip(db.actor, string.format("Online Guard: removed %d", removed_online), nil, nil, 10000)
+end
+
+-- ==================== POPULATION RESET ====================
+
+function delete_common_squads()
+    if not is_in_game() or not db or not db.actor then return end
+    local count = xsquad.release_squads({ common_only = true })
+    log.info("Deleted %d common squads", count)
+    send_pda(string.format("Population reset: %d common squads removed.", count))
+end
+
+function delete_all_squads()
+    if not is_in_game() or not db or not db.actor then return end
+    local count = xsquad.release_squads()
+    log.info("Deleted %d squads", count)
+    send_pda(string.format("Population reset: %d squads removed.", count))
+end
+

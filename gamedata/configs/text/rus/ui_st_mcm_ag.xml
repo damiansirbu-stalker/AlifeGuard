@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+    <!-- ==================== ������� ���� ==================== -->
+    <string id="ui_mcm_menu_ag">
+        <text>AlifeGuard</text>
+    </string>
+
+    <!-- ==================== �������� ������� ==================== -->
+    <string id="ui_mcm_menu_general">
+        <text>��������</text>
+    </string>
+
+    <!-- ==================== ������� �������� �������� ==================== -->
+    <string id="ui_mcm_ag_title">
+        <text>AlifeGuard</text>
+    </string>
+    <string id="ui_mcm_ag_version">
+        <text>%c[d_cyan]1.0.4</text>
+    </string>
+    <string id="ui_mcm_ag_general_info">
+        <text>A-Life ��������� � ������������. ������� ������� ���������� �������� ��������� ������� ������������������. AlifeGuard ������������ ������� ���������� ���������, �������� �������� ������ ������������ NPC ������� � ������-���������. ��� ���������� ������������ � ������ ��� ���������.</text>
+    </string>
+
+    <!-- �������� - �������� -->
+    <string id="ui_mcm_ag_hdr_actions">
+        <text>�����������</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_show_status">
+        <text>�������� ������</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_show_status_desc">
+        <text>���������� ������� ���������� ��������� � ���������� ������ ����� ���.</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_manual_cleanup">
+        <text>�������������� �������</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_manual_cleanup_desc">
+        <text>���������� ������� ������ ��������. ����������� ��� ����������� ������� ������� ������.</text>
+    </string>
+
+    <!-- �������� - ����� ��������� -->
+    <string id="ui_mcm_ag_hdr_population">
+        <text>����� ���������</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_delete_common">
+        <text>������� ������� ������</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_delete_common_desc">
+        <text>������� ��� ������� (������������) ������ �� ����. �������� � ��������� ������ �����������. ����� ��������� �� �������� ������ ���������.</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_delete_all">
+        <text>������� ��� ������</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_delete_all_desc">
+        <text>������� ��� ������, ������� ��������. ����������� ������ ���� ������� �������� �� ��������. ����� �������� �������� ������.</text>
+    </string>
+
+    <!-- �������� - ������ ��������� -->
+    <string id="ui_mcm_ag_hdr_online">
+        <text>������ ���������</text>
+    </string>
+    <string id="ui_mcm_ag_general_enabled">
+        <text>�������� ������-�����������</text>
+    </string>
+    <string id="ui_mcm_ag_general_enabled_desc">
+        <text>���������� ���������� �������� ��������� ������ ���. ����� ������ ������ � ������ �������. ��������, ���������, ���� ������� � ��� �������.</text>
+    </string>
+    <string id="ui_mcm_ag_general_max">
+        <text>�������� ������</text>
+    </string>
+    <string id="ui_mcm_ag_general_max_desc">
+        <text>������� ��������� � �������� ����� ���� ������� ������������. ������ = ���� FPS � �������������� �������. 40 � ���������������� ��������.</text>
+    </string>
+    <string id="ui_mcm_ag_general_check_interval">
+        <text>�������� �������� (���)</text>
+    </string>
+    <string id="ui_mcm_ag_general_check_interval_desc">
+        <text>��� ����� ��������� ���������� ���������. ������ = ������� �������, �� ��������� �������� �� ������������������. 30 ��� � ���������������� ��������.</text>
+    </string>
+
+    <!-- �������� - ������ -->
+    <string id="ui_mcm_ag_hdr_protection">
+        <text>������� ������</text>
+    </string>
+    <string id="ui_mcm_ag_general_check_tasks">
+        <text>�������� ��������� NPC</text>
+    </string>
+    <string id="ui_mcm_ag_general_check_tasks_desc">
+        <text>NPC, ��������������� � �������� ��������, �� ����� ���� �������. ���������, ���� ���� ������ ���� ����������� � ����� �����.</text>
+    </string>
+    <string id="ui_mcm_ag_general_prioritize_distant">
+        <text>������� ������� �������</text>
+    </string>
+    <string id="ui_mcm_ag_general_prioritize_distant_desc">
+        <text>������� ������� �������� �������� ��������. ���� ��������� � ��������� �����: ��������, �� ������ ������� ������� NPC.</text>
+    </string>
+
+    <!-- �������� - ����������� -->
+    <string id="ui_mcm_ag_hdr_notifications">
+        <text>�����������</text>
+    </string>
+    <string id="ui_mcm_ag_general_pda">
+        <text>��������� ���</text>
+    </string>
+    <string id="ui_mcm_ag_general_pda_desc">
+        <text>���������� ���������� ������� ����� ��� ��� �������� ���������.</text>
+    </string>
+
+    <!-- �������� - ����������� -->
+    <string id="ui_mcm_ag_hdr_advanced">
+        <text>�����������</text>
+    </string>
+    <string id="ui_mcm_ag_general_debug_log">
+        <text>������ �������</text>
+    </string>
+    <string id="ui_mcm_ag_general_debug_log_desc">
+        <text>���������� ��������� ���� � logs/alifeguard.log: ���������� ���������, ������� �� ��������, ��������. ������ �� ������������������ ��� ���������.</text>
+    </string>
+</string_table>

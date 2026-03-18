@@ -1,0 +1,105 @@
+--- ag_mcm: MCM configuration for AlifeGuard population control
+
+-- ==================== DEFAULTS ====================
+
+defaults = {
+    -- General
+    debug_log = false,
+
+    -- Population Control
+    enabled = true,
+    max = 40,
+    check_interval = 30,
+    check_tasks = true,
+    prioritize_distant = true,
+    pda = true,
+}
+
+-- ==================== CONFIG ====================
+
+local path_builder = function(key) return "ag/general/" .. key end
+get_config = xmcm.create_getter("ag", defaults, path_builder)
+cfg = setmetatable({}, { __index = function(_, k) return get_config(k) end })
+
+-- ==================== BUTTON HANDLERS ====================
+
+function btn_show_status()
+    if ag_population and ag_population.show_status then
+        ag_population.show_status()
+    end
+end
+
+function btn_manual_cleanup()
+    if ag_population and ag_population.manual_cleanup then
+        ag_population.manual_cleanup()
+    end
+end
+
+function btn_delete_common()
+    if ag_population and ag_population.delete_common_squads then
+        ag_population.delete_common_squads()
+    end
+end
+
+function btn_delete_all()
+    if ag_population and ag_population.delete_all_squads then
+        ag_population.delete_all_squads()
+    end
+end
+
+-- ==================== MCM DEFINITION ====================
+
+function on_mcm_load()
+    return {
+        id = "ag",
+        gr = {
+            -- ============ GENERAL TAB ============
+            {
+                id = "general",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "ui_options_slider_player",
+                        text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_ag_general_info" },
+
+                    -- Actions
+                    { id = "div_actions", type = "line" },
+                    { id = "hdr_actions", type = "desc", text = "ui_mcm_ag_hdr_actions", clr = {255, 200, 200, 200} },
+                    { id = "btn_show_status", type = "button", functor = { btn_show_status } },
+                    { id = "btn_manual_cleanup", type = "button", functor = { btn_manual_cleanup } },
+
+                    -- Population Reset
+                    { id = "div_population", type = "line" },
+                    { id = "hdr_population", type = "desc", text = "ui_mcm_ag_hdr_population", clr = {255, 200, 200, 200} },
+                    { id = "btn_delete_common", type = "button", functor = { btn_delete_common } },
+                    { id = "btn_delete_all", type = "button", functor = { btn_delete_all } },
+
+                    -- Online Guard
+                    { id = "div_online", type = "line" },
+                    { id = "hdr_online", type = "desc", text = "ui_mcm_ag_hdr_online", clr = {255, 200, 200, 200} },
+                    { id = "enabled", type = "check", val = 1, def = true },
+                    { id = "max", type = "track", val = 2, min = 10, max = 200, step = 5, def = 40 },
+                    { id = "check_interval", type = "track", val = 2, min = 10, max = 120, step = 10, def = 30 },
+
+                    -- Protection rules
+                    { id = "div_protection", type = "line" },
+                    { id = "hdr_protection", type = "desc", text = "ui_mcm_ag_hdr_protection", clr = {255, 200, 200, 200} },
+                    { id = "check_tasks", type = "check", val = 1, def = true },
+                    { id = "prioritize_distant", type = "check", val = 1, def = true },
+
+                    -- Notifications
+                    { id = "div_pda", type = "line" },
+                    { id = "hdr_notifications", type = "desc", text = "ui_mcm_ag_hdr_notifications", clr = {255, 200, 200, 200} },
+                    { id = "pda", type = "check", val = 1, def = true },
+
+                    -- Developer
+                    { id = "div_advanced", type = "line" },
+                    { id = "hdr_advanced", type = "desc", text = "ui_mcm_ag_hdr_advanced", clr = {255, 200, 200, 200} },
+                    { id = "debug_log", type = "check", val = 1, def = false },
+                    { id = "div_version", type = "line" },
+                    { id = "version", type = "desc", text = "ui_mcm_ag_version", clr = {255, 0, 206, 209} },
+                },
+            },
+        },
+    }
+end

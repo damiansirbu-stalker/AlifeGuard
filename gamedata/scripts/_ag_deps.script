@@ -1,0 +1,24 @@
+--- _ag_deps: AlifeGuard dependency gate
+local assert = assert
+
+function on_game_start()
+    assert(xlog,
+        "\n\n! [AlifeGuard] xlibs is not installed.\n"..
+        "! AlifeGuard requires xlibs to function.\n"..
+        "! Install xlibs and restart the game.\n"..
+        "! https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001\n"
+    )
+
+    assert(xlibs and xlibs.version,
+        "\n\n! [AlifeGuard] xlibs is outdated (no version API).\n"..
+        "! Update xlibs and restart the game.\n"..
+        "! https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001\n"
+    )
+
+    assert(xlibs.version() >= "1.0.4",
+        "\n\n! [AlifeGuard] xlibs " .. (xlibs.version()) .. " is too old.\n"..
+        "! AlifeGuard requires xlibs 1.0.4 or later.\n"..
+        "! Update xlibs and restart the game.\n"..
+        "! https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001\n"
+    )
+end
