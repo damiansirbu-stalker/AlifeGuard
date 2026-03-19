@@ -1,5 +1,5 @@
 AlifeGuard: Population control for STALKER Anomaly, by Damian
-Latest: 1.0.4 (xlibs 1.0.5)
+Latest: 1.0.5 (xlibs 1.0.5)
 
 Too many online entities kill performance. AlifeGuard maintains a target count by releasing excess NPCs back to offline simulation. They continue existing in A-Life, just not rendered.
 
@@ -75,6 +75,9 @@ Credits:
 Stalker_Boss - Russian translation
 
 Versions:
+
+1.0.5
+  Fixed: dependency gate uses exact version match instead of string comparison
 
 1.0.4
   Task giver protection fix and debug tracing.

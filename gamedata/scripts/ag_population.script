@@ -1,6 +1,6 @@
 --- ag_population: Population control - despawn farthest entities when online count exceeds threshold
 
-local _VERSION = "1.0.4"
+local _VERSION = "1.0.5"
 
 function version()
     return _VERSION
