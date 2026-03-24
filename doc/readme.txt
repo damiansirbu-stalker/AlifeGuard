@@ -74,6 +74,12 @@ No script-side fix exists.
 Credits:
 Stalker_Boss - Russian translation
 
+DrakoMT and SaloEater for their support.
+Demonized, Catspaw, Vintar0, RavenAscendant, xcvb, lizzardman, Aoldri, and Feel_Fried. Their work on the engine, modded exes, scripts, and tools shaped how Anomaly modding is done.
+
+License:
+MIT License. See LICENSE file.
+
 Versions:
 
 1.0.5
