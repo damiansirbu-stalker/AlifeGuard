@@ -107,4 +107,5 @@ end
 function on_game_start()
     load_config()
     RegisterScriptCallback("on_option_change", load_config)
+    RegisterScriptCallback("mcm_option_restore_default", load_config)
 end

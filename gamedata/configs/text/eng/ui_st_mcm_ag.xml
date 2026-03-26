@@ -73,10 +73,10 @@
         <text>How many stalkers and mutants can be active simultaneously. Lower = better framerate in dense areas. 40 is balanced.</text>
     </string>
     <string id="ui_mcm_ag_general_check_interval">
-        <text>Check interval (sec)</text>
+        <text>Check interval</text>
     </string>
     <string id="ui_mcm_ag_general_check_interval_desc">
-        <text>How often to check entity counts. Lower = more responsive but slight performance cost. 30s is balanced.</text>
+        <text>[seconds]\nHow often to check entity counts. Lower = more responsive but slight performance cost. 30 is balanced.</text>
     </string>
 
     <!-- General - Protection -->
