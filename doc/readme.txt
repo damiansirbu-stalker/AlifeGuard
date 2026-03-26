@@ -1,5 +1,6 @@
 AlifeGuard: Population control for STALKER Anomaly, by Damian
-Latest: 1.0.5 (xlibs 1.0.5)
+Latest: 1.0.6 (xlibs 1.2.0)
+GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 
 Too many online entities kill performance. AlifeGuard maintains a target count by releasing excess NPCs back to offline simulation. They continue existing in A-Life, just not rendered.
 
@@ -58,18 +59,16 @@ All settings in MCM under AlifeGuard. The defaults work well, adjust after playi
 Compatibility:
 Works with AlifePlus, ZCP, Warfare, GAMMA, and any other A-Life or warfare mod. Does not modify base scripts. Only releases entities through the standard engine API.
 
-Development:
-Source: https://github.com/damiansirbu-stalker/AlifeGuard
-Releases: https://github.com/damiansirbu-stalker/AlifeGuard/releases
-Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.
-Code patterns and engine usage validated against established work by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb).
-The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.
-Full report in doc/test-report.log.
-
 Known Issues:
 Extremely rare crash on entity release (Perform_reject assertion).
 This is an engine bug in X-Ray's inventory parent tracking - the same code path used by all similar mods: Grok Dynamic Despawner, Night Mutants (xcvb), Phantoms (xcvb), Guards Spawner (xcvb), Dynamic Anomalies (Demonized), Boomsticks and Sharpsticks despawn scripts (Mich).
 No script-side fix exists.
+
+Development:
+Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.
+Code patterns and engine usage validated against established work by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb).
+The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.
+Full report in doc/test-report.log.
 
 Credits:
 Stalker_Boss - Russian translation
@@ -77,10 +76,14 @@ Stalker_Boss - Russian translation
 DrakoMT and SaloEater for their support.
 Demonized, Catspaw, Vintar0, RavenAscendant, xcvb, lizzardman, Aoldri, and Feel_Fried. Their work on the engine, modded exes, scripts, and tools shaped how Anomaly modding is done.
 
-License:
-MIT License. See LICENSE file.
-
 Versions:
+
+1.0.6
+  Changed: default online guard threshold from 40 to 70
+  Changed: MCM config access performance optimization
+  Added: MCM reset button support
+  Added: MCM label cleanup
+  Fixed: smaller performance optimizations
 
 1.0.5
   Fixed: dependency gate uses exact version match instead of string comparison
