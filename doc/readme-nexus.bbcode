@@ -1,8 +1,5 @@
-[size=4][b]AlifeGuard: Population control for STALKER Anomaly[/b][/size]
-by Damian
-Latest: 1.0.7 (xlibs 1.2.1)
-
-[url=https://github.com/damiansirbu-stalker/AlifeGuard]GitHub[/url]
+[size=3][b]Latest: 1.0.8 (xlibs 1.2.3)[/b][/size]
+[size=3][b]GitHub: [url=https://github.com/damiansirbu-stalker/AlifeGuard]https://github.com/damiansirbu-stalker/AlifeGuard[/url][/b][/size]
 
 Too many online entities kill performance. AlifeGuard maintains a target count by releasing excess NPCs back to offline simulation. They continue existing in A-Life, just not rendered.
 
@@ -18,9 +15,9 @@ Four MCM buttons give direct control: show current entity stats, force an immedi
 
 [line]
 
-[size=3][b]Features[/b][/size]
+[size=3][b]Features:[/b][/size]
 
-[size=2][b]Online Guard[/b][/size]
+[size=2][b]Online Guard:[/b][/size]
 [list]
 [*]Monitors online entity count on a configurable interval
 [*]Releases farthest entities first when over threshold
@@ -28,7 +25,7 @@ Four MCM buttons give direct control: show current entity stats, force an immedi
 [*]Distance-based or random removal (configurable)
 [/list]
 
-[size=2][b]Protection[/b][/size]
+[size=2][b]Protection:[/b][/size]
 [list]
 [*]Traders, mechanics, leaders, medics, barmen, guides - never removed
 [*]Story characters and quest givers - never removed
@@ -36,15 +33,15 @@ Four MCM buttons give direct control: show current entity stats, force an immedi
 [*]NPCs with active tasks - never removed (configurable)
 [/list]
 
-[size=2][b]MCM Buttons[/b][/size]
+[size=2][b]MCM Buttons:[/b][/size]
 [list]
-[*]Show Status - Display current entity counts and protection stats via PDA
-[*]Force Cleanup - Immediately cull excess entities
-[*]Delete Common - Remove all respawnable squads (smart terrains repopulate)
-[*]Delete All - Remove ALL squads including story (may break quests)
+[*][b]Show Status[/b] - Display current entity counts and protection stats via PDA
+[*][b]Force Cleanup[/b] - Immediately cull excess entities
+[*][b]Delete Common[/b] - Remove all respawnable squads (smart terrains repopulate)
+[*][b]Delete All[/b] - Remove ALL squads including story (may break quests)
 [/list]
 
-[size=2][b]Notifications[/b][/size]
+[size=2][b]Notifications:[/b][/size]
 [list]
 [*]Immersive PDA messages when cleanup runs
 [*]Debug logging to alifeguard.log (optional)
@@ -52,7 +49,7 @@ Four MCM buttons give direct control: show current entity stats, force an immedi
 
 [line]
 
-[size=3][b]Requirements[/b][/size]
+[size=3][b]Requirements:[/b][/size]
 [list]
 [*]Anomaly 1.5.3
 [*]Modded exes
@@ -60,49 +57,62 @@ Four MCM buttons give direct control: show current entity stats, force an immedi
 [*]MCM
 [/list]
 
-[size=3][b]Install (MO2)[/b][/size]
-[list=1]
+[size=3][b]Install (MO2):[/b][/size]
+[list]
 [*]Install xlibs
 [*]Install AlifeGuard
 [*]Load order does not matter
 [*]Configure via MCM
 [/list]
 
-[size=3][b]Uninstall (MO2)[/b][/size]
+[size=3][b]Uninstall (MO2):[/b][/size]
 Disable or remove in MO2.
 
-[size=3][b]Configuration[/b][/size]
+[line]
+
+[size=3][b]Configuration:[/b][/size]
 All settings in MCM under AlifeGuard. The defaults work well, adjust after playing.
 
-[size=3][b]Compatibility[/b][/size]
+[size=3][b]Compatibility:[/b][/size]
 Works with AlifePlus, ZCP, Warfare, GAMMA, and any other A-Life or warfare mod. Does not modify base scripts. Only releases entities through the standard engine API.
 
-[size=3][b]Known Issues[/b][/size]
+[line]
+
+[size=3][b]Known Issues:[/b][/size]
 Extremely rare crash on entity release (Perform_reject assertion).
 This is an engine bug in X-Ray's inventory parent tracking - the same code path used by all similar mods: Grok Dynamic Despawner, Night Mutants (xcvb), Phantoms (xcvb), Guards Spawner (xcvb), Dynamic Anomalies (Demonized), Boomsticks and Sharpsticks despawn scripts (Mich).
 No script-side fix exists.
 
 [line]
 
-[size=3][b]Development[/b][/size]
+[size=3][b]Development:[/b][/size]
 Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.
 Code patterns and engine usage validated against established work by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb).
 The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.
 Full report in doc/test-report.log.
 
-[size=3][b]Usage and License[/b][/size]
-Modpacks: allowed and encouraged. Keep the readme and license files.
-Addons, patches, compatibility layers: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.
-Replicating the architecture or design in another mod: allowed if you credit the source visibly.
-Competing standalone replacements that substitute for AlifeGuard: not allowed.
-Full license in LICENSE file and on GitHub.
-
-[size=3][b]Credits[/b][/size]
+[size=3][b]Credits:[/b][/size]
 Stalker_Boss - Russian translation
 
 [line]
 
-[size=3][b]Versions[/b][/size]
+[size=3][b]Usage and License:[/b][/size]
+[list]
+[*]Modpacks: allowed and encouraged. Keep the readme and license files.
+[*]Addons, patches, compatibility layers: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.
+[*]Replicating the architecture or design in another mod: allowed if you credit the source visibly.
+[*]Competing standalone replacements that substitute for AlifeGuard: not allowed.
+[*]Full license in LICENSE file and on GitHub.
+[/list]
+
+[line]
+
+[size=3][b]Versions:[/b][/size]
+
+[size=2][b]1.0.8[/b][/size]
+[list]
+[*]xlibs 1.2.3 dependency.
+[/list]
 
 [size=2][b]1.0.7[/b][/size]
 [list]
