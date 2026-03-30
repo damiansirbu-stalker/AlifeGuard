@@ -1,0 +1,94 @@
+<h3>Latest: 1.0.7 (xlibs 1.2.1)</h3>
+<h3>GitHub: <a href="https://github.com/damiansirbu-stalker/AlifeGuard">https://github.com/damiansirbu-stalker/AlifeGuard</a></h3>
+<p>Too many online entities kill performance. AlifeGuard maintains a target count by releasing excess NPCs back to offline simulation. They continue existing in A-Life, just not rendered.<br /><br />Every removal goes through the correct X-Ray release chain: alife_release_id triggers squad:remove_npc, which cascades through smart terrain unregistration, squad member cleanup, and the server_entity_on_unregister callback. The entity is gone from every engine table that knew about it. No zombie phantoms, no orphaned references, no memory leaks.<br /><br />Removal starts with the farthest entities. All online stalkers and mutants are collected, sorted by distance to the player, and released farthest-first until under the target. The NPC standing next to you is always the last to go.<br /><br />Protected entities are never removed. Traders, mechanics, leaders, medics, barmen, guides, story characters, companions, companion squads, NPCs with active tasks, entities with story IDs. Multiple checks run on every entity before removal - any one is enough to keep it.<br /><br />A 30-second grace period after every level load lets the world settle before any cleanup runs.<br /><br />Four MCM buttons give direct control: show current entity stats, force an immediate cleanup, delete all common (respawnable) squads, or nuclear option - delete all squads including story ones. Smart terrains repopulate naturally after a common squad delete.<br /><br /></p>
+<h2>Features</h2>
+<h3>Online Guard</h3>
+<ul>
+<li>Monitors online entity count on a configurable interval</li>
+<li>Releases farthest entities first when over threshold</li>
+<li>30-second grace period after level load</li>
+<li>Distance-based or random removal (configurable)</li>
+</ul>
+<h3>Protection</h3>
+<ul>
+<li>Traders, mechanics, leaders, medics, barmen, guides - never removed</li>
+<li>Story characters and quest givers - never removed</li>
+<li>Companions and companion squads - never removed</li>
+<li>NPCs with active tasks - never removed (configurable)</li>
+</ul>
+<h3>MCM Buttons</h3>
+<ul>
+<li>Show Status - Display current entity counts and protection stats via PDA</li>
+<li>Force Cleanup - Immediately cull excess entities</li>
+<li>Delete Common - Remove all respawnable squads (smart terrains repopulate)</li>
+<li>Delete All - Remove ALL squads including story (may break quests)</li>
+</ul>
+<h3>Notifications</h3>
+<ul>
+<li>Immersive PDA messages when cleanup runs</li>
+<li>Debug logging to alifeguard.log (optional)</li>
+</ul>
+<h2>Requirements</h2>
+<p>Anomaly 1.5.3<br />Modded exes<br /><a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a><br />MCM<br /><br /></p>
+<h2>Install (MO2)</h2>
+<p>1. Install xlibs<br />2. Install AlifeGuard<br />3. Load order does not matter<br />4. Configure via MCM<br /><br />Uninstall: Disable or remove in MO2.<br /><br /></p>
+<h2>Configuration</h2>
+<p>All settings in MCM under AlifeGuard. The defaults work well, adjust after playing.<br /><br /></p>
+<h2>Compatibility</h2>
+<p>Works with AlifePlus, ZCP, Warfare, GAMMA, and any other A-Life or warfare mod. Does not modify base scripts. Only releases entities through the standard engine API.<br /><br /></p>
+<h2>Known Issues</h2>
+<p>Extremely rare crash on entity release (Perform_reject assertion).<br />This is an engine bug in X-Ray's inventory parent tracking - the same code path used by all similar mods: Grok Dynamic Despawner, Night Mutants (xcvb), Phantoms (xcvb), Guards Spawner (xcvb), Dynamic Anomalies (Demonized), Boomsticks and Sharpsticks despawn scripts (Mich).<br />No script-side fix exists.<br /><br /></p>
+<h2>Development</h2>
+<p>Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.<br />Code patterns and engine usage validated against established work by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb).<br />The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.<br />Full report in doc/test-report.log.<br /><br /></p>
+<h2>Usage and License</h2>
+<p>Modpacks: allowed and encouraged. Keep the readme and license files.<br />Addons, patches, compatibility layers: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.<br />Replicating the architecture or design in another mod: allowed if you credit the source visibly.<br />Competing standalone replacements that substitute for AlifeGuard: not allowed.<br />Full license in LICENSE file and on GitHub.<br /><br /></p>
+<p>Credits:<br />Stalker_Boss - Russian translation</p>
+<p></p>
+<h2>Versions</h2>
+<h3>1.0.7</h3>
+<ul>
+<li>Changed: xlibs dependency updated to 1.2.1</li>
+</ul>
+<h3>1.0.6</h3>
+<ul>
+<li>Changed: default online guard threshold from 40 to 70</li>
+<li>Changed: MCM config access performance optimization</li>
+<li>Added: MCM reset button support</li>
+<li>Added: MCM label cleanup</li>
+<li>Fixed: smaller performance optimizations</li>
+</ul>
+<h3>1.0.5</h3>
+<ul>
+<li>Fixed: dependency gate uses exact version match instead of string comparison</li>
+</ul>
+<h3>1.0.4</h3>
+<ul>
+<li>Task giver protection fix and debug tracing.</li>
+<li>Fixed: sim task givers unprotected (task_giver_id is squad ID, not NPC ID)</li>
+<li>Added: debug log traces for all protection decisions and released entity sections</li>
+</ul>
+<h3>1.0.3</h3>
+<ul>
+<li>Dependency gate and Russian translation.</li>
+<li>Added: dependency gate - clear error message if xlibs is missing or outdated</li>
+<li>Added: Russian translation (Stalker_Boss)</li>
+</ul>
+<h3>1.0.2</h3>
+<ul>
+<li>Fixed: bounty and hostage task targets protected from release</li>
+</ul>
+<h3>1.0.1</h3>
+<ul>
+<li>Fixed console log spam during entity iteration and release.</li>
+<li>Fixed: alive() and release callstack spam on non-creature objects</li>
+<li>Fixed: missing check_interval default</li>
+</ul>
+<h3>1.0.0</h3>
+<ul>
+<li>First release. Online entity limiter with MCM configuration.</li>
+<li>Added: online guard with distance-based removal</li>
+<li>Added: entity protection (traders, companions, story, tasks)</li>
+<li>Added: MCM buttons (status, cleanup, delete common, delete all)</li>
+<li>Added: immersive PDA notifications</li>
+<li>Added: debug logging</li>
+</ul>

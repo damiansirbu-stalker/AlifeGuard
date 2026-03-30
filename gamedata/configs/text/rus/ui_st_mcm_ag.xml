@@ -15,7 +15,7 @@
         <text>AlifeGuard</text>
     </string>
     <string id="ui_mcm_ag_version">
-        <text>%c[d_cyan]1.0.7</text>
+        <text>%c[d_cyan]1.0.8</text>
     </string>
     <string id="ui_mcm_ag_general_info">
         <text>A-Life needs breathing room. Too many entities online kills performance. AlifeGuard maintains target entity count by releasing farthest unprotected NPCs back to offline simulation. They continue existing, just not rendered.</text>
