@@ -1,3 +1,8 @@
+1.0.9
+  Added: MCM banner
+  Added: version logged at startup (mod + xlibs)
+  Changed: MCM version displayed from code, no longer hardcoded in XML
+
 1.0.8
   xlibs 1.2.3 dependency.
 
