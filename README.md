@@ -8,4 +8,5 @@ Requires: Anomaly 1.5.3, Modded exes, [xlibs](https://www.moddb.com/mods/stalker
 
 ## Documentation
 
-- [readme.txt](doc/readme.txt) -- full description, features, changelog
+- [readme.txt](doc/readme.txt) -- full description, features
+- [changelog](https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog) -- version history

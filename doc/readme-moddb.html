@@ -1,5 +1,5 @@
-<h3>Latest: 1.0.8 (xlibs 1.2.3)</h3>
 <h3>GitHub: <a href="https://github.com/damiansirbu-stalker/AlifeGuard">https://github.com/damiansirbu-stalker/AlifeGuard</a></h3>
+<h3>Changelog: <a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog">doc/changelog</a></h3>
 
 <p>Too many online entities kill performance. AlifeGuard maintains a target count by releasing excess NPCs back to offline simulation. They continue existing in A-Life, just not rendered.</p>
 
@@ -93,64 +93,3 @@ Full report in doc/test-report.log.</p>
 <li>Full license in LICENSE file and on GitHub.</li>
 </ul>
 
-<h2>Versions:</h2>
-
-<h3>1.0.8</h3>
-<ul>
-<li>xlibs 1.2.3 dependency.</li>
-</ul>
-
-<h3>1.0.7</h3>
-<ul>
-<li>Changed: xlibs dependency updated to 1.2.1</li>
-</ul>
-
-<h3>1.0.6</h3>
-<ul>
-<li>Changed: default online guard threshold from 40 to 70</li>
-<li>Changed: MCM config access performance optimization</li>
-<li>Added: MCM reset button support</li>
-<li>Added: MCM label cleanup</li>
-<li>Fixed: smaller performance optimizations</li>
-</ul>
-
-<h3>1.0.5</h3>
-<ul>
-<li>Fixed: dependency gate uses exact version match instead of string comparison</li>
-</ul>
-
-<h3>1.0.4</h3>
-<ul>
-<li>Task giver protection fix and debug tracing.</li>
-<li>Fixed: sim task givers unprotected (task_giver_id is squad ID, not NPC ID)</li>
-<li>Added: debug log traces for all protection decisions and released entity sections</li>
-</ul>
-
-<h3>1.0.3</h3>
-<ul>
-<li>Dependency gate and Russian translation.</li>
-<li>Added: dependency gate - clear error message if xlibs is missing or outdated</li>
-<li>Added: Russian translation (Stalker_Boss)</li>
-</ul>
-
-<h3>1.0.2</h3>
-<ul>
-<li>Fixed: bounty and hostage task targets protected from release</li>
-</ul>
-
-<h3>1.0.1</h3>
-<ul>
-<li>Fixed console log spam during entity iteration and release.</li>
-<li>Fixed: alive() and release callstack spam on non-creature objects</li>
-<li>Fixed: missing check_interval default</li>
-</ul>
-
-<h3>1.0.0</h3>
-<ul>
-<li>First release. Online entity limiter with MCM configuration.</li>
-<li>Added: online guard with distance-based removal</li>
-<li>Added: entity protection (traders, companions, story, tasks)</li>
-<li>Added: MCM buttons (status, cleanup, delete common, delete all)</li>
-<li>Added: immersive PDA notifications</li>
-<li>Added: debug logging</li>
-</ul>
