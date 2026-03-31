@@ -7,114 +7,110 @@
 
     <!-- ==================== TAB NAMES ==================== -->
     <string id="ui_mcm_menu_general">
-        <text>General</text>
+        <text>Общие</text>
     </string>
 
     <!-- ==================== GENERAL TAB ==================== -->
     <string id="ui_mcm_ag_title">
         <text>AlifeGuard</text>
     </string>
-    <string id="ui_mcm_ag_version">
-        <text>%c[d_cyan]1.0.8</text>
-    </string>
     <string id="ui_mcm_ag_general_info">
-        <text>A-Life needs breathing room. Too many entities online kills performance. AlifeGuard maintains target entity count by releasing farthest unprotected NPCs back to offline simulation. They continue existing, just not rendered.</text>
+        <text>A-Life нужен простор. Слишком много сущностей онлайн убивает производительность. AlifeGuard поддерживает целевое количество сущностей, отправляя самых дальних незащищённых NPC обратно в офлайн-симуляцию. Они продолжают существовать, просто не отрисовываются.</text>
     </string>
 
     <!-- General - Actions -->
     <string id="ui_mcm_ag_hdr_actions">
-        <text>Diagnostics</text>
+        <text>Диагностика</text>
     </string>
     <string id="ui_mcm_ag_general_btn_show_status">
-        <text>Show status</text>
+        <text>Показать статус</text>
     </string>
     <string id="ui_mcm_ag_general_btn_show_status_desc">
-        <text>Display current entity counts and protection statistics via PDA.</text>
+        <text>Показать текущее количество сущностей и статистику защиты через КПК.</text>
     </string>
     <string id="ui_mcm_ag_general_btn_manual_cleanup">
-        <text>Force cleanup</text>
+        <text>Принудительная очистка</text>
     </string>
     <string id="ui_mcm_ag_general_btn_manual_cleanup_desc">
-        <text>Immediately cull excess entities. Use if framerate drops unexpectedly.</text>
+        <text>Немедленно удалить лишние сущности. Используйте при неожиданном падении частоты кадров.</text>
     </string>
 
     <!-- General - Population Reset -->
     <string id="ui_mcm_ag_hdr_population">
-        <text>Population Reset</text>
+        <text>Сброс популяции</text>
     </string>
     <string id="ui_mcm_ag_general_btn_delete_common">
-        <text>Delete common squads</text>
+        <text>Удалить обычные отряды</text>
     </string>
     <string id="ui_mcm_ag_general_btn_delete_common_desc">
-        <text>Remove all common (respawnable) squads from the world. Story and quest squads are kept. Smart terrains will repopulate naturally over time.</text>
+        <text>Удалить все обычные (возрождаемые) отряды из мира. Сюжетные и квестовые отряды сохраняются. Умные укрытия заселятся заново со временем.</text>
     </string>
     <string id="ui_mcm_ag_general_btn_delete_all">
-        <text>Delete all squads</text>
+        <text>Удалить все отряды</text>
     </string>
     <string id="ui_mcm_ag_general_btn_delete_all_desc">
-        <text>Remove ALL squads including story squads. Use only if common delete is not enough. May break active quests.</text>
+        <text>Удалить ВСЕ отряды, включая сюжетные. Используйте, только если удаление обычных не помогло. Может сломать активные задания.</text>
     </string>
-
 
     <!-- General - Entity limits -->
     <string id="ui_mcm_ag_hdr_online">
-        <text>Entity Limits</text>
+        <text>Лимиты сущностей</text>
     </string>
     <string id="ui_mcm_ag_general_enabled">
-        <text>Enable online guard</text>
+        <text>Включить онлайн-охрану</text>
     </string>
     <string id="ui_mcm_ag_general_enabled_desc">
-        <text>Limit active entities around you. Farthest go offline first. Traders, companions, quest targets - protected.</text>
+        <text>Ограничить активные сущности вокруг вас. Самые дальние уходят в офлайн первыми. Торговцы, спутники, цели заданий -- защищены.</text>
     </string>
     <string id="ui_mcm_ag_general_max">
-        <text>Maximum online</text>
+        <text>Максимум онлайн</text>
     </string>
     <string id="ui_mcm_ag_general_max_desc">
-        <text>How many stalkers and mutants can be active simultaneously. Lower = better framerate in dense areas. 40 is balanced.</text>
+        <text>Сколько сталкеров и мутантов могут быть активны одновременно. Меньше = лучше FPS в плотных зонах. 40 -- сбалансировано.</text>
     </string>
     <string id="ui_mcm_ag_general_check_interval">
-        <text>Check interval</text>
+        <text>Интервал проверки</text>
     </string>
     <string id="ui_mcm_ag_general_check_interval_desc">
-        <text>[seconds]\nHow often to check entity counts. Lower = more responsive but slight performance cost. 30 is balanced.</text>
+        <text>[секунды]\nКак часто проверять количество сущностей. Меньше = быстрее реакция, но небольшая нагрузка. 30 -- сбалансировано.</text>
     </string>
 
     <!-- General - Protection -->
     <string id="ui_mcm_ag_hdr_protection">
-        <text>Protection Rules</text>
+        <text>Правила защиты</text>
     </string>
     <string id="ui_mcm_ag_general_check_tasks">
-        <text>Protect task NPCs</text>
+        <text>Защищать NPC заданий</text>
     </string>
     <string id="ui_mcm_ag_general_check_tasks_desc">
-        <text>NPCs involved in active tasks cannot be removed. Disable if the Zone should be indifferent to your objectives.</text>
+        <text>NPC, участвующие в активных заданиях, не могут быть удалены. Отключите, если Зона должна быть безразлична к вашим целям.</text>
     </string>
     <string id="ui_mcm_ag_general_prioritize_distant">
-        <text>Remove farthest first</text>
+        <text>Удалять дальних первыми</text>
     </string>
     <string id="ui_mcm_ag_general_prioritize_distant_desc">
-        <text>Cull distant entities first. If disabled, random selection - chaotic but occasionally removes nearby NPCs.</text>
+        <text>Убирать дальние сущности первыми. При отключении -- случайный выбор, хаотичный, но иногда убирает ближних NPC.</text>
     </string>
 
     <!-- General - Notifications -->
     <string id="ui_mcm_ag_hdr_notifications">
-        <text>Notifications</text>
+        <text>Уведомления</text>
     </string>
     <string id="ui_mcm_ag_general_pda">
-        <text>PDA messages</text>
+        <text>Сообщения КПК</text>
     </string>
     <string id="ui_mcm_ag_general_pda_desc">
-        <text>Show cleanup statistics via PDA when entities are culled.</text>
+        <text>Показывать статистику очистки через КПК при удалении сущностей.</text>
     </string>
 
     <!-- General - Developer -->
     <string id="ui_mcm_ag_hdr_advanced">
-        <text>Developer</text>
+        <text>Разработка</text>
     </string>
     <string id="ui_mcm_ag_general_debug_log">
-        <text>Debug logging</text>
+        <text>Отладочные логи</text>
     </string>
     <string id="ui_mcm_ag_general_debug_log_desc">
-        <text>Write detailed logs to logs/alifeguard.log. Entity counts, release decisions, timing. Performance cost when enabled.</text>
+        <text>Записывать подробные логи в logs/alifeguard.log. Количество сущностей, решения об освобождении, тайминги. Влияет на производительность.</text>
     </string>
 </string_table>

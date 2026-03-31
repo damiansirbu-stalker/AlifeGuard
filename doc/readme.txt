@@ -1,6 +1,6 @@
 AlifeGuard: Population control for STALKER Anomaly, by Damian
-Latest: 1.0.8 (xlibs 1.2.3)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
+Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 
 Too many online entities kill performance. AlifeGuard maintains a target count by releasing excess NPCs back to offline simulation. They continue existing in A-Life, just not rendered.
 
@@ -79,47 +79,3 @@ Usage and License:
   Replicating the architecture or design in another mod: allowed if you credit the source visibly.
   Competing standalone replacements that substitute for AlifeGuard: not allowed.
   Full license in LICENSE file and on GitHub.
-
-Versions:
-
-1.0.8
-  xlibs 1.2.3 dependency.
-
-1.0.7
-  Changed: xlibs dependency updated to 1.2.1
-
-1.0.6
-  Changed: default online guard threshold from 40 to 70
-  Changed: MCM config access performance optimization
-  Added: MCM reset button support
-  Added: MCM label cleanup
-  Fixed: smaller performance optimizations
-
-1.0.5
-  Fixed: dependency gate uses exact version match instead of string comparison
-
-1.0.4
-  Task giver protection fix and debug tracing.
-  Fixed: sim task givers unprotected (task_giver_id is squad ID, not NPC ID)
-  Added: debug log traces for all protection decisions and released entity sections
-
-1.0.3
-  Dependency gate and Russian translation.
-  Added: dependency gate - clear error message if xlibs is missing or outdated
-  Added: Russian translation (Stalker_Boss)
-
-1.0.2
-  Fixed: bounty and hostage task targets protected from release
-
-1.0.1
-  Fixed console log spam during entity iteration and release.
-  Fixed: alive() and release callstack spam on non-creature objects
-  Fixed: missing check_interval default
-
-1.0.0
-  First release. Online entity limiter with MCM configuration.
-  Added: online guard with distance-based removal
-  Added: entity protection (traders, companions, story, tasks)
-  Added: MCM buttons (status, cleanup, delete common, delete all)
-  Added: immersive PDA notifications
-  Added: debug logging
