@@ -1,10 +1,11 @@
 next
   Added: MCM banner
   Added: version logged at startup (mod + xlibs)
-  Added: task target squad protection -- assault, bounty, hostage, delivery squads never released
+  Added: task target squad protection (assault, bounty, hostage, delivery squads never released)
   Changed: MCM version displayed from code, no longer hardcoded in XML
   Fixed: delete_all_squads + repopulate crash (stale SIMBOARD IDs)
   Fixed: delete_common_squads removing bounty/hostage quest targets
+  Fixed: Russian MCM encoding (windows-1251)
 
 1.0.8
   xlibs 1.2.3 dependency.
