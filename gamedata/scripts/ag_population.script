@@ -95,6 +95,11 @@ local function _is_entity_protected(obj, id, is_stalker)
         return true
     end
     if is_stalker and _is_bounty_or_hostage(id) then return true end
+    local squad = get_object_squad(obj)
+    if squad and xsquad.is_task_target(squad) then
+        _prot("    TASK_TARGET xsquad ID:%d squad:%d [%s]", id, squad.id, section)
+        return true
+    end
     return false
 end
 

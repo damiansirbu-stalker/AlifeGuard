@@ -8,7 +8,10 @@ Every removal goes through the correct X-Ray release chain: alife_release_id tri
 
 Removal starts with the farthest entities. All online stalkers and mutants are collected, sorted by distance to the player, and released farthest-first until under the target. The NPC standing next to you is always the last to go.
 
-Protected entities are never removed. Traders, mechanics, leaders, medics, barmen, guides, story characters, companions, companion squads, NPCs with active tasks, entities with story IDs. Multiple checks run on every entity before removal - any one is enough to keep it.
+Protected entities are never removed. Multiple checks run on every entity before removal - any one is enough to keep it:
+  Identity: traders, mechanics, leaders, medics, barmen, guides, story characters, entities with story IDs
+  Role: companions, companion squads, quest givers
+  Task: NPCs with active tasks, task target squads (assault, bounty, hostage, delivery, etc.)
 
 A 30-second grace period after every level load lets the world settle before any cleanup runs.
 
@@ -27,6 +30,7 @@ Protection:
   Story characters and quest givers - never removed
   Companions and companion squads - never removed
   NPCs with active tasks - never removed (configurable)
+  Task target squads (assault, bounty, hostage, delivery, etc.) - never removed
 
 MCM Buttons:
   Show Status         Display current entity counts and protection stats via PDA
