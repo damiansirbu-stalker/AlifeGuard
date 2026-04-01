@@ -2,45 +2,40 @@ AlifeGuard: Population control for STALKER Anomaly, by Damian
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 
-Too many online entities kill performance. AlifeGuard maintains a target count by releasing excess NPCs back to offline simulation. They continue existing in A-Life, just not rendered.
+Too many online entities kill performance. AlifeGuard keeps the count under a configurable threshold by despawning excess NPCs. Smart terrains repopulate naturally - the world stays alive.
 
-Every removal goes through the correct X-Ray release chain: alife_release_id triggers squad:remove_npc, which cascades through smart terrain unregistration, squad member cleanup, and the server_entity_on_unregister callback. The entity is gone from every engine table that knew about it. No zombie phantoms, no orphaned references, no memory leaks.
+Balanced despawning:
+  Farthest-first. All online stalkers and mutants are sorted by distance. The NPC next to you is always the last to go.
+  30-second grace period after every level load lets the world settle.
+  Single-pass collection via game_objects_iter (native C++ iterator, no Lua table allocation).
+  Configurable threshold and interval. Default: 70 max, 30s checks.
 
-Removal starts with the farthest entities. All online stalkers and mutants are collected, sorted by distance to the player, and released farthest-first until under the target. The NPC standing next to you is always the last to go.
+Multi-layer protection:
+  Every entity goes through 4 independent checks before removal. Any single match keeps it alive.
+  Layer 1 - Identity: story characters, squad story IDs, companions, named NPCs (traders, mechanics, leaders, medics, barmen, guides)
+  Layer 2 - Task givers: NPCs referenced by active tasks (by NPC ID or squad ID)
+  Layer 3 - Bounty/hostage: targets tracked by axr_task_manager
+  Layer 4 - Task target squads: assault, bounty, hostage, delivery squads
 
-Protected entities are never removed. Multiple checks run on every entity before removal - any one is enough to keep it:
-  Identity: traders, mechanics, leaders, medics, barmen, guides, story characters, entities with story IDs
-  Role: companions, companion squads, quest givers
-  Task: NPCs with active tasks, task target squads (assault, bounty, hostage, delivery, etc.)
+Performance:
+  Single-pass collection via game_objects_iter (native C++ iterator, no Lua table allocation).
+  Squared distance comparisons throughout - no sqrt calls.
+  All engine API calls (IsStalker, IsMonster, alife_object, alife_release_id) cached as local upvalues - no global lookups on hot paths.
+  obj:section() (luabind) only called when debug logging is enabled.
+  xcreature.is_unscriptable uses weak-key cache - one luabind call per entity per GC cycle, zero after.
+  No per-entity per-frame callbacks. One timer, one pass, done.
 
-A 30-second grace period after every level load lets the world settle before any cleanup runs.
+Clean engine release:
+  Every removal goes through X-Ray's alife_release_id. The entity is removed from every engine table - no zombie phantoms, no orphaned references, no memory leaks.
 
-Four MCM buttons give direct control: show current entity stats, force an immediate cleanup, delete all common (respawnable) squads, or nuclear option - delete all squads including story ones. Smart terrains repopulate naturally after a common squad delete.
+MCM buttons:
+  Show Status     Current entity counts and protection stats via PDA
+  Force Cleanup   Immediately cull excess entities
+  Delete Common   Remove all respawnable squads (smart terrains repopulate)
+  Delete All      Remove ALL squads including story (may break quests)
 
-Features:
-
-Online Guard:
-  Monitors online entity count on a configurable interval
-  Releases farthest entities first when over threshold
-  30-second grace period after level load
-  Distance-based or random removal (configurable)
-
-Protection:
-  Traders, mechanics, leaders, medics, barmen, guides - never removed
-  Story characters and quest givers - never removed
-  Companions and companion squads - never removed
-  NPCs with active tasks - never removed (configurable)
-  Task target squads (assault, bounty, hostage, delivery, etc.) - never removed
-
-MCM Buttons:
-  Show Status         Display current entity counts and protection stats via PDA
-  Force Cleanup       Immediately cull excess entities
-  Delete Common       Remove all respawnable squads (smart terrains repopulate)
-  Delete All          Remove ALL squads including story (may break quests)
-
-Notifications:
-  Immersive PDA messages when cleanup runs
-  Debug logging to alifeguard.log (optional)
+PDA notifications:
+  Immersive messages when cleanup runs. Toggleable via MCM.
 
 Requirements:
 Anomaly 1.5.3
@@ -56,9 +51,6 @@ Install (MO2):
 
 Uninstall (MO2):
 Disable or remove in MO2.
-
-Configuration:
-All settings in MCM under AlifeGuard. The defaults work well, adjust after playing.
 
 Compatibility:
 Works with AlifePlus, ZCP, Warfare, GAMMA, and any other A-Life or warfare mod. Does not modify base scripts. Only releases entities through the standard engine API.

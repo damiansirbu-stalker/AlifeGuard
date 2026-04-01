@@ -1,12 +1,17 @@
 next
-  Added: version logged at startup (mod + xlibs)
-  Added: task target squad protection (assault, bounty, hostage, delivery squads never released)
-  Changed: MCM refresh (banner, version from code, cream version color)
-  Fixed: delete_all_squads + repopulate crash (stale SIMBOARD IDs)
-  Fixed: delete_common_squads removing bounty/hostage quest targets
-  Fixed: log deadbanding reduces spam in busy areas (xlibs)
-  Fixed: Russian MCM encoding (windows-1251)
-  Fixed: task target squad check running on monsters (wasted luabind calls)
+  Compatibility:
+    Added: task target squad protection (assault, bounty, hostage, delivery squads never released)
+    Fixed: task target squad check running on monsters (wasted luabind calls)
+    Fixed: delete_common_squads removing bounty/hostage quest targets
+  MCM:
+    Added: version displayed at startup (mod + xlibs)
+    Changed: MCM visual refresh
+    Fixed: Russian MCM encoding restored (windows-1251)
+  X-Ray & xlibs:
+    Added: xsquad.is_task_target for O(1) task squad detection (replaces per-entity bounty scan)
+    Added: log deadbanding reduces repeated lines in busy areas
+    Fixed: release_squads crash on stale SIMBOARD IDs after repopulate
+    Fixed: find_online_squads no longer re-evaluates rejected squads
 
 1.0.8
   xlibs 1.2.3 dependency.
