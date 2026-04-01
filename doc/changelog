@@ -6,6 +6,7 @@ next
   Fixed: delete_all_squads + repopulate crash (stale SIMBOARD IDs)
   Fixed: delete_common_squads removing bounty/hostage quest targets
   Fixed: Russian MCM encoding (windows-1251)
+  Fixed: task target squad check running on monsters (wasted luabind calls)
 
 1.0.8
   xlibs 1.2.3 dependency.
