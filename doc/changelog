@@ -1,3 +1,8 @@
+1.0.10
+  xlibs 1.2.5 dependency.
+  Fixed: delete_all_squads + repopulate crash (stale SIMBOARD IDs)
+  Fixed: delete_common_squads removing bounty/hostage quest targets
+
 1.0.9
   Added: MCM banner
   Added: version logged at startup (mod + xlibs)
