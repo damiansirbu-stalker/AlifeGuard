@@ -127,8 +127,11 @@ local function count_and_collect_online()
     local actor = db.actor
     local actor_id = actor:id()
     local actor_pos = actor:position()
-    local stats = { total = 0, stalkers = 0, mutants = 0, protected = 0 }
+    local stats = { total = 0, stalkers = 0, mutants = 0, protected = 0, skipped = 0 }
     local entities = {}
+
+    local iter_timer = xprofiler.new_if(_dbg)
+    iter_timer:start()
 
     for obj in game_objects_iter() do
         local id = obj:id()
@@ -140,6 +143,7 @@ local function count_and_collect_online()
         elseif is_monster(obj) then
             obj_is_stalker = false
         else
+            stats.skipped = stats.skipped + 1
             goto next
         end
 
@@ -168,48 +172,77 @@ local function count_and_collect_online()
         ::next::
     end
 
+    iter_timer:stop()
+    log.debug("  COLLECT: %d entities (%d stalkers, %d mutants, %d protected, %d skipped) [%.2fms]",
+        stats.total, stats.stalkers, stats.mutants, stats.protected, stats.skipped, iter_timer:get_ms())
+
     return stats.total, stats.stalkers, stats.mutants, stats.protected, entities
 end
 
 local function despawn_online_to_target(entities, current_count, target)
     if current_count <= target then
         log.debug("  ONLINE: %d <= %d target - OK", current_count, target)
-        return 0, 0, 0
+        return
     end
-    if not entities then return 0, 0, 0 end
+    if not entities then return end
 
     local to_remove = current_count - target
-    log.debug("  ONLINE: %d > %d target - need to remove %d", current_count, target, to_remove)
+    log.debug("  DESPAWN: %d > %d target - need to remove %d", current_count, target, to_remove)
 
-    -- Sort: farthest first
+    -- Sort: farthest first (synchronous, fast for ~100 items)
+    local sort_timer = xprofiler.new_if(_dbg)
+    sort_timer:start()
     if cfg.prioritize_distant then
         entities = xtable.sort(entities, function(a, b) return a.dist_sq > b.dist_sq end)
     else
         entities = xtable.shuffle(entities)
     end
+    sort_timer:stop()
+    log.debug("  SORT: %d entities [%.2fms]", #entities, sort_timer:get_ms())
 
-    -- Release unprotected entities (already sorted by distance)
+    -- Spread releases across frames (1 per frame to avoid net_Relcase cascade)
     local removed, removed_stalkers, removed_mutants = 0, 0, 0
-    local protected_count = 0
+    local protected_count, failed_count, frames = 0, 0, 0
+    local start_time = clock()
 
-    for _, ent in ipairs(entities) do
-        if ent.protected then
-            protected_count = protected_count + 1
-            goto continue
-        end
-        if removed >= to_remove then goto continue end
-        if not safe_release(ent.id) then goto continue end
-        removed = removed + 1
-        local st, mt, label = _count_release(ent)
-        removed_stalkers = removed_stalkers + st
-        removed_mutants = removed_mutants + mt
-        log.debug("    Released %s ID:%d [%s] at %.0fm", label, ent.id, ent.section or "?", math_sqrt(ent.dist_sq))
-        ::continue::
-    end
+    xslice.start("ag_despawn", entities, {
+        step = 1,
+        func = function(ent)
+            frames = frames + 1
+            if removed >= to_remove then return false end
+            if ent.protected then
+                protected_count = protected_count + 1
+                _prot("    SKIP protected ID:%d [frame:%d]", ent.id, frames)
+                return true
+            end
 
-    log.debug("  ONLINE: Removed %d entities (%d stalkers, %d mutants, skipped %d protected)",
-        removed, removed_stalkers, removed_mutants, protected_count)
-    return removed, removed_stalkers, removed_mutants
+            local release_timer = xprofiler.new_if(_dbg)
+            release_timer:start()
+            local ok = safe_release(ent.id)
+            release_timer:stop()
+            local ms = release_timer:get_ms()
+
+            if not ok then
+                failed_count = failed_count + 1
+                log.debug("    RELEASE FAILED ID:%d [%.2fms frame:%d]", ent.id, ms, frames)
+                return true
+            end
+
+            removed = removed + 1
+            local st, mt, label = _count_release(ent)
+            removed_stalkers = removed_stalkers + st
+            removed_mutants = removed_mutants + mt
+            log.debug("    RELEASE %s ID:%d [%s] dist=%.0fm [%.2fms frame:%d]",
+                label, ent.id, ent.section or "?", math_sqrt(ent.dist_sq), ms, frames)
+            return true
+        end,
+        on_done = function()
+            local elapsed_ms = (clock() - start_time) * 1000
+            log.info("DESPAWN SPREAD: removed %d/%d (stalkers:%d mutants:%d protected:%d failed:%d) [%d frames %.0fms]",
+                removed, to_remove, removed_stalkers, removed_mutants, protected_count, failed_count, frames, elapsed_ms)
+            notify_cleanup(removed, removed_stalkers, removed_mutants)
+        end,
+    })
 end
 
 -- ==================== MAIN UPDATE ====================
@@ -217,6 +250,7 @@ end
 local function actor_on_update()
     if not cfg.enabled then return end
     if not db or not db.actor then return end
+    if xslice.is_active("ag_despawn") then return end
 
     local tg = clock()
     if tg - level_load_time < LEVEL_LOAD_GRACE_PERIOD then return end
@@ -227,24 +261,17 @@ local function actor_on_update()
     local total_timer = xprofiler.new()
     total_timer:start()
 
-    local count_timer = xprofiler.new()
-    count_timer:start()
     local total, stalkers, mutants, protected, entities = count_and_collect_online()
-    count_timer:stop()
-    log.debug("ONLINE: %d/%d (stalkers:%d mutants:%d protected:%d) [count:%.1fms]",
-        total, cfg.max, stalkers, mutants, protected, count_timer:get_ms())
 
     if total > cfg.max then
-        local action_timer = xprofiler.new()
-        action_timer:start()
-        local removed, removed_stalkers, removed_mutants = despawn_online_to_target(entities, total, cfg.max)
-        action_timer:stop()
-        log.info("ONLINE ACTION: removed %d [%.1fms]", removed, action_timer:get_ms())
-        notify_cleanup(removed, removed_stalkers, removed_mutants)
+        total_timer:stop()
+        log.debug("  OVER: %d/%d [collect:%.2fms]", total, cfg.max, total_timer:get_ms())
+        despawn_online_to_target(entities, total, cfg.max)
+    else
+        total_timer:stop()
+        log.debug("ONLINE OK: %d/%d (stalkers:%d mutants:%d protected:%d) [%.2fms]",
+            total, cfg.max, stalkers, mutants, protected, total_timer:get_ms())
     end
-
-    total_timer:stop()
-    log.debug("TOTAL: %.1fms", total_timer:get_ms())
 end
 
 -- ==================== LEVEL CHANGE ====================
@@ -290,6 +317,11 @@ end
 function manual_cleanup()
     if not is_in_game() or not db or not db.actor then return end
 
+    if xslice.is_active("ag_despawn") then
+        news_manager.send_tip(db.actor, "AlifeGuard: Cleanup already in progress", nil, nil, 5000)
+        return
+    end
+
     local tg = clock()
     if tg - level_load_time < LEVEL_LOAD_GRACE_PERIOD then
         local remaining = math_ceil(LEVEL_LOAD_GRACE_PERIOD - (tg - level_load_time))
@@ -299,17 +331,16 @@ function manual_cleanup()
 
     load_config()
 
-    local removed_online = 0
-
     if cfg.enabled and cfg.max > 0 then
         local total, _, _, _, entities = count_and_collect_online()
         if total > cfg.max then
-            removed_online = despawn_online_to_target(entities, total, cfg.max)
+            news_manager.send_tip(db.actor, "--- AlifeGuard Cleanup ---", nil, nil, 10000)
+            despawn_online_to_target(entities, total, cfg.max)
+        else
+            news_manager.send_tip(db.actor, "--- AlifeGuard Cleanup ---", nil, nil, 10000)
+            news_manager.send_tip(db.actor, "Online Guard: no cleanup needed", nil, nil, 10000)
         end
     end
-
-    news_manager.send_tip(db.actor, "--- AlifeGuard Cleanup ---", nil, nil, 10000)
-    news_manager.send_tip(db.actor, string.format("Online Guard: removed %d", removed_online), nil, nil, 10000)
 end
 
 -- ==================== POPULATION RESET ====================

@@ -2,13 +2,18 @@ AlifeGuard: Population control for STALKER Anomaly, by Damian
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 
-Too many online entities kill performance. AlifeGuard keeps the count under a configurable threshold by despawning excess NPCs. Smart terrains repopulate naturally - the world stays alive.
+! Please reset MCM settings to defaults when updating to a new version !
+
+Late-game lag, micro-stutters, FPS drops from A-Life bloat.
+Too many online entities choke the X-Ray engine. AlifeGuard keeps the count under a
+configurable threshold by despawning the farthest NPCs first. Smart terrains repopulate
+naturally. The world stays alive without the CPU cost.
 
 Balanced despawning:
   Farthest-first. All online stalkers and mutants are sorted by distance. The NPC next to you is always the last to go.
   30-second grace period after every level load lets the world settle.
   Single-pass collection via game_objects_iter (native C++ iterator, no Lua table allocation).
-  Configurable threshold and interval. Default: 70 max, 30s checks.
+  Configurable threshold and interval. Default: 80 max, 30s checks.
 
 Multi-layer protection:
   Every entity goes through 4 independent checks before removal. Any single match keeps it alive.
@@ -18,21 +23,28 @@ Multi-layer protection:
   Layer 4 - Task target squads: assault, bounty, hostage, delivery squads
 
 Performance:
-  Single-pass collection via game_objects_iter (native C++ iterator, no Lua table allocation).
-  Squared distance comparisons throughout - no sqrt calls.
-  All engine API calls (IsStalker, IsMonster, alife_object, alife_release_id) cached as local upvalues - no global lookups on hot paths.
-  obj:section() (luabind) only called when debug logging is enabled.
-  xcreature.is_unscriptable uses weak-key cache - one luabind call per entity per GC cycle, zero after.
-  No per-entity per-frame callbacks. One timer, one pass, done.
+  Frame-spread despawning. Instead of releasing all excess entities in one frame, AlifeGuard
+  uses a deferred queue (xslice) to spread the work across frames. Entities are released one
+  per frame. 20 excess NPCs = 20 frames to clear. Flat frametimes, no stutter, no freezing.
+  Collection uses squared distances, cached engine calls, and weak-key caches for protection
+  checks. The mod collects and sorts in one pass, then the queue releases in the background.
+  See doc/img/benchmark_despawn_spread.jpg for measured data.
 
 Clean engine release:
-  Every removal goes through X-Ray's alife_release_id. The entity is removed from every engine table - no zombie phantoms, no orphaned references, no memory leaks.
+  Every removal goes through alife_release_id, one per frame. Releasing multiple entities in
+  a single frame is a known cause of X-Ray engine crashes (net_Relcase cascade). One-per-frame
+  pacing prevents this entirely. No phantom entities, no orphaned data, no memory leaks.
 
 MCM buttons:
   Show Status     Current entity counts and protection stats via PDA
   Force Cleanup   Immediately cull excess entities
   Delete Common   Remove all respawnable squads (smart terrains repopulate)
   Delete All      Remove ALL squads including story (may break quests)
+
+Debug logging:
+  MCM toggle. When enabled, logs every protection check, every release with timing and
+  distance, and a full summary line per cycle. Written to alifeguard.log.
+  Zero overhead when disabled (all debug calls behind a boolean guard).
 
 PDA notifications:
   Immersive messages when cleanup runs. Toggleable via MCM.

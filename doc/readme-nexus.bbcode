@@ -1,61 +1,54 @@
-[size=3][b]GitHub: [url=https://github.com/damiansirbu-stalker/AlifeGuard]https://github.com/damiansirbu-stalker/AlifeGuard[/url][/b][/size]
-[size=3][b]Changelog: [url=https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog]doc/changelog[/url][/b][/size]
+[url=https://github.com/damiansirbu-stalker/AlifeGuard]GitHub[/url]
+[url=https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog]Changelog[/url]
 
-Too many online entities kill performance. AlifeGuard maintains a target count by releasing excess NPCs back to offline simulation. They continue existing in A-Life, just not rendered.
+[b]! Please reset MCM settings to defaults when updating to a new version ![/b]
 
-Every removal goes through the correct X-Ray release chain: alife_release_id triggers squad:remove_npc, which cascades through smart terrain unregistration, squad member cleanup, and the server_entity_on_unregister callback. The entity is gone from every engine table that knew about it. No zombie phantoms, no orphaned references, no memory leaks.
+Late-game lag, micro-stutters, FPS drops from A-Life bloat.
+Too many online entities choke the X-Ray engine. AlifeGuard keeps the count under a configurable threshold by despawning the farthest NPCs first. Smart terrains repopulate naturally. The world stays alive without the CPU cost.
 
-Removal starts with the farthest entities. All online stalkers and mutants are collected, sorted by distance to the player, and released farthest-first until under the target. The NPC standing next to you is always the last to go.
-
-Protected entities are never removed. Multiple checks run on every entity before removal - any one is enough to keep it:
+[size=3][b]Balanced despawning[/b][/size]
 [list]
-[*][b]Identity:[/b] traders, mechanics, leaders, medics, barmen, guides, story characters, entities with story IDs
-[*][b]Role:[/b] companions, companion squads, quest givers
-[*][b]Task:[/b] NPCs with active tasks, task target squads (assault, bounty, hostage, delivery, etc.)
+[*]Farthest-first. All online stalkers and mutants are sorted by distance. The NPC next to you is always the last to go.
+[*]30-second grace period after every level load lets the world settle.
+[*]Single-pass collection via game_objects_iter (native C++ iterator, no Lua table allocation).
+[*]Configurable threshold and interval. Default: 80 max, 30s checks.
 [/list]
 
-A 30-second grace period after every level load lets the world settle before any cleanup runs.
-
-Four MCM buttons give direct control: show current entity stats, force an immediate cleanup, delete all common (respawnable) squads, or nuclear option - delete all squads including story ones. Smart terrains repopulate naturally after a common squad delete.
-
-[line]
-
-[size=3][b]Features:[/b][/size]
-
-[size=2][b]Online Guard:[/b][/size]
+[size=3][b]Multi-layer protection[/b][/size]
+Every entity goes through 4 independent checks before removal. Any single match keeps it alive.
 [list]
-[*]Monitors online entity count on a configurable interval
-[*]Releases farthest entities first when over threshold
-[*]30-second grace period after level load
-[*]Distance-based or random removal (configurable)
+[*]Layer 1 - Identity: story characters, squad story IDs, companions, named NPCs (traders, mechanics, leaders, medics, barmen, guides)
+[*]Layer 2 - Task givers: NPCs referenced by active tasks (by NPC ID or squad ID)
+[*]Layer 3 - Bounty/hostage: targets tracked by axr_task_manager
+[*]Layer 4 - Task target squads: assault, bounty, hostage, delivery squads
 [/list]
 
-[size=2][b]Protection:[/b][/size]
-[list]
-[*]Traders, mechanics, leaders, medics, barmen, guides - never removed
-[*]Story characters and quest givers - never removed
-[*]Companions and companion squads - never removed
-[*]NPCs with active tasks - never removed (configurable)
-[*]Task target squads (assault, bounty, hostage, delivery, etc.) - never removed
-[/list]
+[size=3][b]Performance[/b][/size]
+Frame-spread despawning. Instead of releasing all excess entities in one frame, AlifeGuard uses a deferred queue (xslice) to spread the work across frames. Entities are released one per frame. 20 excess NPCs = 20 frames to clear. Flat frametimes, no stutter, no freezing.
+Collection uses squared distances, cached engine calls, and weak-key caches for protection checks. The mod collects and sorts in one pass, then the queue releases in the background.
+See doc/img/benchmark_despawn_spread.jpg for measured data.
 
-[size=2][b]MCM Buttons:[/b][/size]
+[size=3][b]Clean engine release[/b][/size]
+Every removal goes through alife_release_id, one per frame. Releasing multiple entities in a single frame is a known cause of X-Ray engine crashes (net_Relcase cascade). One-per-frame pacing prevents this entirely. No phantom entities, no orphaned data, no memory leaks.
+
+[size=3][b]MCM buttons[/b][/size]
 [list]
-[*][b]Show Status[/b] - Display current entity counts and protection stats via PDA
+[*][b]Show Status[/b] - Current entity counts and protection stats via PDA
 [*][b]Force Cleanup[/b] - Immediately cull excess entities
 [*][b]Delete Common[/b] - Remove all respawnable squads (smart terrains repopulate)
 [*][b]Delete All[/b] - Remove ALL squads including story (may break quests)
 [/list]
 
-[size=2][b]Notifications:[/b][/size]
-[list]
-[*]Immersive PDA messages when cleanup runs
-[*]Debug logging to alifeguard.log (optional)
-[/list]
+[size=3][b]Debug logging[/b][/size]
+MCM toggle. When enabled, logs every protection check, every release with timing and distance, and a full summary line per cycle. Written to alifeguard.log.
+Zero overhead when disabled (all debug calls behind a boolean guard).
+
+[size=3][b]PDA notifications[/b][/size]
+Immersive messages when cleanup runs. Toggleable via MCM.
 
 [line]
 
-[size=3][b]Requirements:[/b][/size]
+[size=3][b]Requirements[/b][/size]
 [list]
 [*]Anomaly 1.5.3
 [*]Modded exes
@@ -63,50 +56,40 @@ Four MCM buttons give direct control: show current entity stats, force an immedi
 [*]MCM
 [/list]
 
-[size=3][b]Install (MO2):[/b][/size]
-[list]
+[size=3][b]Install (MO2)[/b][/size]
+[list=1]
 [*]Install xlibs
 [*]Install AlifeGuard
 [*]Load order does not matter
 [*]Configure via MCM
 [/list]
 
-[size=3][b]Uninstall (MO2):[/b][/size]
+[size=3][b]Uninstall (MO2)[/b][/size]
 Disable or remove in MO2.
 
-[line]
-
-[size=3][b]Configuration:[/b][/size]
-All settings in MCM under AlifeGuard. The defaults work well, adjust after playing.
-
-[size=3][b]Compatibility:[/b][/size]
+[size=3][b]Compatibility[/b][/size]
 Works with AlifePlus, ZCP, Warfare, GAMMA, and any other A-Life or warfare mod. Does not modify base scripts. Only releases entities through the standard engine API.
 
-[line]
-
-[size=3][b]Known Issues:[/b][/size]
+[size=3][b]Known Issues[/b][/size]
 Extremely rare crash on entity release (Perform_reject assertion).
 This is an engine bug in X-Ray's inventory parent tracking - the same code path used by all similar mods: Grok Dynamic Despawner, Night Mutants (xcvb), Phantoms (xcvb), Guards Spawner (xcvb), Dynamic Anomalies (Demonized), Boomsticks and Sharpsticks despawn scripts (Mich).
 No script-side fix exists.
 
 [line]
 
-[size=3][b]Development:[/b][/size]
+[size=3][b]Development[/b][/size]
 Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.
 Code patterns and engine usage validated against established work by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb).
 The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.
 Full report in doc/test-report.log.
 
-[size=3][b]Credits:[/b][/size]
+[size=3][b]Credits[/b][/size]
 Stalker_Boss - Russian translation
 
-[line]
-
-[size=3][b]Usage and License:[/b][/size]
+[size=3][b]Usage and License[/b][/size]
 Modpacks: allowed and encouraged. Keep the readme and license files.
 Addons, patches, integrations: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.
 Reproducing the implementation in other software: not allowed, even with credit.
 Full license in LICENSE file and on GitHub.
 
 [line]
-

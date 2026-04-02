@@ -1,4 +1,8 @@
-next
+1.0.9
+  Gameplay:
+    Changed: default online guard threshold from 70 to 80
+  Diagnostics:
+    Added: per-operation timing traces (collect, sort, per-release) when debug_log enabled
   Compatibility:
     Added: task target squad protection (assault, bounty, hostage, delivery squads never released)
     Fixed: task target squad check running on monsters (wasted luabind calls)
@@ -12,6 +16,8 @@ next
     Added: log deadbanding reduces repeated lines in busy areas
     Fixed: release_squads crash on stale SIMBOARD IDs after repopulate
     Fixed: find_online_squads no longer re-evaluates rejected squads
+  Performance:
+    Changed: entity removal spread across frames via xslice (zero stutter, 0.05ms average per release)
 
 1.0.8
   xlibs 1.2.3 dependency.
