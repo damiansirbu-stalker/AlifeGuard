@@ -11,3 +11,8 @@ Requires: Anomaly 1.5.3, Modded exes, [xlibs](https://www.moddb.com/mods/stalker
 - [readme.txt](doc/readme.txt) -- full description, features, performance
 - [changelog](https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog) -- version history
 - [architecture.md](doc/architecture.md) -- technical reference: protection layers, performance, comparison vs GAMMA despawner
+
+## License
+
+PolyForm Perimeter License. See [LICENSE](LICENSE).
+Part of the AlifePlus ecosystem: [xlibs](https://github.com/damiansirbu-stalker/xlibs) | [AlifePlus](https://github.com/damiansirbu-stalker/AlifePlus)
