@@ -1,6 +1,6 @@
 --- ag_population: Population control - despawn farthest entities when online count exceeds threshold
 
-local pairs, ipairs, math_sqrt, math_random, math_ceil, tostring, string = pairs, ipairs, math.sqrt, math.random, math.ceil, tostring, string
+local pairs, math_sqrt, math_random, math_ceil, tostring, string = pairs, math.sqrt, math.random, math.ceil, tostring, string
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
 local alife_object, alife_release_id, RegisterScriptCallback = alife_object, alife_release_id, RegisterScriptCallback
