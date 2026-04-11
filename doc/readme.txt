@@ -65,6 +65,7 @@ Uninstall (MO2):
 Disable or remove in MO2.
 
 Compatibility:
+Compatible with all modded exe variants (Demonized, AOE, MT).
 Works with AlifePlus, ZCP, Warfare, GAMMA, and any other A-Life or warfare mod. Does not modify base scripts. Only releases entities through the standard engine API.
 
 Known Issues:
@@ -80,6 +81,7 @@ Full report in doc/test-report.log.
 
 Credits:
 Stalker_Boss - Russian translation
+Altogolik - support, ideas, source materials
 
 Usage and License:
   Modpacks: allowed and encouraged. Keep the readme and license files.

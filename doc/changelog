@@ -1,3 +1,6 @@
+1.1.0
+  Changed: xlibs 1.2.5 dependency.
+
 1.0.9
   Gameplay:
     Changed: default online guard threshold from 70 to 80
