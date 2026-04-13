@@ -1,6 +1,7 @@
 AlifeGuard: Population control for STALKER Anomaly, by Damian
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
+Russian / На русском: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
 
 ! Please reset MCM settings to defaults when updating to a new version !
 
