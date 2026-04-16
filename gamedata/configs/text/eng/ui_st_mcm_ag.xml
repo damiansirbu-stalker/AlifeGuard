@@ -18,7 +18,7 @@
         <text>AlifeGuard</text>
     </string>
     <string id="ui_mcm_ag_general_info">
-        <text>A-Life needs breathing room. Too many entities online kills performance. AlifeGuard maintains target entity count by releasing farthest unprotected NPCs back to offline simulation. They continue existing, just not rendered.</text>
+        <text>Late-game A-Life accumulates too many active entities. AlifeGuard governs the online population with squad-aware culling, round-robin fairness across factions, and hysteresis to prevent oscillation. Squads survive, smart terrains stay consistent.</text>
     </string>
 
     <!-- General - Entity limits -->
