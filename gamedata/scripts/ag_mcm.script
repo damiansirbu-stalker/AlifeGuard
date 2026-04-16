@@ -3,22 +3,34 @@
 -- ==================== DEFAULTS ====================
 
 defaults = {
-    -- General
-    debug_log = false,
-
     -- Population Control
     enabled = true,
     max = 80,
+    buffer = 10,
     check_interval = 30,
     check_tasks = true,
     prioritize_distant = true,
+    squad_culling = true,
+    round_robin = true,
     pda = true,
+
+    -- Development
+    log_level = "WARN",
 }
 
 -- ==================== CONFIG ====================
 
 local RegisterScriptCallback = RegisterScriptCallback
-local path_builder = function(key) return "ag/general/" .. key end
+
+local _key_to_tab = {
+    log_level = "development",
+}
+
+local function path_builder(key)
+    local tab = _key_to_tab[key] or "general"
+    return "ag/" .. tab .. "/" .. key
+end
+
 cfg, get_config, load_config = xmcm.create_config("ag", defaults, path_builder)
 
 -- ==================== BUTTON HANDLERS ====================
@@ -62,9 +74,57 @@ function on_mcm_load()
                         text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
                     { id = "desc", type = "desc", text = "ui_mcm_ag_general_info" },
 
-                    -- Actions
-                    { id = "div_actions", type = "line" },
-                    { id = "hdr_actions", type = "desc", text = "ui_mcm_ag_hdr_actions", clr = {255, 200, 200, 200} },
+                    -- Online Guard
+                    { id = "div_online", type = "line" },
+                    { id = "hdr_online", type = "desc", text = "ui_mcm_ag_hdr_online", clr = {255, 200, 200, 200} },
+                    { id = "enabled", type = "check", val = 1, def = true },
+                    { id = "max", type = "track", val = 2, min = 10, max = 200, step = 5, def = 80 },
+                    { id = "buffer", type = "track", val = 2, min = 0, max = 50, step = 5, def = 10 },
+                    { id = "check_interval", type = "track", val = 2, min = 10, max = 120, step = 10, def = 30 },
+
+                    -- Protection rules
+                    { id = "div_protection", type = "line" },
+                    { id = "hdr_protection", type = "desc", text = "ui_mcm_ag_hdr_protection", clr = {255, 200, 200, 200} },
+                    { id = "check_tasks", type = "check", val = 1, def = true },
+                    { id = "prioritize_distant", type = "check", val = 1, def = true },
+                    { id = "squad_culling", type = "check", val = 1, def = true },
+                    { id = "round_robin", type = "check", val = 1, def = true },
+
+                    -- Notifications
+                    { id = "div_pda", type = "line" },
+                    { id = "hdr_notifications", type = "desc", text = "ui_mcm_ag_hdr_notifications", clr = {255, 200, 200, 200} },
+                    { id = "pda", type = "check", val = 1, def = true },
+
+                    -- Version footer
+                    { id = "div_version", type = "line" },
+                    { id = "version", type = "desc", text = "ui_mcm_ag_title",
+                        ui_hook_functor = { set_version_text }, clr = {255, 212, 201, 168} },
+                },
+            },
+            -- ============ DEVELOPMENT TAB ============
+            {
+                id = "development",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "ag_mcm_banner",
+                        text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_ag_development_desc" },
+
+                    -- Logging
+                    { id = "div_logging", type = "line" },
+                    { id = "hdr_logging", type = "desc", text = "ui_mcm_ag_hdr_logging", clr = {255, 200, 200, 200} },
+                    { id = "log_level", type = "list", val = 0, def = "WARN",
+                        content = {
+                            {"ERROR", "error"},
+                            {"WARN", "warn"},
+                            {"INFO", "info"},
+                            {"DEBUG", "debug"},
+                        },
+                    },
+
+                    -- Diagnostics
+                    { id = "div_diagnostics", type = "line" },
+                    { id = "hdr_diagnostics", type = "desc", text = "ui_mcm_ag_hdr_diagnostics", clr = {255, 200, 200, 200} },
                     { id = "btn_show_status", type = "button", functor = { btn_show_status } },
                     { id = "btn_manual_cleanup", type = "button", functor = { btn_manual_cleanup } },
 
@@ -73,32 +133,6 @@ function on_mcm_load()
                     { id = "hdr_population", type = "desc", text = "ui_mcm_ag_hdr_population", clr = {255, 200, 200, 200} },
                     { id = "btn_delete_common", type = "button", functor = { btn_delete_common } },
                     { id = "btn_delete_all", type = "button", functor = { btn_delete_all } },
-
-                    -- Online Guard
-                    { id = "div_online", type = "line" },
-                    { id = "hdr_online", type = "desc", text = "ui_mcm_ag_hdr_online", clr = {255, 200, 200, 200} },
-                    { id = "enabled", type = "check", val = 1, def = true },
-                    { id = "max", type = "track", val = 2, min = 10, max = 200, step = 5, def = 80 },
-                    { id = "check_interval", type = "track", val = 2, min = 10, max = 120, step = 10, def = 30 },
-
-                    -- Protection rules
-                    { id = "div_protection", type = "line" },
-                    { id = "hdr_protection", type = "desc", text = "ui_mcm_ag_hdr_protection", clr = {255, 200, 200, 200} },
-                    { id = "check_tasks", type = "check", val = 1, def = true },
-                    { id = "prioritize_distant", type = "check", val = 1, def = true },
-
-                    -- Notifications
-                    { id = "div_pda", type = "line" },
-                    { id = "hdr_notifications", type = "desc", text = "ui_mcm_ag_hdr_notifications", clr = {255, 200, 200, 200} },
-                    { id = "pda", type = "check", val = 1, def = true },
-
-                    -- Developer
-                    { id = "div_advanced", type = "line" },
-                    { id = "hdr_advanced", type = "desc", text = "ui_mcm_ag_hdr_advanced", clr = {255, 200, 200, 200} },
-                    { id = "debug_log", type = "check", val = 1, def = false },
-                    { id = "div_version", type = "line" },
-                    { id = "version", type = "desc", text = "ui_mcm_ag_title",
-                        ui_hook_functor = { set_version_text }, clr = {255, 212, 201, 168} },
                 },
             },
         },

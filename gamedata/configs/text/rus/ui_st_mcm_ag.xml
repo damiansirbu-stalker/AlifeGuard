@@ -9,47 +9,16 @@
     <string id="ui_mcm_menu_general">
         <text>Общие</text>
     </string>
+    <string id="ui_mcm_menu_development">
+        <text>Разработка</text>
+    </string>
 
     <!-- ==================== GENERAL TAB ==================== -->
     <string id="ui_mcm_ag_title">
         <text>AlifeGuard</text>
     </string>
     <string id="ui_mcm_ag_general_info">
-        <text>A-Life нужен простор. Слишком много сущностей онлайн убивает производительность. AlifeGuard поддерживает целевое количество сущностей, отправляя самых дальних незащищённых NPC обратно в офлайн-симуляцию. Они продолжают существовать, просто не отрисовываются.</text>
-    </string>
-
-    <!-- General - Actions -->
-    <string id="ui_mcm_ag_hdr_actions">
-        <text>Диагностика</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_show_status">
-        <text>Показать статус</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_show_status_desc">
-        <text>Показать текущее количество сущностей и статистику защиты через КПК.</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_manual_cleanup">
-        <text>Принудительная очистка</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_manual_cleanup_desc">
-        <text>Немедленно удалить лишние сущности. Используйте при неожиданном падении частоты кадров.</text>
-    </string>
-
-    <!-- General - Population Reset -->
-    <string id="ui_mcm_ag_hdr_population">
-        <text>Сброс популяции</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_delete_common">
-        <text>Удалить обычные отряды</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_delete_common_desc">
-        <text>Удалить все обычные (возрождаемые) отряды из мира. Сюжетные и квестовые отряды сохраняются. Умные укрытия заселятся заново со временем.</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_delete_all">
-        <text>Удалить все отряды</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_delete_all_desc">
-        <text>Удалить ВСЕ отряды, включая сюжетные. Используйте, только если удаление обычных не помогло. Может сломать активные задания.</text>
+        <text>A-Life нужно пространство. Слишком много активных сущностей убивает производительность. AlifeGuard поддерживает целевое количество сущностей, переводя дальних незащищенных NPC в офлайн-симуляцию. Они продолжают существовать, просто не рендерятся.</text>
     </string>
 
     <!-- General - Entity limits -->
@@ -57,16 +26,22 @@
         <text>Лимиты сущностей</text>
     </string>
     <string id="ui_mcm_ag_general_enabled">
-        <text>Включить онлайн-охрану</text>
+        <text>Включить онлайн-контроль</text>
     </string>
     <string id="ui_mcm_ag_general_enabled_desc">
-        <text>Ограничить активные сущности вокруг вас. Самые дальние уходят в офлайн первыми. Торговцы, спутники, цели заданий -- защищены.</text>
+        <text>Ограничить активные сущности вокруг вас. Дальние уходят в офлайн первыми. Торговцы, компаньоны, квестовые цели защищены.</text>
     </string>
     <string id="ui_mcm_ag_general_max">
         <text>Максимум онлайн</text>
     </string>
     <string id="ui_mcm_ag_general_max_desc">
-        <text>Сколько сталкеров и мутантов могут быть активны одновременно. Меньше = лучше FPS в плотных зонах. 40 -- сбалансировано.</text>
+        <text>Сколько сталкеров и мутантов могут быть активны одновременно. Меньше = лучше FPS в плотных зонах.</text>
+    </string>
+    <string id="ui_mcm_ag_general_buffer">
+        <text>Буфер гистерезиса</text>
+    </string>
+    <string id="ui_mcm_ag_general_buffer_desc">
+        <text>Цель очистки = максимум минус буфер. Предотвращает колебания: очистка запускается реже, так как популяция должна снова превысить максимум. 0 отключает.</text>
     </string>
     <string id="ui_mcm_ag_general_check_interval">
         <text>Интервал проверки</text>
@@ -80,16 +55,28 @@
         <text>Правила защиты</text>
     </string>
     <string id="ui_mcm_ag_general_check_tasks">
-        <text>Защищать NPC заданий</text>
+        <text>Защищать квестовых NPC</text>
     </string>
     <string id="ui_mcm_ag_general_check_tasks_desc">
-        <text>NPC, участвующие в активных заданиях, не могут быть удалены. Отключите, если Зона должна быть безразлична к вашим целям.</text>
+        <text>NPC, связанные с активными заданиями, не могут быть удалены. Отключите, если Зона должна быть безразлична к вашим целям.</text>
     </string>
     <string id="ui_mcm_ag_general_prioritize_distant">
         <text>Удалять дальних первыми</text>
     </string>
     <string id="ui_mcm_ag_general_prioritize_distant_desc">
-        <text>Убирать дальние сущности первыми. При отключении -- случайный выбор, хаотичный, но иногда убирает ближних NPC.</text>
+        <text>Удалять дальние сущности первыми. Если выключено -- случайный выбор.</text>
+    </string>
+    <string id="ui_mcm_ag_general_squad_culling">
+        <text>Поотрядная очистка</text>
+    </string>
+    <string id="ui_mcm_ag_general_squad_culling_desc">
+        <text>Удалять членов отрядов перед командирами. Сохраняет отряды, предотвращает цикл перерождения. Если выключено, все сущности удаляются индивидуально как в v1.0.</text>
+    </string>
+    <string id="ui_mcm_ag_general_round_robin">
+        <text>Равномерная очистка</text>
+    </string>
+    <string id="ui_mcm_ag_general_round_robin_desc">
+        <text>Распределять удаления равномерно между фракциями и типами мутантов. Если выключено, удаляются дальние сущности независимо от фракции.</text>
     </string>
 
     <!-- General - Notifications -->
@@ -103,14 +90,65 @@
         <text>Показывать статистику очистки через КПК при удалении сущностей.</text>
     </string>
 
-    <!-- General - Developer -->
-    <string id="ui_mcm_ag_hdr_advanced">
-        <text>Разработка</text>
+    <!-- ==================== DEVELOPMENT TAB ==================== -->
+    <string id="ui_mcm_ag_development_desc">
+        <text>Отладка и инструменты разработки. DEBUG включает структурированную трассировку с ID трассы, таймингами по фазам и логами по каждой сущности. Записывается в alifeguard.log. Влияет на производительность.</text>
     </string>
-    <string id="ui_mcm_ag_general_debug_log">
-        <text>Отладочные логи</text>
+
+    <!-- Development - Logging -->
+    <string id="ui_mcm_ag_hdr_logging">
+        <text>Логирование</text>
     </string>
-    <string id="ui_mcm_ag_general_debug_log_desc">
-        <text>Записывать подробные логи в logs/alifeguard.log. Количество сущностей, решения об освобождении, тайминги. Влияет на производительность.</text>
+    <string id="ui_mcm_ag_development_log_level">
+        <text>Уровень логов</text>
+    </string>
+    <string id="ui_mcm_ag_development_log_level_desc">
+        <text>Управляет детализацией логов. ERROR: только краши. WARN: аномалии. INFO: итоги циклов и конфиг. DEBUG: полная трассировка с таймингами по сущностям.</text>
+    </string>
+    <string id="ag_development_log_level_lst_error">
+        <text>Error</text>
+    </string>
+    <string id="ag_development_log_level_lst_warn">
+        <text>Warn</text>
+    </string>
+    <string id="ag_development_log_level_lst_info">
+        <text>Info</text>
+    </string>
+    <string id="ag_development_log_level_lst_debug">
+        <text>Debug</text>
+    </string>
+
+    <!-- Development - Diagnostics -->
+    <string id="ui_mcm_ag_hdr_diagnostics">
+        <text>Диагностика</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_show_status">
+        <text>Показать статус</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_show_status_desc">
+        <text>Отобразить текущее количество сущностей и статистику защиты через КПК.</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_manual_cleanup">
+        <text>Принудительная очистка</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_manual_cleanup_desc">
+        <text>Немедленно удалить лишние сущности. Используйте при неожиданном падении FPS.</text>
+    </string>
+
+    <!-- Development - Population Reset -->
+    <string id="ui_mcm_ag_hdr_population">
+        <text>Сброс популяции</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_delete_common">
+        <text>Удалить обычные отряды</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_delete_common_desc">
+        <text>Удалить все обычные (перерождаемые) отряды. Сюжетные и квестовые отряды сохранены. Умные территории восполнят естественно.</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_delete_all">
+        <text>Удалить все отряды</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_delete_all_desc">
+        <text>Удалить ВСЕ отряды, включая сюжетные. Может сломать активные квесты. Используйте как последнее средство.</text>
     </string>
 </string_table>

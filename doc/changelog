@@ -1,4 +1,37 @@
-next
+1.1.0
+  Summary: Squad-aware culling, round-robin fairness, hysteresis, 4-tier priority, structured tracing
+
+  Core:
+    Changed: culling redesigned around squads, not individual entities
+    Changed: entities grouped by squad, non-commanders thinned first, commanders last
+    Changed: removals distributed evenly across factions and mutant types via round-robin
+    Changed: 4-tier priority: unscripted members -> scripted members -> unscripted commanders -> scripted commanders
+    Added: hysteresis buffer separates trigger threshold from cull target (default: trigger 80, cull to 70)
+    Added: scripted squads (AlifePlus, warfare, Guards Spawner) deprioritized across both member and commander tiers
+
+  Protection:
+    Changed: protection unified at squad level via xsquad.is_protected (story, trader, task giver, companion, bounty/hostage)
+    Changed: duplicate per-NPC bounty/hostage scan removed, covered by squad-level is_task_target
+    Added: companion squads protected (previously only individual companion NPCs caught)
+    Added: positive-only TTL cache on squad protection (120s, no false negatives, cleared on config change)
+    Fixed: named NPCs as non-commander squad members now caught by per-member is_unscriptable fallback
+
+  Performance:
+    Changed: squad-level checks replace per-NPC scans, fewer bridge calls per entity
+    Changed: uncached per-entity task_giver O(t) scan eliminated, replaced by cached squad-level check
+
+  MCM:
+    Changed: two-tab layout (General + Development)
+    Changed: log level dropdown (ERROR/WARN/INFO/DEBUG) replaces debug_log toggle
+    Changed: diagnostics and population reset moved to Development tab
+    Added: hysteresis buffer slider (0-50, step 5, default 10)
+    Added: per-squad culling toggle (default on, disabling reverts to v1.0 flat behavior)
+    Added: round-robin fairness toggle (default on, disabling allows one faction to lose everything first)
+
+  Internal:
+    Added: xtrace IDs per cycle for structured log correlation
+    Added: per-phase timing in log output (collect, queue build, release spread)
+    Changed: log format standardized to [PHASE] [tid=N] key=value [Xms]
 
 1.0.10
   Changed: xlibs 1.2.5 dependency.

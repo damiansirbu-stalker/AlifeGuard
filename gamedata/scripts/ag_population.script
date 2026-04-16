@@ -1,29 +1,44 @@
---- ag_population: Population control - despawn farthest entities when online count exceeds threshold
+--- ag_population: Population control - per-squad culling with round-robin fairness and hysteresis
 
-local pairs, math_sqrt, math_random, math_ceil, tostring, string = pairs, math.sqrt, math.random, math.ceil, tostring, string
+local pairs, ipairs, math_sqrt, math_random, math_ceil, tostring, string = pairs, ipairs, math.sqrt, math.random, math.ceil, tostring, string
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
 local alife_object, alife_release_id, RegisterScriptCallback = alife_object, alife_release_id, RegisterScriptCallback
 
-local log = xlog.get_logger("AG.POPULATION", { outfile = "alifeguard.log" })
+local log = xlog.get_logger("AG.POP", { outfile = "alifeguard.log" })
 local _dbg = false
-local function _prot(fmt, ...) if _dbg then log.debug(fmt, ...) end end
+local _null_trace = xtrace.new_if(false)
 
 local last_check_time = 0
 local level_load_time = 0
 local LEVEL_LOAD_GRACE_PERIOD = 30
+local PROTECTION_TTL = 120
+local INVALID_GROUP = 65535
 
 local cfg = {
     enabled = true,
-    max = 40,
+    max = 80,
+    buffer = 10,
     check_interval = 30,
     check_tasks = true,
     prioritize_distant = true,
+    squad_culling = true,
+    round_robin = true,
     pda = true,
-    debug_log = false,
+    log_level = "WARN",
 }
 
+local _protection_opts = {}
+local _prot_cache = {}
+
 -- ==================== CONFIG ====================
+
+local function _update_protection_opts()
+    _protection_opts.exclude_scripted = false
+    _protection_opts.exclude_permanent = true
+    _protection_opts.exclude_active_role = cfg.check_tasks
+    _protection_opts.exclude_task_target = cfg.check_tasks
+end
 
 local function load_config()
     if not ag_mcm or not ag_mcm.cfg then return end
@@ -31,21 +46,24 @@ local function load_config()
     local mcm = ag_mcm.cfg
     cfg.enabled = mcm.enabled
     cfg.max = mcm.max
+    cfg.buffer = mcm.buffer or 10
     cfg.check_interval = mcm.check_interval
     cfg.check_tasks = mcm.check_tasks
     cfg.prioritize_distant = mcm.prioritize_distant
+    cfg.squad_culling = mcm.squad_culling ~= false
+    cfg.round_robin = mcm.round_robin ~= false
     cfg.pda = mcm.pda
-    cfg.debug_log = mcm.debug_log
+    cfg.log_level = mcm.log_level or "WARN"
 
-    -- Configure logger + debug guard based on debug_log setting
-    log.set_level(cfg.debug_log and "DEBUG" or "INFO")
-    _dbg = cfg.debug_log
+    log.set_level(cfg.log_level)
+    _dbg = log.get_level() >= 5
+    _update_protection_opts()
+    _prot_cache = {}
 
-    if cfg.debug_log then
-        log.info("Config: OnlineGuard[%s max=%d interval=%ds] pda=%s debug=%s",
-            tostring(cfg.enabled), cfg.max, cfg.check_interval,
-            tostring(cfg.pda), tostring(cfg.debug_log))
-    end
+    log.info("[CONFIG] enabled=%s max=%d buffer=%d interval=%ds tasks=%s squads=%s rr=%s dist=%s pda=%s log=%s",
+        tostring(cfg.enabled), cfg.max, cfg.buffer, cfg.check_interval,
+        tostring(cfg.check_tasks), tostring(cfg.squad_culling), tostring(cfg.round_robin),
+        tostring(cfg.prioritize_distant), tostring(cfg.pda), cfg.log_level)
 end
 
 -- ==================== PDA NOTIFICATIONS ====================
@@ -65,42 +83,25 @@ local cleanup_messages = {
 
 local function notify_cleanup(removed, _stalkers, _mutants)
     if not cfg.pda or removed == 0 then return end
-
     local template = cleanup_messages[math_random(#cleanup_messages)]
     local msg = string.format(template, removed)
     send_pda(msg)
 end
 
--- ==================== PROTECTION CHECKS ====================
+-- ==================== PROTECTION ====================
 
-local function _is_bounty_or_hostage(id)
-    if not axr_task_manager then return false end
-    for _, npc_id in pairs(axr_task_manager.bounties_by_id) do
-        if npc_id == id then _prot("    PROTECTED bounty ID:%d", id); return true end
-    end
-    for _, npc_id in pairs(axr_task_manager.hostages_by_id) do
-        if npc_id == id then _prot("    PROTECTED hostage ID:%d", id); return true end
-    end
-    return false
-end
-
-local function _is_entity_protected(obj, id, is_stalker)
-    local section = _dbg and obj:section() or nil
-    if xcreature.is_unscriptable(obj) then
-        _prot("    UNSCRIPTABLE xcreature ID:%d [%s]", id, section)
+local function _is_squad_protected(squad)
+    local squad_id = squad.id
+    local cached = _prot_cache[squad_id]
+    if cached and clock() - cached < PROTECTION_TTL then
+        if _dbg then log.debug("[PROTECT] squad:%d cached", squad_id) end
         return true
     end
-    if is_stalker and cfg.check_tasks and xcreature.is_task_giver(obj) then
-        _prot("    TASK_GIVER xcreature ID:%d [%s]", id, section)
+    local protected, reason, detail = xsquad.is_protected(squad, _protection_opts)
+    if protected then
+        _prot_cache[squad_id] = clock()
+        if _dbg then log.debug("[PROTECT] squad:%d %s:%s", squad_id, reason or "?", tostring(detail or "")) end
         return true
-    end
-    if is_stalker and _is_bounty_or_hostage(id) then return true end
-    if is_stalker then
-        local squad = get_object_squad(obj)
-        if squad and xsquad.is_task_target(squad) then
-            _prot("    TASK_TARGET xsquad ID:%d squad:%d [%s]", id, squad.id, section)
-            return true
-        end
     end
     return false
 end
@@ -119,112 +120,268 @@ local function _count_release(ent)
     return 0, 1, "mutant"
 end
 
--- ==================== ONLINE GUARD ====================
+-- ==================== COLLECTION ====================
 
-local function count_and_collect_online()
-    if not (db and db.actor) then return 0, 0, 0, 0, {} end
+local function _make_entry(id, dist_sq, obj_is_stalker, obj)
+    return { id = id, dist_sq = dist_sq, is_stalker = obj_is_stalker, section = _dbg and obj:section() or nil }
+end
+
+local function _new_squad_record(squad)
+    return {
+        commander_id = squad:commander_id(),
+        protected = _is_squad_protected(squad),
+        scripted = xsquad.is_scripted(squad),
+        category = squad.player_id or "unknown",
+        max_dist_sq = 0,
+        commander_entry = nil,
+        removable = {},
+    }
+end
+
+-- Classify entity: true=stalker, false=mutant, nil=skip
+local function _classify(obj)
+    if is_stalker(obj) then return true end
+    if is_monster(obj) then return false end
+    return nil
+end
+
+-- Process single online entity into _squads or orphans
+local function _process_entity(obj, ctx)
+    local id = obj:id()
+    if id == ctx.actor_id then return end
+
+    local obj_is_stalker = _classify(obj)
+    if obj_is_stalker == nil then ctx.stats.skipped = ctx.stats.skipped + 1; return end
+    if not obj:alive() then return end
+
+    if obj_is_stalker then ctx.stats.stalkers = ctx.stats.stalkers + 1
+    else ctx.stats.mutants = ctx.stats.mutants + 1 end
+    ctx.stats.total = ctx.stats.total + 1
+
+    local obj_pos = obj:position()
+    local dist_sq = obj_pos and ctx.actor_pos:distance_to_sqr(obj_pos) or 0
+    local se_obj = alife_object(id)
+    local group_id = se_obj and se_obj.group_id
+    local is_orphan = not group_id or group_id == INVALID_GROUP
+
+    if is_orphan and xcreature.is_unscriptable(obj) then ctx.stats.protected = ctx.stats.protected + 1; return end
+    if is_orphan then ctx.orphans[#ctx.orphans + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj); return end
+
+    local squad = alife_object(group_id)
+    if not squad then ctx.orphans[#ctx.orphans + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj); return end
+
+    local rec = ctx._squads[group_id]
+    if not rec then
+        rec = _new_squad_record(squad)
+        ctx._squads[group_id] = rec
+    end
+    if dist_sq > rec.max_dist_sq then rec.max_dist_sq = dist_sq end
+    if rec.protected then ctx.stats.protected = ctx.stats.protected + 1; return end
+
+    if cfg.squad_culling and id == rec.commander_id then
+        rec.commander_entry = _make_entry(id, dist_sq, obj_is_stalker, obj)
+        return
+    end
+    if xcreature.is_unscriptable(obj) then ctx.stats.protected = ctx.stats.protected + 1; return end
+
+    rec.removable[#rec.removable + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj)
+end
+
+local function _collect_online()
+    if not (db and db.actor) then
+        return { total = 0, stalkers = 0, mutants = 0, protected = 0, skipped = 0 }, {}, {}
+    end
 
     local actor = db.actor
-    local actor_id = actor:id()
-    local actor_pos = actor:position()
-    local stats = { total = 0, stalkers = 0, mutants = 0, protected = 0, skipped = 0 }
-    local entities = {}
+    local tr = _dbg and xtrace.new() or _null_trace
+    local ctx = {
+        tid = tr.id,
+        actor_id = actor:id(),
+        actor_pos = actor:position(),
+        stats = { total = 0, stalkers = 0, mutants = 0, protected = 0, skipped = 0 },
+        _squads = {},
+        orphans = {},
+    }
 
     local iter_timer = xprofiler.new_if(_dbg)
     iter_timer:start()
 
     for obj in game_objects_iter() do
-        local id = obj:id()
-        if id == actor_id then goto next end
-
-        local obj_is_stalker
-        if is_stalker(obj) then
-            obj_is_stalker = true
-        elseif is_monster(obj) then
-            obj_is_stalker = false
-        else
-            stats.skipped = stats.skipped + 1
-            goto next
-        end
-
-        if not obj:alive() then goto next end
-
-        if obj_is_stalker then
-            stats.stalkers = stats.stalkers + 1
-        else
-            stats.mutants = stats.mutants + 1
-        end
-
-        stats.total = stats.total + 1
-        local protected = _is_entity_protected(obj, id, obj_is_stalker)
-        if protected then stats.protected = stats.protected + 1 end
-
-        local obj_pos = obj:position()
-
-        entities[#entities + 1] = {
-            id = id,
-            dist_sq = obj_pos and actor_pos:distance_to_sqr(obj_pos) or 0,
-            is_stalker = obj_is_stalker,
-            protected = protected,
-            section = _dbg and obj:section() or nil,
-        }
-
-        ::next::
+        _process_entity(obj, ctx)
     end
 
     iter_timer:stop()
-    log.debug("  COLLECT: %d entities (%d stalkers, %d mutants, %d protected, %d skipped) [%.2fms]",
-        stats.total, stats.stalkers, stats.mutants, stats.protected, stats.skipped, iter_timer:get_ms())
+    log.debug("[COLLECT] [tid=%d] total=%d stalkers=%d mutants=%d protected=%d skipped=%d orphans=%d [%.2fms]",
+        ctx.tid, ctx.stats.total, ctx.stats.stalkers, ctx.stats.mutants, ctx.stats.protected,
+        ctx.stats.skipped, #ctx.orphans, iter_timer:get_ms())
 
-    return stats.total, stats.stalkers, stats.mutants, stats.protected, entities
+    return ctx.stats, ctx._squads, ctx.orphans, ctx.tid
 end
 
-local function despawn_online_to_target(entities, current_count, target)
-    if current_count <= target then
-        log.debug("  ONLINE: %d <= %d target - OK", current_count, target)
+-- ==================== RELEASE QUEUE ====================
+
+-- Add entity to a category bucket within a tier
+local function _add_to_tier(tier, category, entry)
+    local cat = tier[category]
+    if not cat then cat = {}; tier[category] = cat end
+    cat[#cat + 1] = entry
+end
+
+-- Resolve tier index for a squad record
+local function _member_tier(rec)
+    if not cfg.squad_culling then return 1 end
+    return rec.scripted and 2 or 1
+end
+
+local function _commander_tier(rec)
+    if not cfg.squad_culling then return 1 end
+    return rec.scripted and 4 or 3
+end
+
+-- Sort squad members into 4 priority tiers by scripted status
+-- Tier 1: non-commander from unscripted squads + orphans (first to go)
+-- Tier 2: non-commander from scripted squads
+-- Tier 3: commander from unscripted squads
+-- Tier 4: commander from scripted squads (last resort)
+local function _categorize_squads(_squads, orphans, tiers)
+    for _, rec in pairs(_squads) do
+        if rec.protected then goto next_squad end
+        local mt = _member_tier(rec)
+        for _, ent in ipairs(rec.removable) do
+            _add_to_tier(tiers[mt], rec.category, ent)
+        end
+        if rec.commander_entry then
+            _add_to_tier(tiers[_commander_tier(rec)], rec.category, rec.commander_entry)
+        end
+        ::next_squad::
+    end
+    if #orphans > 0 then
+        tiers[1]["orphan"] = orphans
+    end
+end
+
+-- Sort or shuffle entries within a single tier's categories
+local function _sort_tier(tier, sort_fn)
+    for cat, entries in pairs(tier) do
+        if #entries > 1 then
+            tier[cat] = sort_fn and xtable.sort(entries, sort_fn) or xtable.shuffle(entries)
+        end
+    end
+end
+
+local function _sort_categories(tiers)
+    local sort_fn = cfg.prioritize_distant and function(a, b) return a.dist_sq > b.dist_sq end or nil
+    for tier_idx = 1, 4 do
+        _sort_tier(tiers[tier_idx], sort_fn)
+    end
+end
+
+-- Take one entity from a source if available
+local function _take_from_source(src, queue)
+    if src.idx > #src.items then return false end
+    queue[#queue + 1] = src.items[src.idx]
+    src.idx = src.idx + 1
+    return true
+end
+
+-- One round of round-robin: take 1 from each source, return true if any taken
+local function _round_robin_step(sources, queue, target)
+    local any = false
+    for i = 1, #sources do
+        if #queue >= target then return any end
+        if _take_from_source(sources[i], queue) then any = true end
+    end
+    return any
+end
+
+-- Round-robin: take 1 entity from each category per round until target reached
+local function _round_robin_fill(tier, queue, target)
+    local sources = {}
+    for _, entries in pairs(tier) do
+        sources[#sources + 1] = { items = entries, idx = 1 }
+    end
+    if #sources == 0 then return end
+    while #queue < target do
+        if not _round_robin_step(sources, queue, target) then return end
+    end
+end
+
+-- Linear fill: merge all categories in tier into flat sorted/shuffled list
+local function _linear_fill(tier, queue, target)
+    local merged = {}
+    for _, entries in pairs(tier) do
+        for _, ent in ipairs(entries) do
+            merged[#merged + 1] = ent
+        end
+    end
+    if #merged == 0 then return end
+    if cfg.prioritize_distant then
+        merged = xtable.sort(merged, function(a, b) return a.dist_sq > b.dist_sq end)
+    else
+        merged = xtable.shuffle(merged)
+    end
+    for i = 1, #merged do
+        if #queue >= target then return end
+        queue[#queue + 1] = merged[i]
+    end
+end
+
+-- Build release queue: 4 tiers, fill within each (round-robin or linear), stop at target
+local function _build_release_queue(_squads, orphans, target, tid)
+    if target <= 0 then return {} end
+    local queue_timer = xprofiler.new_if(_dbg):start()
+    local tiers = { {}, {}, {}, {} }
+    _categorize_squads(_squads, orphans, tiers)
+
+    local fill_fn
+    if cfg.round_robin then
+        _sort_categories(tiers)
+        fill_fn = _round_robin_fill
+    else
+        fill_fn = _linear_fill
+    end
+
+    local queue = {}
+    for tier_idx = 1, 4 do
+        if #queue >= target then break end
+        local before = #queue
+        fill_fn(tiers[tier_idx], queue, target)
+        if _dbg then log.debug("[QUEUE] [tid=%d] tier%d +%d", tid, tier_idx, #queue - before) end
+    end
+    queue_timer:stop()
+    log.debug("[QUEUE] [tid=%d] %d/%d entities [%.2fms]", tid, #queue, target, queue_timer:get_ms())
+    return queue
+end
+
+-- ==================== DESPAWN ====================
+
+local function _despawn_from_queue(queue, current_count, target, tid)
+    if #queue == 0 then
+        log.debug("[DESPAWN] [tid=%d] no removable entities", tid)
         return
     end
-    if not entities then return end
 
     local to_remove = current_count - target
-    log.debug("  DESPAWN: %d > %d target - need to remove %d", current_count, target, to_remove)
+    log.debug("[DESPAWN] [tid=%d] %d > %d target, need %d, queue %d", tid, current_count, target, to_remove, #queue)
 
-    -- Sort: farthest first (synchronous, fast for ~100 items)
-    local sort_timer = xprofiler.new_if(_dbg)
-    sort_timer:start()
-    if cfg.prioritize_distant then
-        entities = xtable.sort(entities, function(a, b) return a.dist_sq > b.dist_sq end)
-    else
-        entities = xtable.shuffle(entities)
-    end
-    sort_timer:stop()
-    log.debug("  SORT: %d entities [%.2fms]", #entities, sort_timer:get_ms())
-
-    -- Spread releases across frames (1 per frame to avoid net_Relcase cascade)
     local removed, removed_stalkers, removed_mutants = 0, 0, 0
-    local protected_count, failed_count, frames = 0, 0, 0
+    local failed_count, frames = 0, 0
     local start_time = clock()
 
-    xslice.start("ag_despawn", entities, {
+    xslice.start("ag_despawn", queue, {
         step = 1,
         func = function(ent)
             frames = frames + 1
             if removed >= to_remove then return false end
-            if ent.protected then
-                protected_count = protected_count + 1
-                _prot("    SKIP protected ID:%d [frame:%d]", ent.id, frames)
-                return true
-            end
 
-            local release_timer = xprofiler.new_if(_dbg)
-            release_timer:start()
+            local release_timer = xprofiler.new_if(_dbg):start()
             local ok = safe_release(ent.id)
             release_timer:stop()
             local ms = release_timer:get_ms()
 
             if not ok then
                 failed_count = failed_count + 1
-                log.debug("    RELEASE FAILED ID:%d [%.2fms frame:%d]", ent.id, ms, frames)
+                if _dbg then log.debug("[RELEASE] [tid=%d] FAIL id=%d [%.2fms frame:%d]", tid, ent.id, ms, frames) end
                 return true
             end
 
@@ -232,14 +389,14 @@ local function despawn_online_to_target(entities, current_count, target)
             local st, mt, label = _count_release(ent)
             removed_stalkers = removed_stalkers + st
             removed_mutants = removed_mutants + mt
-            log.debug("    RELEASE %s ID:%d [%s] dist=%.0fm [%.2fms frame:%d]",
-                label, ent.id, ent.section or "?", math_sqrt(ent.dist_sq), ms, frames)
+            if _dbg then log.debug("[RELEASE] [tid=%d] %s id=%d sec=%s dist=%.0fm [%.2fms frame:%d]",
+                tid, label, ent.id, ent.section or "?", math_sqrt(ent.dist_sq), ms, frames) end
             return true
         end,
         on_done = function()
             local elapsed_ms = (clock() - start_time) * 1000
-            log.info("DESPAWN SPREAD: removed %d/%d (stalkers:%d mutants:%d protected:%d failed:%d) [%d frames %.0fms]",
-                removed, to_remove, removed_stalkers, removed_mutants, protected_count, failed_count, frames, elapsed_ms)
+            log.info("[DESPAWN] [tid=%d] removed %d/%d stalkers=%d mutants=%d failed=%d [%d frames %.0fms]",
+                tid, removed, to_remove, removed_stalkers, removed_mutants, failed_count, frames, elapsed_ms)
             notify_cleanup(removed, removed_stalkers, removed_mutants)
         end,
     })
@@ -257,20 +414,16 @@ local function actor_on_update()
     if tg - last_check_time < cfg.check_interval then return end
     last_check_time = tg
 
-    log.debug("========== ALIFEGUARD POPULATION CHECK ==========")
-    local total_timer = xprofiler.new()
-    total_timer:start()
+    local stats, _squads, orphans, tid = _collect_online()
+    local target = cfg.max - cfg.buffer
+    if target < 0 then target = 0 end
 
-    local total, stalkers, mutants, protected, entities = count_and_collect_online()
-
-    if total > cfg.max then
-        total_timer:stop()
-        log.debug("  OVER: %d/%d [collect:%.2fms]", total, cfg.max, total_timer:get_ms())
-        despawn_online_to_target(entities, total, cfg.max)
+    if stats.total > cfg.max then
+        local queue = _build_release_queue(_squads, orphans, stats.total - target, tid)
+        _despawn_from_queue(queue, stats.total, target, tid)
     else
-        total_timer:stop()
-        log.debug("ONLINE OK: %d/%d (stalkers:%d mutants:%d protected:%d) [%.2fms]",
-            total, cfg.max, stalkers, mutants, protected, total_timer:get_ms())
+        log.debug("[CYCLE] [tid=%d] OK %d/%d stalkers=%d mutants=%d protected=%d",
+            tid, stats.total, cfg.max, stats.stalkers, stats.mutants, stats.protected)
     end
 end
 
@@ -304,14 +457,11 @@ end
 
 function show_status()
     if not is_in_game() or not db or not db.actor then return end
-
     load_config()
-
-    local total, stalkers, mutants, protected = count_and_collect_online()
-
+    local stats = _collect_online()
     news_manager.send_tip(db.actor, "--- AlifeGuard " .. _ag_deps.get_version() .. " Status ---", nil, nil, 8000)
     news_manager.send_tip(db.actor, string.format("Online: %d/%d (stalkers:%d mutants:%d protected:%d)",
-        total, cfg.max, stalkers, mutants, protected), nil, nil, 8000)
+        stats.total, cfg.max, stats.stalkers, stats.mutants, stats.protected), nil, nil, 8000)
 end
 
 function manual_cleanup()
@@ -332,10 +482,13 @@ function manual_cleanup()
     load_config()
 
     if cfg.enabled and cfg.max > 0 then
-        local total, _, _, _, entities = count_and_collect_online()
-        if total > cfg.max then
+        local stats, _squads, orphans, tid = _collect_online()
+        local target = cfg.max - cfg.buffer
+        if target < 0 then target = 0 end
+        if stats.total > cfg.max then
             news_manager.send_tip(db.actor, "--- AlifeGuard Cleanup ---", nil, nil, 10000)
-            despawn_online_to_target(entities, total, cfg.max)
+            local queue = _build_release_queue(_squads, orphans, stats.total - target, tid)
+            _despawn_from_queue(queue, stats.total, target, tid)
         else
             news_manager.send_tip(db.actor, "--- AlifeGuard Cleanup ---", nil, nil, 10000)
             news_manager.send_tip(db.actor, "Online Guard: no cleanup needed", nil, nil, 10000)
@@ -358,4 +511,3 @@ function delete_all_squads()
     log.info("Deleted %d squads", count)
     send_pda(string.format("Population reset: %d squads removed.", count))
 end
-

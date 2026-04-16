@@ -9,6 +9,9 @@
     <string id="ui_mcm_menu_general">
         <text>General</text>
     </string>
+    <string id="ui_mcm_menu_development">
+        <text>Development</text>
+    </string>
 
     <!-- ==================== GENERAL TAB ==================== -->
     <string id="ui_mcm_ag_title">
@@ -18,41 +21,6 @@
         <text>A-Life needs breathing room. Too many entities online kills performance. AlifeGuard maintains target entity count by releasing farthest unprotected NPCs back to offline simulation. They continue existing, just not rendered.</text>
     </string>
 
-    <!-- General - Actions -->
-    <string id="ui_mcm_ag_hdr_actions">
-        <text>Diagnostics</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_show_status">
-        <text>Show status</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_show_status_desc">
-        <text>Display current entity counts and protection statistics via PDA.</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_manual_cleanup">
-        <text>Force cleanup</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_manual_cleanup_desc">
-        <text>Immediately cull excess entities. Use if framerate drops unexpectedly.</text>
-    </string>
-
-    <!-- General - Population Reset -->
-    <string id="ui_mcm_ag_hdr_population">
-        <text>Population Reset</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_delete_common">
-        <text>Delete common squads</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_delete_common_desc">
-        <text>Remove all common (respawnable) squads from the world. Story and quest squads are kept. Smart terrains will repopulate naturally over time.</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_delete_all">
-        <text>Delete all squads</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_delete_all_desc">
-        <text>Remove ALL squads including story squads. Use only if common delete is not enough. May break active quests.</text>
-    </string>
-
-
     <!-- General - Entity limits -->
     <string id="ui_mcm_ag_hdr_online">
         <text>Entity Limits</text>
@@ -61,13 +29,19 @@
         <text>Enable online guard</text>
     </string>
     <string id="ui_mcm_ag_general_enabled_desc">
-        <text>Limit active entities around you. Farthest go offline first. Traders, companions, quest targets - protected.</text>
+        <text>Limit active entities around you. Farthest go offline first. Traders, companions, quest targets protected.</text>
     </string>
     <string id="ui_mcm_ag_general_max">
         <text>Maximum online</text>
     </string>
     <string id="ui_mcm_ag_general_max_desc">
-        <text>How many stalkers and mutants can be active simultaneously. Lower = better framerate in dense areas. 40 is balanced.</text>
+        <text>How many stalkers and mutants can be active simultaneously. Lower = better framerate in dense areas.</text>
+    </string>
+    <string id="ui_mcm_ag_general_buffer">
+        <text>Hysteresis buffer</text>
+    </string>
+    <string id="ui_mcm_ag_general_buffer_desc">
+        <text>Cull target is max minus buffer. Prevents oscillation: cleanup runs less often because population must rise back above max before the next cycle triggers. 0 disables.</text>
     </string>
     <string id="ui_mcm_ag_general_check_interval">
         <text>Check interval</text>
@@ -90,7 +64,19 @@
         <text>Remove farthest first</text>
     </string>
     <string id="ui_mcm_ag_general_prioritize_distant_desc">
-        <text>Cull distant entities first. If disabled, random selection - chaotic but occasionally removes nearby NPCs.</text>
+        <text>Cull distant entities first. If disabled, random selection.</text>
+    </string>
+    <string id="ui_mcm_ag_general_squad_culling">
+        <text>Per-squad culling</text>
+    </string>
+    <string id="ui_mcm_ag_general_squad_culling_desc">
+        <text>Thin squad members before touching commanders. Keeps squads alive, prevents respawn churn. If disabled, all entities released individually like v1.0.</text>
+    </string>
+    <string id="ui_mcm_ag_general_round_robin">
+        <text>Round-robin fairness</text>
+    </string>
+    <string id="ui_mcm_ag_general_round_robin_desc">
+        <text>Spread removals evenly across factions and mutant types. If disabled, farthest entities removed regardless of faction.</text>
     </string>
 
     <!-- General - Notifications -->
@@ -104,14 +90,65 @@
         <text>Show cleanup statistics via PDA when entities are culled.</text>
     </string>
 
-    <!-- General - Developer -->
-    <string id="ui_mcm_ag_hdr_advanced">
-        <text>Developer</text>
+    <!-- ==================== DEVELOPMENT TAB ==================== -->
+    <string id="ui_mcm_ag_development_desc">
+        <text>Debug and development tools. DEBUG enables structured tracing with trace IDs, per-phase timing, and per-entity release logs. Written to alifeguard.log. Has performance cost.</text>
     </string>
-    <string id="ui_mcm_ag_general_debug_log">
-        <text>Debug logging</text>
+
+    <!-- Development - Logging -->
+    <string id="ui_mcm_ag_hdr_logging">
+        <text>Logging</text>
     </string>
-    <string id="ui_mcm_ag_general_debug_log_desc">
-        <text>Write detailed logs to logs/alifeguard.log. Entity counts, release decisions, timing. Performance cost when enabled.</text>
+    <string id="ui_mcm_ag_development_log_level">
+        <text>Log level</text>
+    </string>
+    <string id="ui_mcm_ag_development_log_level_desc">
+        <text>Controls log verbosity. ERROR: crashes only. WARN: anomalies. INFO: cycle summaries and config. DEBUG: full tracing with timing per entity.</text>
+    </string>
+    <string id="ag_development_log_level_lst_error">
+        <text>Error</text>
+    </string>
+    <string id="ag_development_log_level_lst_warn">
+        <text>Warn</text>
+    </string>
+    <string id="ag_development_log_level_lst_info">
+        <text>Info</text>
+    </string>
+    <string id="ag_development_log_level_lst_debug">
+        <text>Debug</text>
+    </string>
+
+    <!-- Development - Diagnostics -->
+    <string id="ui_mcm_ag_hdr_diagnostics">
+        <text>Diagnostics</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_show_status">
+        <text>Show status</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_show_status_desc">
+        <text>Display current entity counts and protection statistics via PDA.</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_manual_cleanup">
+        <text>Force cleanup</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_manual_cleanup_desc">
+        <text>Immediately cull excess entities. Use if framerate drops unexpectedly.</text>
+    </string>
+
+    <!-- Development - Population Reset -->
+    <string id="ui_mcm_ag_hdr_population">
+        <text>Population Reset</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_delete_common">
+        <text>Delete common squads</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_delete_common_desc">
+        <text>Remove all common (respawnable) squads. Story and quest squads kept. Smart terrains repopulate naturally.</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_delete_all">
+        <text>Delete all squads</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_delete_all_desc">
+        <text>Remove ALL squads including story squads. May break active quests. Use as last resort.</text>
     </string>
 </string_table>

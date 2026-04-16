@@ -1,54 +1,65 @@
-AlifeGuard: Population control for STALKER Anomaly, by Damian
+AlifeGuard: A-Life population governor for STALKER Anomaly, by Damian
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
-Russian / На русском: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
+Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
 
-! Please reset MCM settings to defaults when updating to a new version !
+! Reset MCM settings to defaults after updating !
 
-Late-game lag, micro-stutters, FPS drops from A-Life bloat.
-Too many online entities choke the X-Ray engine. AlifeGuard keeps the count under a
-configurable threshold by despawning the farthest NPCs first. Smart terrains repopulate
-naturally. The world stays alive without the CPU cost.
+Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all
+run on the same thread. Performance degrades as the count grows. Population mods like
+ZCP and Redone amplify the problem by increasing spawn rates. Zombie entities from broken
+releases, orphaned squad members, and engine-level memory leaks make it worse over time.
 
-Balanced despawning:
-  Farthest-first. All online stalkers and mutants are sorted by distance. The NPC next to you is always the last to go.
-  30-second grace period after every level load lets the world settle.
-  Single-pass collection via game_objects_iter (native C++ iterator, no Lua table allocation).
-  Configurable threshold and interval. Default: 80 max, 30s checks.
+AlifeGuard keeps the online population under control while preserving how A-Life works.
+Squads remain valid, smart terrains behave correctly, no respawn loops. It reduces load
+without breaking the simulation.
 
-Multi-layer protection:
-  Every entity goes through 4 independent checks before removal. Any single match keeps it alive.
-  Layer 1 - Identity: story characters, squad story IDs, companions, named NPCs (traders, mechanics, leaders, medics, barmen, guides)
-  Layer 2 - Task givers: NPCs referenced by active tasks (by NPC ID or squad ID)
-  Layer 3 - Bounty/hostage: targets tracked by axr_task_manager
-  Layer 4 - Task target squads: assault, bounty, hostage, delivery squads
+Simple despawners remove individual NPCs without considering squad structure. This can
+delete entire squads, open respawn slots, leave smart terrains in a malformed state where
+they stop spawning, and interfere with mods that script squads. AlifeGuard works at the
+squad level and accounts for the engine's spawn bookkeeping.
+
+Squad-aware culling:
+  Entities are processed as part of their squad, not individually. Non-commander members
+  are thinned first. Commanders are removed only as a last resort.
+  This preserves squads in SIMBOARD, keeps already_spawned counters intact, and prevents
+  the respawn churn that individual-NPC despawners cause.
+  Squads controlled by other mods (AlifePlus, Warfare, Guards Spawner) are deprioritized:
+  their members go after unscripted members, their commanders last of all.
+
+Round-robin fairness:
+  Removals are spread across factions and mutant types. One entity per category per round.
+  No single group is disproportionately affected.
+
+Hysteresis:
+  Separate trigger and target thresholds (default: trigger at 80, cull to 70). Cleanup runs
+  in cycles, not constantly reacting to small population changes.
+
+Frame-spread release:
+  Entities are released one per frame via xslice (cooperative time-slicing). 30 excess
+  entities = 30 frames to clear. No spikes, no freezes, no net_Relcase cascade crashes.
+
+Protection:
+  Story squads, traders, named NPCs, companions, task givers, bounty and hostage targets
+  are never removed. Squad-level checks with positive-only TTL cache. Per-member fallback
+  catches named NPCs who are not squad commanders.
 
 Performance:
-  Frame-spread despawning. Instead of releasing all excess entities in one frame, AlifeGuard
-  uses a deferred queue (xslice) to spread the work across frames. Entities are released one
-  per frame. 20 excess NPCs = 20 frames to clear. Flat frametimes, no stutter, no freezing.
-  Collection uses squared distances, cached engine calls, and weak-key caches for protection
-  checks. The mod collects and sorts in one pass, then the queue releases in the background.
-  See doc/img/benchmark_despawn_spread.jpg for measured data.
+  Single-pass collection (native C++ iterator). Cached protection lookups. Sub-millisecond
+  scan for 200 entities. 0.05ms per release. Zero debug overhead when log level < DEBUG.
 
-Clean engine release:
-  Every removal goes through alife_release_id, one per frame. Releasing multiple entities in
-  a single frame is a known cause of X-Ray engine crashes (net_Relcase cascade). One-per-frame
-  pacing prevents this entirely. No phantom entities, no orphaned data, no memory leaks.
+Mod compatibility:
+  Most population mods conflict with A-Life mods. AlifeGuard is designed to coexist with
+  AlifePlus, Warfare, ZCP, GAMMA, Guards Spawner, and any mod that uses scripted_target.
+  Scripted squads are preserved as long as possible. Commanders remain, so squad assignments
+  continue. Spawn counters stay consistent. Warfare population tracking stays accurate.
+  AlifePlus cause/consequence chains complete because target squads persist.
+  Other mods direct the world. AlifeGuard keeps it performant.
 
-MCM buttons:
-  Show Status     Current entity counts and protection stats via PDA
-  Force Cleanup   Immediately cull excess entities
-  Delete Common   Remove all respawnable squads (smart terrains repopulate)
-  Delete All      Remove ALL squads including story (may break quests)
-
-Debug logging:
-  MCM toggle. When enabled, logs every protection check, every release with timing and
-  distance, and a full summary line per cycle. Written to alifeguard.log.
-  Zero overhead when disabled (all debug calls behind a boolean guard).
-
-PDA notifications:
-  Immersive messages when cleanup runs. Toggleable via MCM.
+MCM:
+  General: population limits, hysteresis buffer, check interval, protection rules
+  (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.
+  Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
 Requirements:
 Anomaly 1.5.3
@@ -67,17 +78,34 @@ Disable or remove in MO2.
 
 Compatibility:
 Compatible with all modded exe variants (Demonized, AOE, MT).
-Works with AlifePlus, ZCP, Warfare, GAMMA, and any other A-Life or warfare mod. Does not modify base scripts. Only releases entities through the standard engine API.
+Does not modify base scripts. Uses the standard engine API (alife_release_id).
 
-Known Issues:
-Extremely rare crash on entity release (Perform_reject assertion).
-This is an engine bug in X-Ray's inventory parent tracking - the same code path used by all similar mods: Grok Dynamic Despawner, Night Mutants (xcvb), Phantoms (xcvb), Guards Spawner (xcvb), Dynamic Anomalies (Demonized), Boomsticks and Sharpsticks despawn scripts (Mich).
-No script-side fix exists.
+Known issue:
+Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's
+inventory parent tracking, present in all population mods. No script-side fix exists.
 
-Development:
-Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.
-Code patterns and engine usage validated against established work by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb).
-The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.
+Architecture:
+- AlifeGuard runs on xlibs, a reverse-engineered API that wraps the X-Ray engine source.
+  Squad lifecycle, protection checks, and spawn bookkeeping were traced through the C++ source.
+  Core patterns were studied from the most accomplished mods in the Anomaly ecosystem.
+- No base script edits, no engine patches. Runtime callbacks only.
+- Two-phase pipeline: synchronous collection (frame 0), frame-spread release (frames 1-N).
+  See doc/architecture.md for full design documentation.
+
+Performance:
+- Performance was a design constraint from the start.
+  Collection: sub-millisecond for 200 entities. Release: 0.05ms per frame.
+- Cooperative time-slicing (xslice) prevents the net_Relcase cascade crashes that batch
+  releases cause in X-Ray.
+- Structured tracing with trace IDs, per-phase timing, null object singletons for zero
+  debug overhead when log level < DEBUG.
+
+Multi-stage validation pipeline:
+- luacheck, selene (static analysis)
+- tree-sitter AST analysis, ast-grep structural patterns
+- Contract rules (API safety, cross-file dependencies, cyclomatic complexity, coding standards)
+- lua54 integration testing with X-Ray engine stubs
+- gitleaks (secret scanning)
 Full report in doc/test-report.log.
 
 Credits:
