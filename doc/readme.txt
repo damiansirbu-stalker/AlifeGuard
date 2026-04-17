@@ -79,6 +79,11 @@ Disable or remove in MO2.
 Compatibility:
 Compatible with all modded exe variants (Demonized, AOE, MT).
 Does not modify base scripts. Uses the standard engine API (alife_release_id).
+Compatible with A-Life config tweaks (alife.ltx tuning, smart terrain max_population
+adjustments, Redone Alife Performance, x3 performance tweaks). These mods change engine
+parameters while AlifeGuard works at the script level, so they do not overlap.
+Disable other despawn mods (e.g. Grok's Despawner) when using AlifeGuard. Running two
+population governors causes conflicting release decisions, respawn churn, and entity leaks.
 
 Known issue:
 Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's

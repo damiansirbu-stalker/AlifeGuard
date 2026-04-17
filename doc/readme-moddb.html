@@ -27,7 +27,7 @@
 <h2>Uninstall (MO2)</h2>
 <p>Disable or remove in MO2.</p>
 <h2>Compatibility</h2>
-<p>Compatible with all modded exe variants (Demonized, AOE, MT).<br />Does not modify base scripts. Uses the standard engine API (alife_release_id).</p>
+<p>Compatible with all modded exe variants (Demonized, AOE, MT).<br />Does not modify base scripts. Uses the standard engine API (alife_release_id).<br />Compatible with A-Life config tweaks (alife.ltx tuning, smart terrain max_population adjustments, Redone Alife Performance, x3 performance tweaks). These mods change engine parameters while AlifeGuard works at the script level, so they do not overlap.<br />Disable other despawn mods (e.g. Grok's Despawner) when using AlifeGuard. Running two population governors causes conflicting release decisions, respawn churn, and entity leaks.</p>
 <h2>Known issue</h2>
 <p>Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's inventory parent tracking, present in all population mods. No script-side fix exists.</p>
 <h2>Architecture</h2>
