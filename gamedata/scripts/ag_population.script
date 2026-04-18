@@ -206,7 +206,7 @@ local function _collect_online()
     local iter_timer = xprofiler.new_if(_dbg)
     iter_timer:start()
 
-    for obj in game_objects_iter() do
+    for obj in xcreature.online_iter() do
         _process_entity(obj, ctx)
     end
 

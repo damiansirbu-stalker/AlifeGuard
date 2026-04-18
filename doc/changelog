@@ -1,3 +1,11 @@
+next
+
+1.1.1
+  Core:
+    Changed: population scan uses xcreature.online_iter() instead of game_objects_iter (no longer crashes without Demonized exes)
+  Compatibility:
+    Removed: modded exes requirement. Works with vanilla Anomaly 1.5.3, Demonized, Demonized MT, AOEngine. Tested with GAMMA, EFP, Zona.
+
 1.1.0
   Summary: Squad-aware culling, round-robin fairness, hysteresis, 4-tier priority, structured tracing
 

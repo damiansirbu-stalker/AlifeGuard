@@ -21,13 +21,13 @@
 <h2>MCM</h2>
 <p>General: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.<br />Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.</p>
 <h2>Requirements</h2>
-<p>Anomaly 1.5.3<br />Modded exes<br /><a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a><br />MCM</p>
+<p>Anomaly 1.5.3<br /><a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a><br />MCM</p>
 <h2>Install (MO2)</h2>
 <p>1. Install xlibs<br />2. Install AlifeGuard<br />3. Load order does not matter<br />4. Configure via MCM</p>
 <h2>Uninstall (MO2)</h2>
 <p>Disable or remove in MO2.</p>
 <h2>Compatibility</h2>
-<p>Compatible with all modded exe variants (Demonized, AOE, MT).<br />Does not modify base scripts. Uses the standard engine API (alife_release_id).<br />Compatible with A-Life config tweaks (alife.ltx tuning, smart terrain max_population adjustments, Redone Alife Performance, x3 performance tweaks). These mods change engine parameters while AlifeGuard works at the script level, so they do not overlap.<br />Disable other despawn mods (e.g. Grok's Despawner) when using AlifeGuard. Running two population governors causes conflicting release decisions, respawn churn, and entity leaks.</p>
+<p>Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).<br />Does not modify base scripts. Uses the standard engine API (alife_release_id).<br />Compatible with A-Life config tweaks (alife.ltx tuning, smart terrain max_population adjustments, Redone Alife Performance, x3 performance tweaks). These mods change engine parameters while AlifeGuard works at the script level, so they do not overlap.<br />Disable other despawn mods (e.g. Grok's Despawner) when using AlifeGuard. Running two population governors causes conflicting release decisions, respawn churn, and entity leaks.</p>
 <h2>Known issue</h2>
 <p>Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's inventory parent tracking, present in all population mods. No script-side fix exists.</p>
 <h2>Architecture</h2>

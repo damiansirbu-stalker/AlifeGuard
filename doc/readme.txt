@@ -63,7 +63,6 @@ MCM:
 
 Requirements:
 Anomaly 1.5.3
-Modded exes
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
@@ -77,7 +76,7 @@ Uninstall (MO2):
 Disable or remove in MO2.
 
 Compatibility:
-Compatible with all modded exe variants (Demonized, AOE, MT).
+Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).
 Does not modify base scripts. Uses the standard engine API (alife_release_id).
 Compatible with A-Life config tweaks (alife.ltx tuning, smart terrain max_population
 adjustments, Redone Alife Performance, x3 performance tweaks). These mods change engine
