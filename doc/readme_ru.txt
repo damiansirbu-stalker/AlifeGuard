@@ -1,6 +1,8 @@
 AlifeGuard: Губернатор популяции A-Life для STALKER Anomaly, автор Damian
+Версия: 1.1.1 (xlibs 1.4.1)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Список изменений: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
+English: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme.txt
 Сообщить об ошибке: https://github.com/damiansirbu-stalker/AlifeGuard/issues
 
 ! Сбросьте настройки MCM при обновлении до новой версии !
@@ -68,7 +70,6 @@ MCM:
 
 Требования:
 Anomaly 1.5.3
-Моддед-экзешники
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
@@ -82,7 +83,7 @@ MCM
 Отключите или удалите в MO2.
 
 Совместимость:
-Совместим со всеми вариантами моддед-экзешников (Demonized, AOE, MT).
+Протестирован на ванильном Anomaly 1.5.3, Demonized main, Demonized MT и AOEngine (актуальные версии).
 Не модифицирует базовые скрипты. Использует стандартный API движка (alife_release_id).
 Совместим с конфигурационными твиками A-Life (настройки alife.ltx, max_population умных
 территорий, Redone Alife Performance, x3 performance tweaks). Эти моды меняют параметры
@@ -121,7 +122,6 @@ MCM
 Полный отчёт в doc/test-report.log.
 
 Авторы:
-Stalker_Boss -- русский перевод
 Altogolik -- поддержка, идеи, исходные материалы
 
 Использование и лицензия:
