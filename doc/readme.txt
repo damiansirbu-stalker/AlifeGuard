@@ -3,7 +3,7 @@ Version: 1.1.1 (xlibs 1.4.1)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
-Report a bug: https://github.com/damiansirbu-stalker/AlifeGuard/issues
+Bugs, suggestions: https://github.com/damiansirbu-stalker/AlifeGuard/issues
 
 ! Reset MCM settings to defaults after updating !
 

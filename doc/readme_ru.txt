@@ -3,7 +3,7 @@ AlifeGuard: Губернатор популяции A-Life для STALKER Anomal
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Список изменений: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 English: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme.txt
-Сообщить об ошибке: https://github.com/damiansirbu-stalker/AlifeGuard/issues
+Баги, предложения: https://github.com/damiansirbu-stalker/AlifeGuard/issues
 
 ! Сбросьте настройки MCM при обновлении до новой версии !
 

@@ -2,7 +2,7 @@
 
 Too many online entities kill performance. AlifeGuard keeps the count under a configurable threshold by despawning excess NPCs farthest-first. 4-layer protection ensures story characters, companions, task givers, and quest targets are never touched. Smart terrains repopulate naturally.
 
-[ModDB](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard) | [Releases](https://github.com/damiansirbu-stalker/AlifeGuard/releases) | [Report a bug](https://github.com/damiansirbu-stalker/AlifeGuard/issues)
+[ModDB](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard) | [Releases](https://github.com/damiansirbu-stalker/AlifeGuard/releases) | [Bugs, suggestions](https://github.com/damiansirbu-stalker/AlifeGuard/issues)
 
 Requires: Anomaly 1.5.3, Modded exes, [xlibs](https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001), MCM
 
