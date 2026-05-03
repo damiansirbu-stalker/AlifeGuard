@@ -89,7 +89,7 @@ next
 1.0.3
   Dependency gate and Russian translation.
   Added: dependency gate - clear error message if xlibs is missing or outdated
-  Added: Russian translation (Stalker_Boss)
+  Added: Russian translation
 
 1.0.2
   Fixed: bounty and hostage task targets protected from release
