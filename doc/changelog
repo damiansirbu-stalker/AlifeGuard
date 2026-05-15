@@ -1,7 +1,7 @@
 next
 
 1.2.0
-  Summary: Smart Sanitizer clamps corrupted respawn counters on smart terrains. Prevents save crashes and infinite spawn loops caused by per-NPC despawner mods racing the engine decrement.
+  Summary: Smart Sanitizer clamps corrupted respawn counters on smart terrains. Prevents save crashes, starvations and infinite spawn loops or spawn caused by spawner and despawner mods.
   Core:
     Added: Smart Sanitizer. Clamps negative or non-numeric values in smart.already_spawned[k] counters. Runs once on game load after STATE_Read but before the alife pump, and every 300 seconds during play. Pure Lua table walk over SIMBOARD.smarts. Sub-millisecond on 50-200 smarts.
     Added: Post-load sanitize via actor_on_reinit. Cleans counters restored from save before try_respawn reads them. Runs before the 65534-objects-per-update boot burst would feed corrupted counters into the respawn loop.
