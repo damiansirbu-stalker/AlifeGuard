@@ -1,5 +1,7 @@
 --- ag_mcm: MCM configuration for AlifeGuard population control
 
+local xmcm = xmcm
+
 -- ==================== DEFAULTS ====================
 
 defaults = {
