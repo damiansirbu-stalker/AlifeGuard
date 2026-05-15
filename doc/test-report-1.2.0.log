@@ -1,5 +1,5 @@
 STALKER Mod Validation Report
-Generated: 2026-04-02 21:16:11
+Generated: 2026-05-15 02:55:43
 Validator: stalker-manager validate
 Mods: 1
 
@@ -23,7 +23,7 @@ Files:
   Errors: 0, Warnings: 0
 
 [3/5] contract - project rules (PASS (S+))
-  Rules loaded: 230
+  Rules loaded: 250
   Score: 0
 
   PASS  [alao-table-insert] LUA-LOW w1 - table.insert optimization
@@ -50,7 +50,7 @@ Files:
   PASS  [alifeplus-consumer-precompute-label] MOD-HIGH w5 - alifeplus-consumer-precompute-label
   PASS  [alifeplus-cause-no-direct-subscribe] MOD-HIGH w16 - alifeplus-cause-no-direct-subscribe
   PASS  [alifeplus-cause-no-trace-fallback] MOD-HIGH w16 - alifeplus-cause-no-trace-fallback
-  PASS  [alifeplus-cause-no-rate-limit] MOD-HIGH w9 - alifeplus-cause-no-rate-limit
+  PASS  [alifeplus-producer-no-rate-limit] MOD-HIGH w9 - alifeplus-producer-no-rate-limit
   PASS  [alifeplus-cause-return-data] MOD-HIGH w5 - alifeplus-cause-return-data
   PASS  [alifeplus-cause-event-level-id] MOD-HIGH w9 - alifeplus-cause-event-level-id
   PASS  [alifeplus-cause-no-actor-level-fallback] MOD-HIGH w9 - alifeplus-cause-no-actor-level-fallback
@@ -75,18 +75,31 @@ Files:
   PASS  [alifeplus-consumer-silent-condition] MOD-HIGH w9 - alifeplus-consumer-silent-condition
   PASS  [alifeplus-hit-modifiers-logging] MOD-MED w5 - alifeplus-hit-modifiers-logging
   PASS  [alifeplus-mcm-settings-dump] MOD-MED w5 - alifeplus-mcm-settings-dump
-  PASS  [alifeplus-radiant-cause-both-callbacks] MOD-HIGH w16 - alifeplus-radiant-cause-both-callbacks
-  PASS  [alifeplus-radiant-cause-squad-id] MOD-HIGH w16 - alifeplus-radiant-cause-squad-id
-  PASS  [alifeplus-radiant-consequence-no-find-squads] MOD-HIGH w16 - alifeplus-radiant-consequence-no-find-squads
   PASS  [alifeplus-no-pcall] MOD-HIGH w16 - alifeplus-no-pcall
   PASS  [alifeplus-no-raw-logging] MOD-HIGH w9 - alifeplus-no-raw-logging
   PASS  [alifeplus-no-raw-squad-control] MOD-HIGH w12 - alifeplus-no-raw-squad-control
+  PASS  [alifeplus-no-direct-scripted-target] MOD-HIGH w12 - alifeplus-no-direct-scripted-target
+  PASS  [alifeplus-no-direct-callback-register] MOD-STYLE w9 - alifeplus-no-direct-callback-register
   PASS  [alifeplus-no-simboard] MOD-HIGH w12 - alifeplus-no-simboard
   PASS  [alifeplus-consequence-no-published] MOD-MED w5 - alifeplus-consequence-no-published
   PASS  [alifeplus-consequence-standard-find-targets] MOD-MED w5 - alifeplus-consequence-standard-find-targets
   PASS  [alifeplus-consequence-standard-find-destination] MOD-MED w5 - alifeplus-consequence-standard-find-destination
   PASS  [alifeplus-no-hardcoded-mcm-defaults] MOD-HIGH w9 - alifeplus-no-hardcoded-mcm-defaults
   PASS  [alifeplus-mcm-consistency] MOD-HIGH w9 - alifeplus-mcm-consistency
+  PASS  [alifeplus-no-magic-callback-string] MOD-HIGH w9 - alifeplus-no-magic-callback-string
+  PASS  [alifeplus-no-magic-code-reason] MOD-HIGH w5 - alifeplus-no-magic-code-reason
+  PASS  [alifeplus-radiant-must-iterate-enum] MOD-HIGH w9 - alifeplus-radiant-must-iterate-enum
+  PASS  [alifeplus-no-raw-faction-for-species] MOD-HIGH w9 - alifeplus-no-raw-faction-for-species
+  PASS  [alifeplus-core-ext-boundary] MOD-HIGH w16 - alifeplus-core-ext-boundary
+  PASS  [alifeplus-news-both-locales] MOD-HIGH w12 - alifeplus-news-both-locales
+  PASS  [alifeplus-news-id-parity] MOD-HIGH w12 - alifeplus-news-id-parity
+  PASS  [alifeplus-news-contiguity] MOD-HIGH w16 - alifeplus-news-contiguity
+  PASS  [alifeplus-news-no-empty-text] MOD-HIGH w16 - alifeplus-news-no-empty-text
+  PASS  [alifeplus-news-symbol-resolvability] MOD-HIGH w9 - alifeplus-news-symbol-resolvability
+  PASS  [alifeplus-news-no-action-token] MOD-MED w5 - alifeplus-news-no-action-token
+  PASS  [alifeplus-news-rus-encoding] MOD-HIGH w12 - alifeplus-news-rus-encoding
+  PASS  [alifeplus-news-no-empty-pools] MOD-HIGH w9 - alifeplus-news-no-empty-pools
+  PASS  [alifeplus-consequence-completeness] MOD-HIGH w9 - alifeplus-consequence-completeness
   PASS  [complexity-file-critical] LUA-MED w5 - Critical file complexity (sum)
   PASS  [complexity-weighted-high] LUA-MED w5 - High weighted complexity
   PASS  [complexity-weighted-critical] LUA-MED w5 - Critical weighted complexity
@@ -112,6 +125,10 @@ Files:
   PASS  [deepseek-ahead-caching] LUA-LOW w3 - Ahead-caching anti-pattern
   PASS  [depgate-format] LUA-HIGH w9 - Dependency gate format
   PASS  [depgate-missing] LUA-HIGH w9 - Dependency gate missing
+  PASS  [encoding-xml-mismatch] XRAY-HIGH w9 - XML encoding mismatch
+  PASS  [encoding-xml-no-declaration] XRAY-LOW w1 - XML missing encoding declaration
+  PASS  [encoding-xml-corrupted] XRAY-HIGH w9 - XML encoding corrupted
+  PASS  [encoding-cyrillic-in-utf8-no-decl] XRAY-MED w5 - Cyrillic in UTF-8 without declaration
   PASS  [library-self-namespace] XRAY-HIGH w9 - Self-namespace creation
   PASS  [library-nil-level-object] XRAY-HIGH w9 - level.object_by_id nil access
   PASS  [library-nil-alife-object] XRAY-HIGH w9 - alife():object nil access
@@ -239,6 +256,7 @@ Files:
   PASS  [standards-guard-not-early] LUA-LOW w1 - standards-guard-not-early
   PASS  [standards-global-cache-separate-lines] LUA-STYLE w0.1 - standards-global-cache-separate-lines
   PASS  [standards-uncached-global] LUA-MED w5 - standards-uncached-global
+  PASS  [standards-unused-cached-global] LUA-LOW w1 - standards-unused-cached-global
   PASS  [standards-require-in-function] LUA-MED w5 - standards-require-in-function
   PASS  [standards-local-shadows-export] LUA-HIGH w9 - standards-local-shadows-export
   PASS  [standards-numeric-for-wrong] LUA-MED w5 - standards-numeric-for-wrong
@@ -253,6 +271,8 @@ Files:
   PASS  [standards-local-function-arity] LUA-HIGH w9 - standards-local-function-arity
   PASS  [standards-unused-function-param] LUA-LOW w1 - standards-unused-function-param
   PASS  [standards-guard-only-param] LUA-MED w5 - standards-guard-only-param
+  PASS  [standards-cross-module-in-on-game-start] LUA-HIGH w9 - standards-cross-module-in-on-game-start
+  PASS  [standards-nil-check-on-boolean-field] LUA-MED w5 - standards-nil-check-on-boolean-field
   PASS  [version-drift] LUA-HIGH w9 - Version drift
   PASS  [xlibs-engine-docs] LUA-MED w4 - xlibs-engine-docs
   PASS  [xlibs-private-docs] LUA-LOW w2 - xlibs-private-docs
@@ -260,44 +280,46 @@ Files:
 [4/5] load - runtime loading (PASS)
   Test: lua54 interpreter + X-Ray engine stubs
   Load test: AlifeGuard
-  LOAD: xlog
-  LOAD: xconst
-  LOAD: xlibs
-  LOAD: xbus
-  LOAD: ag_population
-  LOAD: xsquad
+  LOAD: xdata
   LOAD: xprofiler
-  LOAD: xmath
-  LOAD: xcreature
-  LOAD: xlibs_mcm
-  LOAD: xlevel
-  LOAD: xsmart
+  LOAD: xbus
   LOAD: xobject
+  LOAD: xlevel
   LOAD: xstash
+  LOAD: xchange
+  LOAD: xmath
   LOAD: _ag_deps
+  LOAD: ag_population
+  LOAD: xsmart
+  LOAD: xactor
   LOAD: xslice
   LOAD: xmcm
-  LOAD: xevent
-  LOAD: xinspect
-  LOAD: xpda
-  LOAD: xtable
-  LOAD: xttltable
-  LOAD: xtrace
-  LOAD: xtime
-  LOAD: xdata
-  LOAD: xstring
   LOAD: ag_mcm
-  START: ag_mcm.on_game_start
-  START: xtime.on_game_start
-  START: _ag_deps.on_game_start
+  LOAD: xstring
+  LOAD: xconst
+  LOAD: xtable
+  LOAD: xcreature
+  LOAD: xtime
+  LOAD: xpda
+  LOAD: xsquad
+  LOAD: xttltable
+  LOAD: xinspect
+  LOAD: xlog
+  LOAD: xevent
+  LOAD: xlibs
+  LOAD: xlibs_mcm
+  LOAD: xtrace
   START: xlog.on_game_start
   START: ag_population.on_game_start
-  OK: 27 loaded, 5 on_game_start
+  START: _ag_deps.on_game_start
+  START: xtime.on_game_start
+  START: ag_mcm.on_game_start
+  OK: 29 loaded, 5 on_game_start
 
 [5/5] gitleaks - secret scanning (PASS)
   Scan: credentials, API keys, tokens, private keys
-  9:16PM INF scanned ~88769 bytes (88.77 KB) in 100ms
-  9:16PM INF no leaks found
+  2:55AM INF scanned ~158261 bytes (158.26 KB) in 121ms
+  2:55AM INF no leaks found
 
 ========================================================================
 RESULT: PASS | Grade: S+ | Score: 0

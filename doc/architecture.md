@@ -154,6 +154,35 @@ Stale entity IDs (entity died between collection and release): `alife_object(id)
 
 ---
 
+## Smart Sanitizer
+
+### Why
+
+`smart.already_spawned[k].num` underflows when more than one release path decrements the counter. Source: engine `sim_squad_scripted.script:1028` (squad on_unregister) racing with external despawners (e.g. Grok's `grok_dynamic_despawner.script:289` calling `alife_release`). Two consequences:
+
+1. Save CTD. STATE_Write at `smart_terrain.script:955` casts `num` to `u8`. Negative values produce `CRITICAL ERROR: write u8 (-1)`.
+2. Infinite spawn. Respawn gate at `smart_terrain.script:1696` reads `max > num`. Negative `num` makes the comparison always true; the smart spawns every cycle without bound.
+
+### How
+
+Periodic walk over `SIMBOARD.smarts` clamping three invariant violations on each entry of `smart.already_spawned`:
+
+| Case | Detection | Fix |
+|---|---|---|
+| A | `type(v) ~= "table"` | `smart.already_spawned[k] = { num = 0 }` |
+| B | `type(v.num) ~= "number"` | `v.num = 0` |
+| C | `v.num < 0` | `v.num = 0` |
+
+Hooks:
+- `actor_on_reinit` — fires after STATE_Read (data live) and before `bind_stalker.script:200` runs `set_objects_per_update(65534)` (engine load burst). Cleans corrupted save data before `try_respawn` reads it.
+- `actor_on_update` interval gate — every 300 seconds during play. Catches mid-session corruption from misbehaving mods still installed.
+
+### Cost
+
+Pure Lua walk. 0 luabind in the inner loop. `smart:name()` is lazy: called once per smart only if a fix fires on that smart. Sub-millisecond for 50-200 smarts in a healthy save (no fixes). Worst case (every smart corrupted, 200 smarts): ~2ms.
+
+---
+
 ## Performance
 
 ### Collection (frame 0, synchronous)
@@ -185,9 +214,9 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 
 | File | Lines | Purpose |
 |---|---|---|
-| ag_population.script | ~477 | Collection, squad grouping, tier/round-robin queue, frame-spread release, MCM buttons |
-| ag_mcm.script | ~117 | MCM defaults, UI definition, button handlers |
-| _ag_deps.script | ~15 | Version string, xlibs dependency gate |
+| ag_population.script | ~589 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer, MCM buttons |
+| ag_mcm.script | ~169 | MCM defaults, UI definition, button handlers |
+| _ag_deps.script | ~34 | Version string, xlibs dependency gate |
 
 ---
 
@@ -202,4 +231,6 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 | check_tasks | true | Protect task givers, companions, bounty/hostage targets |
 | prioritize_distant | true | Farthest first (false = random) |
 | pda | true | PDA notifications on cleanup |
-| debug_log | false | Detailed per-entity logging to alifeguard.log |
+| sanitize_smarts | true | Periodic walk that clamps corrupted already_spawned counters |
+| sanitize_interval | 300 | Seconds between periodic sanitizer passes (60-1800) |
+| log_level | WARN | Logger verbosity (ERROR/WARN/INFO/DEBUG) |

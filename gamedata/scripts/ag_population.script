@@ -1,6 +1,6 @@
 --- ag_population: Population control - per-squad culling with round-robin fairness and hysteresis
 
-local pairs, ipairs, math_sqrt, math_random, math_ceil, tostring, string = pairs, ipairs, math.sqrt, math.random, math.ceil, tostring, string
+local pairs, ipairs, math_sqrt, math_random, math_ceil, tostring, type, string = pairs, ipairs, math.sqrt, math.random, math.ceil, tostring, type, string
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
 local alife_object, alife_release_id, RegisterScriptCallback = alife_object, alife_release_id, RegisterScriptCallback
@@ -10,6 +10,7 @@ local _dbg = false
 local _null_trace = xtrace.new_if(false)
 
 local last_check_time = 0
+local last_sanitize_time = 0
 local level_load_time = 0
 local LEVEL_LOAD_GRACE_PERIOD = 30
 local PROTECTION_TTL = 120
@@ -25,6 +26,8 @@ local cfg = {
     squad_culling = true,
     round_robin = true,
     pda = true,
+    sanitize_smarts = true,
+    sanitize_interval = 300,
     log_level = "WARN",
 }
 
@@ -53,6 +56,8 @@ local function load_config()
     cfg.squad_culling = mcm.squad_culling ~= false
     cfg.round_robin = mcm.round_robin ~= false
     cfg.pda = mcm.pda
+    cfg.sanitize_smarts = mcm.sanitize_smarts ~= false
+    cfg.sanitize_interval = mcm.sanitize_interval or 300
     cfg.log_level = mcm.log_level or "WARN"
 
     log.set_level(cfg.log_level)
@@ -60,10 +65,11 @@ local function load_config()
     _update_protection_opts()
     _prot_cache = {}
 
-    log.info("[CONFIG] enabled=%s max=%d buffer=%d interval=%ds tasks=%s squads=%s rr=%s dist=%s pda=%s log=%s",
+    log.info("[CONFIG] enabled=%s max=%d buffer=%d interval=%ds tasks=%s squads=%s rr=%s dist=%s pda=%s sanitize=%s/%ds log=%s",
         tostring(cfg.enabled), cfg.max, cfg.buffer, cfg.check_interval,
         tostring(cfg.check_tasks), tostring(cfg.squad_culling), tostring(cfg.round_robin),
-        tostring(cfg.prioritize_distant), tostring(cfg.pda), cfg.log_level)
+        tostring(cfg.prioritize_distant), tostring(cfg.pda),
+        tostring(cfg.sanitize_smarts), cfg.sanitize_interval, cfg.log_level)
 end
 
 -- ==================== PDA NOTIFICATIONS ====================
@@ -402,14 +408,68 @@ local function _despawn_from_queue(queue, current_count, target, tid)
     })
 end
 
+-- ==================== SANITIZE ====================
+
+-- Clamp smart.already_spawned[k] corruption (cases A/B/C, see todo-alifeguard-backlog n07).
+-- Source: sim_squad_scripted.script:1028 over-decrement racing with external despawners.
+-- Effect: prevents save CTD (smart_terrain.script:955-966 u8 write) and infinite spawn
+-- (smart_terrain.script:1696 max>num decision). Pure Lua field writes; 0 luabind.
+local function _sanitize_smart(smart)
+    if not smart or not smart.already_spawned then return 0 end
+    local fixed = 0
+    local name
+    for k, v in pairs(smart.already_spawned) do
+        local fix_msg
+        if type(v) ~= "table" then
+            fix_msg = string.format("value type=%s -> { num=0 }", type(v))
+            smart.already_spawned[k] = { num = 0 }
+        elseif type(v.num) ~= "number" then
+            fix_msg = string.format("num type=%s -> 0", type(v.num))
+            v.num = 0
+        elseif v.num < 0 then
+            fix_msg = string.format("num=%d -> 0", v.num)
+            v.num = 0
+        end
+        if fix_msg then
+            name = name or smart:name()
+            log.warn("[SANITIZE] smart=%s key=%s %s", name, k, fix_msg)
+            fixed = fixed + 1
+        end
+    end
+    return fixed
+end
+
+local function _sanitize_smart_terrains()
+    if not SIMBOARD or not SIMBOARD.smarts then
+        log.debug("[SANITIZE] SIMBOARD not ready")
+        return 0, 0
+    end
+    local timer = xprofiler.new_if(_dbg):start()
+    local scanned, fixed = 0, 0
+    for _, rec in pairs(SIMBOARD.smarts) do
+        scanned = scanned + 1
+        fixed = fixed + _sanitize_smart(rec.smrt)
+    end
+    timer:stop()
+    log.info("[SANITIZE] scanned=%d fixed=%d [%.2fms]", scanned, fixed, timer:get_ms())
+    return scanned, fixed
+end
+
 -- ==================== MAIN UPDATE ====================
 
 local function actor_on_update()
     if not cfg.enabled then return end
     if not db or not db.actor then return end
-    if xslice.is_active("ag_despawn") then return end
 
     local tg = clock()
+
+    -- Sanitize gate (independent of cull/despawn cadence)
+    if cfg.sanitize_smarts and tg - last_sanitize_time >= cfg.sanitize_interval then
+        last_sanitize_time = tg
+        _sanitize_smart_terrains()
+    end
+
+    if xslice.is_active("ag_despawn") then return end
     if tg - level_load_time < LEVEL_LOAD_GRACE_PERIOD then return end
     if tg - last_check_time < cfg.check_interval then return end
     last_check_time = tg
@@ -433,6 +493,15 @@ local function on_level_change()
     level_load_time = clock()
 end
 
+-- Reinit fires after STATE_Read restores already_spawned but before alife pump
+-- (bind_stalker.script:198-200). Sanitizing here prevents try_respawn from reading
+-- corrupted counters during the 65534-objects-per-update burst on load.
+local function actor_on_reinit()
+    if not cfg.enabled then return end
+    if not cfg.sanitize_smarts then return end
+    _sanitize_smart_terrains()
+end
+
 function on_option_change()
     load_config()
 end
@@ -451,6 +520,7 @@ function on_game_start()
     RegisterScriptCallback("actor_on_update", actor_on_update)
     RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("actor_on_first_update", on_level_change)
+    RegisterScriptCallback("actor_on_reinit", actor_on_reinit)
 end
 
 -- ==================== MCM BUTTON FUNCTIONS ====================
@@ -510,4 +580,10 @@ function delete_all_squads()
     local count = xsquad.release_squads()
     log.info("Deleted %d squads", count)
     send_pda(string.format("Population reset: %d squads removed.", count))
+end
+
+function sanitize_smarts_now()
+    if not is_in_game() or not db or not db.actor then return end
+    local scanned, fixed = _sanitize_smart_terrains()
+    send_pda(string.format("Smart sanitize: scanned %d smarts, fixed %d entries.", scanned, fixed))
 end

@@ -2,7 +2,7 @@
 local assert = assert
 
 local MOD_NAME = "AlifeGuard"
-local _VERSION = "1.1.1"
+local _VERSION = "1.2.0"
 local XLIBS_MIN_VERSION = "1.4.0"
 local XLIBS_URL = "https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001"
 

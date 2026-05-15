@@ -1,5 +1,5 @@
 AlifeGuard: A-Life population governor for STALKER Anomaly, by Damian
-Version: 1.1.1 (xlibs 1.4.1)
+Version: 1.2.0 (xlibs 1.4.1)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
@@ -46,6 +46,14 @@ Protection:
   are never removed. Squad-level checks with positive-only TTL cache. Per-member fallback
   catches named NPCs who are not squad commanders.
 
+Smart Sanitizer:
+  Defensive pass that clamps corrupted respawn counters on smart terrains. Negative or
+  non-numeric already_spawned values cause save crashes (u8 write overflow at STATE_Write)
+  and infinite spawn loops (max > num respawn gate always true). The sanitizer runs on
+  actor_on_reinit before the load-time alife burst, then every 300 seconds during play.
+  Lua table walk over SIMBOARD.smarts. Sub-millisecond on 50-200 smarts. Toggle and
+  interval in MCM.
+
 Performance:
   Single-pass collection (native C++ iterator). Cached protection lookups. Sub-millisecond
   scan for 200 entities. 0.05ms per release. Zero debug overhead when log level < DEBUG.
@@ -61,7 +69,8 @@ Mod compatibility:
 MCM:
   General: population limits, hysteresis buffer, check interval, protection rules
   (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.
-  Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
+  Development: log level (ERROR/WARN/INFO/DEBUG), Smart Sanitizer (toggle, interval,
+  immediate-sanitize button), diagnostics, population reset.
 
 Requirements:
 Anomaly 1.5.3
