@@ -115,22 +115,22 @@
   <string id="ui_mcm_ag_hdr_sanitize">
     <text>Санитайзер смарт-террейнов</text>
   </string>
-  <string id="ui_mcm_ag_development_sanitize_smarts">
+  <string id="ui_mcm_ag_general_sanitize_smarts">
     <text>Очистка смарт-террейнов</text>
   </string>
-  <string id="ui_mcm_ag_development_sanitize_smarts_desc">
+  <string id="ui_mcm_ag_general_sanitize_smarts_desc">
     <text>Очищает поврежденные счётчики already_spawned на смарт-террейнах. Отрицательные или нечисловые значения вызывают краш сохранения (запись u8 в smart_terrain.script:955) и бесконечный респаун (max &gt; num всегда истина). Возникает при использовании мод-деспавнеров отдельных NPC, которые конфликтуют с движковым декрементом в on_unregister. Очистка запускается при загрузке (до запуска alife pump) и периодически во время игры. Безопасно оставить включенным. По умолчанию: вкл.</text>
   </string>
-  <string id="ui_mcm_ag_development_sanitize_interval">
+  <string id="ui_mcm_ag_general_sanitize_interval">
     <text>Интервал очистки (с)</text>
   </string>
-  <string id="ui_mcm_ag_development_sanitize_interval_desc">
+  <string id="ui_mcm_ag_general_sanitize_interval_desc">
     <text>Интервал в секундах реального времени между периодическими проходами очистки. Стоимость менее миллисекунды независимо от интервала (чистый Lua-обход SIMBOARD.smarts). 300 с — разумное значение по умолчанию; уменьшайте только если наблюдаете быструю порчу данных от другого мода. По умолчанию: 300.</text>
   </string>
-  <string id="ui_mcm_ag_development_btn_sanitize_now">
+  <string id="ui_mcm_ag_general_btn_sanitize_now">
     <text>Очистить сейчас</text>
   </string>
-  <string id="ui_mcm_ag_development_btn_sanitize_now_desc">
+  <string id="ui_mcm_ag_general_btn_sanitize_now_desc">
     <text>Выполнить один проход очистки сразу и сообщить количество просканированных и исправленных записей через КПК. Используйте для проверки работы санитайзера или для очистки состояния перед сохранением.</text>
   </string>
   <string id="ui_mcm_ag_hdr_diagnostics">

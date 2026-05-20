@@ -68,9 +68,9 @@ Mod compatibility:
 
 MCM:
   General: population limits, hysteresis buffer, check interval, protection rules
-  (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.
-  Development: log level (ERROR/WARN/INFO/DEBUG), Smart Sanitizer (toggle, interval,
-  immediate-sanitize button), diagnostics, population reset.
+  (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications,
+  Smart Sanitizer (toggle, interval, immediate-sanitize button).
+  Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
 Requirements:
 Anomaly 1.5.3

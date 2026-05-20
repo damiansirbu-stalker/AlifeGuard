@@ -5,7 +5,6 @@ local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
 local alife_object, alife_release_id, RegisterScriptCallback = alife_object, alife_release_id, RegisterScriptCallback
 local xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature = xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature
-local ag_mcm = ag_mcm
 
 local log = xlog.get_logger("AG.POP", { outfile = "alifeguard.log" })
 local _dbg = false
@@ -46,9 +45,9 @@ local function _update_protection_opts()
 end
 
 local function load_config()
-    if not ag_mcm or not ag_mcm.cfg then return end
+    local mcm = ag_mcm and ag_mcm.cfg
+    if not mcm then return end
 
-    local mcm = ag_mcm.cfg
     cfg.enabled = mcm.enabled
     cfg.max = mcm.max
     cfg.buffer = mcm.buffer or 10

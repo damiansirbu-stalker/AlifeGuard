@@ -1,7 +1,5 @@
 --- ag_mcm: MCM configuration for AlifeGuard population control
 
-local xmcm = xmcm
-
 -- ==================== DEFAULTS ====================
 
 defaults = {
@@ -16,7 +14,7 @@ defaults = {
     round_robin = true,
     pda = true,
 
-    -- Smart Sanitizer (Development tab)
+    -- Smart Sanitizer
     sanitize_smarts = true,
     sanitize_interval = 300,
 
@@ -30,8 +28,6 @@ local RegisterScriptCallback = RegisterScriptCallback
 
 local _key_to_tab = {
     log_level = "development",
-    sanitize_smarts = "development",
-    sanitize_interval = "development",
 }
 
 local function path_builder(key)
@@ -109,6 +105,13 @@ function on_mcm_load()
                     { id = "hdr_notifications", type = "desc", text = "ui_mcm_ag_hdr_notifications", clr = {255, 200, 200, 200} },
                     { id = "pda", type = "check", val = 1, def = true },
 
+                    -- Smart Sanitizer
+                    { id = "div_sanitize", type = "line" },
+                    { id = "hdr_sanitize", type = "desc", text = "ui_mcm_ag_hdr_sanitize", clr = {255, 200, 200, 200} },
+                    { id = "sanitize_smarts", type = "check", val = 1, def = true },
+                    { id = "sanitize_interval", type = "track", val = 2, min = 60, max = 1800, step = 60, def = 300 },
+                    { id = "btn_sanitize_now", type = "button", functor = { btn_sanitize_now } },
+
                     -- Version footer
                     { id = "div_version", type = "line" },
                     { id = "version", type = "desc", text = "ui_mcm_ag_title",
@@ -135,13 +138,6 @@ function on_mcm_load()
                             {"DEBUG", "debug"},
                         },
                     },
-
-                    -- Smart Sanitizer
-                    { id = "div_sanitize", type = "line" },
-                    { id = "hdr_sanitize", type = "desc", text = "ui_mcm_ag_hdr_sanitize", clr = {255, 200, 200, 200} },
-                    { id = "sanitize_smarts", type = "check", val = 1, def = true },
-                    { id = "sanitize_interval", type = "track", val = 2, min = 60, max = 1800, step = 60, def = 300 },
-                    { id = "btn_sanitize_now", type = "button", functor = { btn_sanitize_now } },
 
                     -- Diagnostics
                     { id = "div_diagnostics", type = "line" },

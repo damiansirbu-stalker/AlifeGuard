@@ -90,6 +90,29 @@
         <text>Show cleanup statistics via PDA when entities are culled.</text>
     </string>
 
+    <!-- General - Smart Sanitizer -->
+    <string id="ui_mcm_ag_hdr_sanitize">
+        <text>Smart Sanitizer</text>
+    </string>
+    <string id="ui_mcm_ag_general_sanitize_smarts">
+        <text>Sanitize smart terrains</text>
+    </string>
+    <string id="ui_mcm_ag_general_sanitize_smarts_desc">
+        <text>Clamps corrupted already_spawned counters on smart terrains. Negative or non-numeric values cause save crashes (u8 write at smart_terrain.script:955) and infinite spawn loops (max > num always true). Common when running per-NPC despawners that race with the engine's on_unregister decrement. Sanitize runs once on game/level load (before alife pump) and periodically during play. Safe to leave on. Default: on.</text>
+    </string>
+    <string id="ui_mcm_ag_general_sanitize_interval">
+        <text>Sanitize interval (s)</text>
+    </string>
+    <string id="ui_mcm_ag_general_sanitize_interval_desc">
+        <text>Real-time seconds between periodic sanitize passes. Sub-millisecond cost regardless of interval (pure Lua table walk over SIMBOARD.smarts). 300s is a sensible default; lower it only if you observe rapid corruption from another mod. Default: 300.</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_sanitize_now">
+        <text>Sanitize now</text>
+    </string>
+    <string id="ui_mcm_ag_general_btn_sanitize_now_desc">
+        <text>Run one immediate sanitize pass and report scan count + fix count via PDA. Use to verify the sanitizer fires when expected, or to clean state right before a save.</text>
+    </string>
+
     <!-- ==================== DEVELOPMENT TAB ==================== -->
     <string id="ui_mcm_ag_development_desc">
         <text>Debug and development tools. DEBUG enables structured tracing with trace IDs, per-phase timing, and per-entity release logs. Written to alifeguard.log. Has performance cost.</text>
@@ -116,29 +139,6 @@
     </string>
     <string id="ag_development_log_level_lst_debug">
         <text>Debug</text>
-    </string>
-
-    <!-- Development - Smart Sanitizer -->
-    <string id="ui_mcm_ag_hdr_sanitize">
-        <text>Smart Sanitizer</text>
-    </string>
-    <string id="ui_mcm_ag_development_sanitize_smarts">
-        <text>Sanitize smart terrains</text>
-    </string>
-    <string id="ui_mcm_ag_development_sanitize_smarts_desc">
-        <text>Clamps corrupted already_spawned counters on smart terrains. Negative or non-numeric values cause save crashes (u8 write at smart_terrain.script:955) and infinite spawn loops (max > num always true). Common when running per-NPC despawners that race with the engine's on_unregister decrement. Sanitize runs once on game/level load (before alife pump) and periodically during play. Safe to leave on. Default: on.</text>
-    </string>
-    <string id="ui_mcm_ag_development_sanitize_interval">
-        <text>Sanitize interval (s)</text>
-    </string>
-    <string id="ui_mcm_ag_development_sanitize_interval_desc">
-        <text>Real-time seconds between periodic sanitize passes. Sub-millisecond cost regardless of interval (pure Lua table walk over SIMBOARD.smarts). 300s is a sensible default; lower it only if you observe rapid corruption from another mod. Default: 300.</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_sanitize_now">
-        <text>Sanitize now</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_sanitize_now_desc">
-        <text>Run one immediate sanitize pass and report scan count + fix count via PDA. Use to verify the sanitizer fires when expected, or to clean state right before a save.</text>
     </string>
 
     <!-- Development - Diagnostics -->

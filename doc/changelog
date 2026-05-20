@@ -1,4 +1,6 @@
 next
+  MCM:
+    Changed: Smart Sanitizer (toggle, interval, immediate-sanitize button) moved from Development tab to General tab.
 
 1.2.0
   Summary: Smart Sanitizer clamps corrupted respawn counters on smart terrains. Prevents save crashes, starvations and infinite spawn loops or spawn caused by spawner and despawner mods.
