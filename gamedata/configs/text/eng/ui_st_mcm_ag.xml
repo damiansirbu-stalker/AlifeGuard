@@ -87,7 +87,13 @@
         <text>PDA messages</text>
     </string>
     <string id="ui_mcm_ag_general_pda_desc">
-        <text>Show cleanup statistics via PDA when entities are culled.</text>
+        <text>Show a brief PDA message when the Zone thins out. Messages are lore-flavoured and intentionally vague.</text>
+    </string>
+    <string id="ui_mcm_ag_general_pda_sound">
+        <text>Notification sound</text>
+    </string>
+    <string id="ui_mcm_ag_general_pda_sound_desc">
+        <text>Play a brief psy-flavoured cue when a notification fires. Subtle. Disable for silent notifications.</text>
     </string>
 
     <!-- General - Smart Sanitizer -->

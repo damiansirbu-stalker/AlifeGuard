@@ -164,4 +164,10 @@
   <string id="ui_mcm_ag_development_btn_delete_all_desc">
     <text>Удалить ВСЕ отряды, включая сюжетные. Может сломать активные квесты. Используйте как последнее средство.</text>
   </string>
+  <string id="ui_mcm_ag_general_pda_sound">
+    <text>Звук уведомления</text>
+  </string>
+  <string id="ui_mcm_ag_general_pda_sound_desc">
+    <text>Краткий пси-сигнал при уведомлении. Не навязчивый. Отключите для тихих уведомлений.</text>
+  </string>
 </string_table>

@@ -13,6 +13,7 @@ defaults = {
     squad_culling = true,
     round_robin = true,
     pda = true,
+    pda_sound = true,
 
     -- Smart Sanitizer
     sanitize_smarts = true,
@@ -104,6 +105,7 @@ function on_mcm_load()
                     { id = "div_pda", type = "line" },
                     { id = "hdr_notifications", type = "desc", text = "ui_mcm_ag_hdr_notifications", clr = {255, 200, 200, 200} },
                     { id = "pda", type = "check", val = 1, def = true },
+                    { id = "pda_sound", type = "check", val = 1, def = true },
 
                     -- Smart Sanitizer
                     { id = "div_sanitize", type = "line" },

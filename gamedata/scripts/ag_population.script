@@ -4,7 +4,7 @@ local pairs, ipairs, math_sqrt, math_random, math_ceil, tostring, type, string =
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
 local alife_object, alife_release_id, RegisterScriptCallback = alife_object, alife_release_id, RegisterScriptCallback
-local xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature = xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature
+local xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature, xsound = xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature, xsound
 
 local log = xlog.get_logger("AG.POP", { outfile = "alifeguard.log" })
 local _dbg = false
@@ -27,6 +27,7 @@ local cfg = {
     squad_culling = true,
     round_robin = true,
     pda = true,
+    pda_sound = true,
     sanitize_smarts = true,
     sanitize_interval = 300,
     log_level = "WARN",
@@ -57,6 +58,7 @@ local function load_config()
     cfg.squad_culling = mcm.squad_culling ~= false
     cfg.round_robin = mcm.round_robin ~= false
     cfg.pda = mcm.pda
+    cfg.pda_sound = mcm.pda_sound
     cfg.sanitize_smarts = mcm.sanitize_smarts ~= false
     cfg.sanitize_interval = mcm.sanitize_interval or 300
     cfg.log_level = mcm.log_level or "WARN"
@@ -83,16 +85,16 @@ end
 
 local cleanup_messages = {
     "Zone thinned out. Breathe easier for now.",
-    "Population control active. Distant contacts released.",
-    "A-Life adjusted. %d entities moved offline.",
     "The Zone reshuffles. Some stalkers walked into the fog.",
+    "The Zone exhales. Long-range echoes drop out.",
 }
+
+local CLEANUP_SOUND = "ambient\\radar_1"
 
 local function notify_cleanup(removed, _stalkers, _mutants)
     if not cfg.pda or removed == 0 then return end
-    local template = cleanup_messages[math_random(#cleanup_messages)]
-    local msg = string.format(template, removed)
-    send_pda(msg)
+    send_pda(cleanup_messages[math_random(#cleanup_messages)])
+    if cfg.pda_sound then xsound.play(CLEANUP_SOUND) end
 end
 
 -- ==================== PROTECTION ====================
