@@ -1,6 +1,15 @@
 next
+  Summary: Task givers no longer released by cleanup ("Mission Failed: Collect X for Y" on PDA Taskboard tasks). PDA cleanup messages reworked to 3 lore-flavoured lines with an optional ambient sound cue.
+  Protection:
+    Fixed: simulation task fails ("Mission Failed: Collect X for Y") when AlifeGuard released a non-commander squad member who was the player's task giver. Closed via xlibs 1.7.1 xsquad._is_task_giver squad-members iteration.
+    Fixed: orphan NPCs that are active task givers no longer enter the release queue. _process_entity orphan branch now calls xcreature.is_task_giver in addition to xcreature.is_unscriptable. Covers custom mods that spawn unique task-giver NPCs without a story_id assignment (most vanilla and modpack task givers were already covered via story_id or the xdata.npc_roles list).
+  Notifications:
+    Changed: PDA cleanup messages reworked to 3 lore-flavoured Zone-as-actor lines.
   MCM:
     Changed: Smart Sanitizer (toggle, interval, immediate-sanitize button) moved from Development tab to General tab.
+    Added: Notification sound toggle. Plays a brief ambient cue (default ambient\radar_1) when a cleanup PDA message fires. General tab, Notifications section.
+  Compatibility:
+    Changed: xlibs 1.7.1 dependency. Required for xsound.play (notification cue) and the xsquad task-giver iteration fix.
 
 1.2.0
   Summary: Smart Sanitizer clamps corrupted respawn counters on smart terrains. Prevents save crashes, starvations and infinite spawn loops or spawn caused by spawner and despawner mods.
