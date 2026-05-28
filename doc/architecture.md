@@ -4,6 +4,8 @@ Population control for STALKER Anomaly. Keeps online entity count under a config
 
 Built on xlibs (xsquad, xcreature, xslice, xprofiler, xlog).
 
+Part of a three-mod alife family: **AlifePlus** extends A-Life with new behaviors, **AlifeBalance** tunes existing rates and counts, **AlifeGuard** keeps alife state clean (this mod).
+
 ---
 
 ## Pipeline

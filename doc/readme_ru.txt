@@ -78,6 +78,11 @@ MCM:
   Разработка: уровень логов (ERROR/WARN/INFO/DEBUG), Санитайзер смарт-террейнов
   (переключатель, интервал, кнопка немедленной очистки), диагностика, сброс популяции.
 
+Моды-компаньоны:
+
+AlifePlus (реактивный фреймворк A-Life) -- https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01 | https://www.nexusmods.com/stalkeranomaly/mods/105
+AlifeBalance (темп респавна) -- https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance | https://www.nexusmods.com/stalkeranomaly/mods/110
+
 Требования:
 Anomaly 1.5.3
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)

@@ -72,6 +72,11 @@ MCM:
   Smart Sanitizer (toggle, interval, immediate-sanitize button).
   Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
+Companion mods:
+
+AlifePlus (reactive A-Life framework) -- https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01 | https://www.nexusmods.com/stalkeranomaly/mods/105
+AlifeBalance (respawn pacing) -- https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance | https://www.nexusmods.com/stalkeranomaly/mods/110
+
 Requirements:
 Anomaly 1.5.3
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
