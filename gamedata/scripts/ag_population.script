@@ -172,6 +172,7 @@ local function _process_entity(obj, ctx)
     local is_orphan = not group_id or group_id == INVALID_GROUP
 
     if is_orphan and xcreature.is_unscriptable(obj) then ctx.stats.protected = ctx.stats.protected + 1; return end
+    if is_orphan and xcreature.is_task_giver(obj) then ctx.stats.protected = ctx.stats.protected + 1; return end
     if is_orphan then ctx.orphans[#ctx.orphans + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj); return end
 
     local squad = alife_object(group_id)
