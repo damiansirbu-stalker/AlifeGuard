@@ -127,12 +127,6 @@
   <string id="ui_mcm_ag_general_sanitize_interval_desc">
     <text>Интервал в секундах реального времени между периодическими проходами очистки. Стоимость менее миллисекунды независимо от интервала (чистый Lua-обход SIMBOARD.smarts). 300 с — разумное значение по умолчанию; уменьшайте только если наблюдаете быструю порчу данных от другого мода. По умолчанию: 300.</text>
   </string>
-  <string id="ui_mcm_ag_general_btn_sanitize_now">
-    <text>Очистить сейчас</text>
-  </string>
-  <string id="ui_mcm_ag_general_btn_sanitize_now_desc">
-    <text>Выполнить один проход очистки сразу и сообщить количество просканированных и исправленных записей через КПК. Используйте для проверки работы санитайзера или для очистки состояния перед сохранением.</text>
-  </string>
   <string id="ui_mcm_ag_hdr_diagnostics">
     <text>Диагностика</text>
   </string>
@@ -141,12 +135,6 @@
   </string>
   <string id="ui_mcm_ag_development_btn_show_status_desc">
     <text>Отобразить текущее количество сущностей и статистику защиты через КПК.</text>
-  </string>
-  <string id="ui_mcm_ag_development_btn_manual_cleanup">
-    <text>Принудительная очистка</text>
-  </string>
-  <string id="ui_mcm_ag_development_btn_manual_cleanup_desc">
-    <text>Немедленно удалить лишние сущности. Используйте при неожиданном падении FPS.</text>
   </string>
   <!-- Development - Population Reset -->
   <string id="ui_mcm_ag_hdr_population">

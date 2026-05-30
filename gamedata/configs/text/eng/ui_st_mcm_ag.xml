@@ -112,12 +112,6 @@
     <string id="ui_mcm_ag_general_sanitize_interval_desc">
         <text>Real-time seconds between periodic sanitize passes. Sub-millisecond cost regardless of interval (pure Lua table walk over SIMBOARD.smarts). 300s is a sensible default; lower it only if you observe rapid corruption from another mod. Default: 300.</text>
     </string>
-    <string id="ui_mcm_ag_general_btn_sanitize_now">
-        <text>Sanitize now</text>
-    </string>
-    <string id="ui_mcm_ag_general_btn_sanitize_now_desc">
-        <text>Run one immediate sanitize pass and report scan count + fix count via PDA. Use to verify the sanitizer fires when expected, or to clean state right before a save.</text>
-    </string>
 
     <!-- ==================== DEVELOPMENT TAB ==================== -->
     <string id="ui_mcm_ag_development_desc">
@@ -157,13 +151,6 @@
     <string id="ui_mcm_ag_development_btn_show_status_desc">
         <text>Display current entity counts and protection statistics via PDA.</text>
     </string>
-    <string id="ui_mcm_ag_development_btn_manual_cleanup">
-        <text>Force cleanup</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_manual_cleanup_desc">
-        <text>Immediately cull excess entities. Use if framerate drops unexpectedly.</text>
-    </string>
-
     <!-- Development - Population Reset -->
     <string id="ui_mcm_ag_hdr_population">
         <text>Population Reset</text>

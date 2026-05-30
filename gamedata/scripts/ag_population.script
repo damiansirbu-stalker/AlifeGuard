@@ -1,6 +1,6 @@
 --- ag_population: Population control - per-squad culling with round-robin fairness and hysteresis
 
-local pairs, ipairs, math_sqrt, math_random, math_ceil, tostring, type, string = pairs, ipairs, math.sqrt, math.random, math.ceil, tostring, type, string
+local pairs, ipairs, math_sqrt, math_random, tostring, type, string = pairs, ipairs, math.sqrt, math.random, tostring, type, string
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
 local alife_object, alife_release_id, RegisterScriptCallback = alife_object, alife_release_id, RegisterScriptCallback
@@ -538,38 +538,6 @@ function show_status()
         stats.total, cfg.max, stats.stalkers, stats.mutants, stats.protected), nil, nil, 8000)
 end
 
-function manual_cleanup()
-    if not is_in_game() or not db or not db.actor then return end
-
-    if xslice.is_active("ag_despawn") then
-        news_manager.send_tip(db.actor, "AlifeGuard: Cleanup already in progress", nil, nil, 5000)
-        return
-    end
-
-    local tg = clock()
-    if tg - level_load_time < LEVEL_LOAD_GRACE_PERIOD then
-        local remaining = math_ceil(LEVEL_LOAD_GRACE_PERIOD - (tg - level_load_time))
-        news_manager.send_tip(db.actor, "AlifeGuard: Please wait " .. remaining .. "s after level load", nil, nil, 5000)
-        return
-    end
-
-    load_config()
-
-    if cfg.enabled and cfg.max > 0 then
-        local stats, _squads, orphans, tid = _collect_online()
-        local target = cfg.max - cfg.buffer
-        if target < 0 then target = 0 end
-        if stats.total > cfg.max then
-            news_manager.send_tip(db.actor, "--- AlifeGuard Cleanup ---", nil, nil, 10000)
-            local queue = _build_release_queue(_squads, orphans, stats.total - target, tid)
-            _despawn_from_queue(queue, stats.total, target, tid)
-        else
-            news_manager.send_tip(db.actor, "--- AlifeGuard Cleanup ---", nil, nil, 10000)
-            news_manager.send_tip(db.actor, "Online Guard: no cleanup needed", nil, nil, 10000)
-        end
-    end
-end
-
 -- ==================== POPULATION RESET ====================
 
 function delete_common_squads()
@@ -586,8 +554,3 @@ function delete_all_squads()
     send_pda(string.format("Population reset: %d squads removed.", count))
 end
 
-function sanitize_smarts_now()
-    if not is_in_game() or not db or not db.actor then return end
-    local scanned, fixed = _sanitize_smart_terrains()
-    send_pda(string.format("Smart sanitize: scanned %d smarts, fixed %d entries.", scanned, fixed))
-end

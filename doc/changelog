@@ -6,8 +6,10 @@ next
   Notifications:
     Changed: PDA cleanup messages reworked to 3 lore-flavoured Zone-as-actor lines.
   MCM:
-    Changed: Smart Sanitizer (toggle, interval, immediate-sanitize button) moved from Development tab to General tab.
+    Changed: Smart Sanitizer subsection (toggle, interval) moved from Development tab to General tab.
     Added: Notification sound toggle. Plays a brief ambient cue (default ambient\radar_1) when a cleanup PDA message fires. General tab, Notifications section.
+    Removed: Sanitize now button. The periodic sanitize cycle runs every sanitize_interval (default 300s) and the post-load sanitize covers save-corruption cases.
+    Removed: Force cleanup button. The cleanup cycle runs every check_interval (default 30s).
   Compatibility:
     Changed: xlibs 1.7.1 dependency. Required for xsound.play (notification cue) and the xsquad task-giver iteration fix.
 
