@@ -1,4 +1,4 @@
-Version: 1.2.0 (xlibs 1.5.1)
+Version: 1.2.0 (xlibs 1.7.1)
 
 [url=https://github.com/damiansirbu-stalker/AlifeGuard]GitHub[/url] | [url=https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog]Changelog[/url] | [url=https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt]Na russkom[/url] | [url=https://github.com/damiansirbu-stalker/AlifeGuard/issues]Bugs, suggestions[/url]
 
@@ -22,7 +22,7 @@ Removals are spread across factions and mutant types. One entity per category pe
 Separate trigger and target thresholds (default: trigger at 80, cull to 70). Cleanup runs in cycles, not constantly reacting to small population changes.
 
 [size=3][b]Frame-spread release[/b][/size]
-Entities are released one per frame via xslice (cooperative time-slicing). 30 excess entities = 30 frames to clear. No spikes, no freezes, no net_Relcase cascade crashes.
+Entities are released one per frame via xslice (cooperative time-slicing). 30 excess entities = 30 frames to clear. No spikes, no freezes.
 
 [size=3][b]Protection[/b][/size]
 Story squads, traders, named NPCs, companions, task givers, bounty and hostage targets are never removed. Squad-level checks with positive-only TTL cache. Per-member fallback catches named NPCs who are not squad commanders.
@@ -39,7 +39,7 @@ Scripted squads are preserved as long as possible. Commanders remain, so squad a
 Other mods direct the world. AlifeGuard keeps it performant.
 
 [size=3][b]MCM[/b][/size]
-General: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications, Smart Sanitizer (toggle, interval, immediate-sanitize button).
+General: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications, Smart Sanitizer (toggle, interval).
 Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
 [line]
@@ -64,7 +64,7 @@ Disable or remove in MO2.
 
 [size=3][b]Compatibility[/b][/size]
 Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).
-Does not modify base scripts. Uses the standard engine API (alife_release_id).
+Does not modify base scripts. Uses the standard engine API (alife_release).
 Compatible with A-Life config tweaks (alife.ltx tuning, smart terrain max_population adjustments, Redone Alife Performance, x3 performance tweaks). These mods change engine parameters while AlifeGuard works at the script level, so they do not overlap.
 Disable other despawn mods (e.g. Grok's Despawner) when using AlifeGuard. Running two population governors causes conflicting release decisions, respawn churn, and entity leaks.
 
@@ -83,7 +83,7 @@ Rare crash on entity release (Perform_reject assertion). Engine-level issue in X
 [size=3][b]Performance[/b][/size]
 [list]
 [*]Performance was a design constraint from the start. Collection: sub-millisecond for 200 entities. Release: 0.05ms per frame.
-[*]Cooperative time-slicing (xslice) prevents the net_Relcase cascade crashes that batch releases cause in X-Ray.
+[*]Cooperative time-slicing (xslice) bounds per-frame release work and prevents frame stutter under heavy cleanup.
 [*]Structured tracing with trace IDs, per-phase timing, null object singletons for zero debug overhead when log level < DEBUG.
 [/list]
 

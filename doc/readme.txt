@@ -1,5 +1,5 @@
 AlifeGuard: A-Life population governor for STALKER Anomaly, by Damian
-Version: 1.2.0 (xlibs 1.5.1)
+Version: 1.2.0 (xlibs 1.7.1)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
@@ -39,7 +39,7 @@ Hysteresis:
 
 Frame-spread release:
   Entities are released one per frame via xslice (cooperative time-slicing). 30 excess
-  entities = 30 frames to clear. No spikes, no freezes, no net_Relcase cascade crashes.
+  entities = 30 frames to clear. No spikes, no freezes.
 
 Protection:
   Story squads, traders, named NPCs, companions, task givers, bounty and hostage targets
@@ -69,7 +69,7 @@ Mod compatibility:
 MCM:
   General: population limits, hysteresis buffer, check interval, protection rules
   (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications,
-  Smart Sanitizer (toggle, interval, immediate-sanitize button).
+  Smart Sanitizer (toggle, interval).
   Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
 Companion mods:
@@ -93,7 +93,7 @@ Disable or remove in MO2.
 
 Compatibility:
 Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).
-Does not modify base scripts. Uses the standard engine API (alife_release_id).
+Does not modify base scripts. Uses the standard engine API (alife_release).
 Compatible with A-Life config tweaks (alife.ltx tuning, smart terrain max_population
 adjustments, Redone Alife Performance, x3 performance tweaks). These mods change engine
 parameters while AlifeGuard works at the script level, so they do not overlap.
@@ -115,8 +115,8 @@ Architecture:
 Performance:
 - Performance was a design constraint from the start.
   Collection: sub-millisecond for 200 entities. Release: 0.05ms per frame.
-- Cooperative time-slicing (xslice) prevents the net_Relcase cascade crashes that batch
-  releases cause in X-Ray.
+- Cooperative time-slicing (xslice) bounds per-frame release work and prevents frame
+  stutter under heavy cleanup.
 - Structured tracing with trace IDs, per-phase timing, null object singletons for zero
   debug overhead when log level < DEBUG.
 

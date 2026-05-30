@@ -1,6 +1,6 @@
 # AlifeGuard Architecture
 
-Population control for STALKER Anomaly. Keeps online entity count under a configurable threshold by releasing NPCs back to offline simulation. Squad-aware: thins squad members before touching commanders, spreads removals evenly across factions and mutant types via round-robin, uses hysteresis to prevent oscillation. Releases are frame-spread (1 per frame via xslice) to avoid engine crashes from batch net_Relcase.
+Population control for STALKER Anomaly. Keeps online entity count under a configurable threshold by releasing NPCs back to offline simulation. Squad-aware: thins squad members before touching commanders, spreads removals evenly across factions and mutant types via round-robin, uses hysteresis to prevent oscillation. Releases are frame-spread (1 per frame via xslice) to bound `safe_release_manager`'s per-frame work and keep cleanup smooth.
 
 Built on xlibs (xsquad, xcreature, xslice, xprofiler, xlog).
 
@@ -34,7 +34,7 @@ FRAME 0: _collect_online
   |
   v
 FRAMES 1..N: xslice "ag_despawn", step=1
-  |-- per frame: safe_release(entity_id) -> alife_release_id
+  |-- per frame: safe_release(entity_id) -> alife_release
   |-- on_done: log summary, PDA notification
 ```
 
@@ -138,13 +138,13 @@ Without hysteresis: cull to 80, 2 NPCs respawn, cull again next cycle. With buff
 
 xslice (xlibs) processes the release queue at 1 entity per frame via `AddUniqueCall`. Not multithreading -- cooperative time-slicing on X-Ray's single Lua thread.
 
-Why 1 per frame: releasing multiple entities in a single frame causes `net_Relcase` cascade crashes in the X-Ray engine. One-per-frame pacing prevents this entirely.
+Why 1 per frame: `safe_release_manager` (Alundaio, `safe_release_manager.script:4-7`) handles the binder-still-alive race between `release` and `net_destroy` by deferring each entity's actual release across several frames (`set_switch_online(false)` + `set_switch_offline(true)` + `switch_offline()`, then `sim:release` once the binder is gone). It drains its `objects_to_release` dict via `AddUniqueCall` once per frame and walks all pending entries on each pass. A synchronous N-entity release loop pushes N entries in one frame, so every subsequent drain pass does N `switch_offline` calls until the binders finish. xslice's 1-per-frame pacing keeps `objects_to_release` at depth 1, so per-frame cost stays flat. Intra-slice deaths (entity died between collection and release) fail the `alife_object(id)` verify and are skipped at zero cost.
 
 Release path per entity:
 ```
 safe_release(id)
   -> alife_object(id)       -- verify exists (1 luabind medium)
-  -> alife_release_id(id)   -- _g.script routes to squad:remove_npc(id, true)
+  -> alife_release(se)      -- _g.script routes to squad:remove_npc(id, true)
     -> smart:unregister_npc(squad)
     -> squad:unregister_member(id)
     -> safe_release_manager.release(se_obj)
@@ -176,8 +176,8 @@ Periodic walk over `SIMBOARD.smarts` clamping three invariant violations on each
 | C | `v.num < 0` | `v.num = 0` |
 
 Hooks:
-- `actor_on_reinit` — fires after STATE_Read (data live) and before `bind_stalker.script:200` runs `set_objects_per_update(65534)` (engine load burst). Cleans corrupted save data before `try_respawn` reads it.
-- `actor_on_update` interval gate — every 300 seconds during play. Catches mid-session corruption from misbehaving mods still installed.
+- `actor_on_reinit` fires after STATE_Read (data live) and before `bind_stalker.script:200` runs `set_objects_per_update(65534)` (engine load burst). Cleans corrupted save data before `try_respawn` reads it.
+- `actor_on_update` interval gate fires every 300 seconds during play. Catches mid-session corruption from misbehaving mods still installed.
 
 ### Cost
 
@@ -204,7 +204,7 @@ Total: ~9-10 luabind per entity (production), ~1-6 per squad. Sub-millisecond fo
 
 ### Release (frames 1-N)
 
-2 luabind per frame (alife_object verify + alife_release_id). ~0.05ms per release. 30 excess entities = 30 frames = 0.5s at 60fps.
+2 luabind per frame (alife_object verify + alife_release call). ~0.05ms per release. 30 excess entities = 30 frames = 0.5s at 60fps.
 
 ### Benchmarks
 
@@ -216,8 +216,8 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 
 | File | Lines | Purpose |
 |---|---|---|
-| ag_population.script | ~589 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer, MCM buttons |
-| ag_mcm.script | ~169 | MCM defaults, UI definition, button handlers |
+| ag_population.script | ~557 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer |
+| ag_mcm.script | ~155 | MCM defaults, UI definition, button handlers |
 | _ag_deps.script | ~34 | Version string, xlibs dependency gate |
 
 ---
