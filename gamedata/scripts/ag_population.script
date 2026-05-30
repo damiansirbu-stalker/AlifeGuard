@@ -3,7 +3,7 @@
 local pairs, ipairs, math_sqrt, math_random, tostring, type, string = pairs, ipairs, math.sqrt, math.random, tostring, type, string
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
-local alife_object, alife_release_id, RegisterScriptCallback = alife_object, alife_release_id, RegisterScriptCallback
+local alife_object, alife_release, RegisterScriptCallback = alife_object, alife_release, RegisterScriptCallback
 local xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature, xsound = xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature, xsound
 
 local log = xlog.get_logger("AG.POP", { outfile = "alifeguard.log" })
@@ -119,8 +119,9 @@ end
 
 local function safe_release(entity_id)
     if not entity_id then return false end
-    if not alife_object(entity_id) then return false end
-    alife_release_id(entity_id)
+    local se = alife_object(entity_id)
+    if not se then return false end
+    alife_release(se)
     return true
 end
 
