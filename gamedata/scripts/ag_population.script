@@ -494,7 +494,7 @@ end
 
 -- ==================== LEVEL CHANGE ====================
 
-local function on_level_change()
+local function on_actor_first_update()
     level_load_time = clock()
 end
 
@@ -524,7 +524,7 @@ function on_game_start()
 
     RegisterScriptCallback("actor_on_update", actor_on_update)
     RegisterScriptCallback("on_option_change", on_option_change)
-    RegisterScriptCallback("actor_on_first_update", on_level_change)
+    RegisterScriptCallback("actor_on_first_update", on_actor_first_update)
     RegisterScriptCallback("actor_on_reinit", actor_on_reinit)
 end
 
