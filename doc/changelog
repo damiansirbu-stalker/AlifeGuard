@@ -1,8 +1,10 @@
 next
-  Summary: Task givers no longer released by cleanup ("Mission Failed: Collect X for Y" on PDA Taskboard tasks). PDA cleanup messages reworked to 3 lore-flavoured lines with an optional ambient sound cue.
+  Summary: Task givers no longer released by cleanup ("Mission Failed: Collect X for Y" on PDA Taskboard tasks). Crash hardening around stale squad references and recycled SE ids. PDA cleanup messages reworked to 3 lore-flavoured lines with an optional ambient sound cue.
   Protection:
     Fixed: simulation task fails ("Mission Failed: Collect X for Y") when AlifeGuard released a non-commander squad member who was the player's task giver. Closed via xlibs 1.7.1 xsquad._is_task_giver squad-members iteration.
     Fixed: orphan NPCs that are active task givers no longer enter the release queue. _process_entity orphan branch now calls xcreature.is_task_giver in addition to xcreature.is_unscriptable. Covers custom mods that spawn unique task-giver NPCs without a story_id assignment (most vanilla and modpack task givers were already covered via story_id or the xdata.npc_roles list).
+    Fixed: rare CTD at _g.script:2228 ("attempt to call method 'remove_npc' (a nil value)") when safe_release reached a stalker whose se.group_id pointed to a freed-and-recycled SE that was not a squad. safe_release now clsid-checks the squad object and routes stale cases through alife():release directly, bypassing vanilla's truthy-only guard at _g.script:2226-2227. Engine discipline (CSE_ALifeOnlineOfflineGroup destructor clears m_group_id on surviving members) keeps this path effectively unreachable in vanilla flow; the guard covers save-corruption from older sessions and third-party despawners that share the same upstream defect.
+    Fixed: safe_release re-validates the entity section against the value captured at queue build and aborts if the SE id was recycled to a different entity across xslice frames. _make_entry now always captures obj:section() (previously _dbg-gated).
   Notifications:
     Changed: PDA cleanup messages reworked to 3 lore-flavoured Zone-as-actor lines.
   MCM:

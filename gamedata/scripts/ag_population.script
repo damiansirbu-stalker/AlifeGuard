@@ -3,7 +3,7 @@
 local pairs, ipairs, math_sqrt, math_random, tostring, type, string = pairs, ipairs, math.sqrt, math.random, tostring, type, string
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
-local alife_object, alife_release, RegisterScriptCallback = alife_object, alife_release, RegisterScriptCallback
+local alife_object, alife_release, alife, clsid, RegisterScriptCallback = alife_object, alife_release, alife, clsid, RegisterScriptCallback
 local xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature, xsound = xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature, xsound
 
 local log = xlog.get_logger("AG.POP", { outfile = "alifeguard.log" })
@@ -117,10 +117,19 @@ end
 
 -- ==================== ENTITY RELEASE ====================
 
-local function safe_release(entity_id)
+local function safe_release(entity_id, expected_section)
     if not entity_id then return false end
     local se = alife_object(entity_id)
     if not se then return false end
+    if expected_section and se:section_name() ~= expected_section then return false end
+    local gid = se.group_id
+    if gid and gid ~= INVALID_GROUP then
+        local sq = alife_object(gid)
+        if sq and sq:clsid() ~= clsid.online_offline_group_s then
+            alife():release(se, true)
+            return true
+        end
+    end
     alife_release(se)
     return true
 end
@@ -133,7 +142,7 @@ end
 -- ==================== COLLECTION ====================
 
 local function _make_entry(id, dist_sq, obj_is_stalker, obj)
-    return { id = id, dist_sq = dist_sq, is_stalker = obj_is_stalker, section = _dbg and obj:section() or nil }
+    return { id = id, dist_sq = dist_sq, is_stalker = obj_is_stalker, section = obj:section() }
 end
 
 local function _new_squad_record(squad)
@@ -386,7 +395,7 @@ local function _despawn_from_queue(queue, current_count, target, tid)
             if removed >= to_remove then return false end
 
             local release_timer = xprofiler.new_if(_dbg):start()
-            local ok = safe_release(ent.id)
+            local ok = safe_release(ent.id, ent.section)
             release_timer:stop()
             local ms = release_timer:get_ms()
 
