@@ -522,10 +522,6 @@ end
 
 -- ==================== LIFECYCLE ====================
 
-local function is_in_game()
-    return level and level.present and level.present() == true
-end
-
 function on_game_start()
     load_config()
     log.info("AlifeGuard v%s (xlibs v%s)", _ag_deps.get_version(), xlibs.get_version())
@@ -535,32 +531,5 @@ function on_game_start()
     RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("actor_on_first_update", on_actor_first_update)
     RegisterScriptCallback("actor_on_reinit", actor_on_reinit)
-end
-
--- ==================== MCM BUTTON FUNCTIONS ====================
-
-function show_status()
-    if not is_in_game() or not db or not db.actor then return end
-    load_config()
-    local stats = _collect_online()
-    news_manager.send_tip(db.actor, "--- AlifeGuard " .. _ag_deps.get_version() .. " Status ---", nil, nil, 8000)
-    news_manager.send_tip(db.actor, string.format("Online: %d/%d (stalkers:%d mutants:%d protected:%d)",
-        stats.total, cfg.max, stats.stalkers, stats.mutants, stats.protected), nil, nil, 8000)
-end
-
--- ==================== POPULATION RESET ====================
-
-function delete_common_squads()
-    if not is_in_game() or not db or not db.actor then return end
-    local count = xsquad.release_squads({ common_only = true })
-    log.info("Deleted %d common squads", count)
-    send_pda(string.format("Population reset: %d common squads removed.", count))
-end
-
-function delete_all_squads()
-    if not is_in_game() or not db or not db.actor then return end
-    local count = xsquad.release_squads()
-    log.info("Deleted %d squads", count)
-    send_pda(string.format("Population reset: %d squads removed.", count))
 end
 

@@ -6,116 +6,130 @@
     </string>
 
     <!-- ==================== TAB NAMES ==================== -->
-    <string id="ui_mcm_menu_general">
-        <text>General</text>
+    <string id="ui_mcm_menu_online_guard">
+        <text>Online Guard</text>
+    </string>
+    <string id="ui_mcm_menu_smart_sanitizer">
+        <text>Smart Sanitizer</text>
     </string>
     <string id="ui_mcm_menu_development">
         <text>Development</text>
     </string>
 
-    <!-- ==================== GENERAL TAB ==================== -->
+    <!-- ==================== ONLINE GUARD TAB ==================== -->
     <string id="ui_mcm_ag_title">
         <text>AlifeGuard</text>
     </string>
-    <string id="ui_mcm_ag_general_info">
+    <string id="ui_mcm_ag_online_guard_info">
         <text>Late-game A-Life accumulates too many active entities. AlifeGuard governs the online population with squad-aware culling, round-robin fairness across factions, and hysteresis to prevent oscillation. Squads survive, smart terrains stay consistent.</text>
     </string>
 
-    <!-- General - Entity limits -->
+    <!-- Online Guard - Entity limits -->
     <string id="ui_mcm_ag_hdr_online">
         <text>Entity Limits</text>
     </string>
-    <string id="ui_mcm_ag_general_enabled">
+    <string id="ui_mcm_ag_online_guard_enabled">
         <text>Enable online guard</text>
     </string>
-    <string id="ui_mcm_ag_general_enabled_desc">
+    <string id="ui_mcm_ag_online_guard_enabled_desc">
         <text>Limit active entities around you. Farthest go offline first. Traders, companions, quest targets protected.</text>
     </string>
-    <string id="ui_mcm_ag_general_max">
+    <string id="ui_mcm_ag_online_guard_max">
         <text>Maximum online</text>
     </string>
-    <string id="ui_mcm_ag_general_max_desc">
+    <string id="ui_mcm_ag_online_guard_max_desc">
         <text>How many stalkers and mutants can be active simultaneously. Lower = better framerate in dense areas.</text>
     </string>
-    <string id="ui_mcm_ag_general_buffer">
+    <string id="ui_mcm_ag_online_guard_buffer">
         <text>Hysteresis buffer</text>
     </string>
-    <string id="ui_mcm_ag_general_buffer_desc">
+    <string id="ui_mcm_ag_online_guard_buffer_desc">
         <text>Cull target is max minus buffer. Prevents oscillation: cleanup runs less often because population must rise back above max before the next cycle triggers. 0 disables.</text>
     </string>
-    <string id="ui_mcm_ag_general_check_interval">
+    <string id="ui_mcm_ag_online_guard_check_interval">
         <text>Check interval</text>
     </string>
-    <string id="ui_mcm_ag_general_check_interval_desc">
+    <string id="ui_mcm_ag_online_guard_check_interval_desc">
         <text>[seconds]\nHow often to check entity counts. Lower = more responsive but slight performance cost. 30 is balanced.</text>
     </string>
 
-    <!-- General - Protection -->
+    <!-- Online Guard - Protection -->
     <string id="ui_mcm_ag_hdr_protection">
         <text>Protection Rules</text>
     </string>
-    <string id="ui_mcm_ag_general_check_tasks">
+    <string id="ui_mcm_ag_online_guard_check_tasks">
         <text>Protect task NPCs</text>
     </string>
-    <string id="ui_mcm_ag_general_check_tasks_desc">
+    <string id="ui_mcm_ag_online_guard_check_tasks_desc">
         <text>NPCs involved in active tasks cannot be removed. Disable if the Zone should be indifferent to your objectives.</text>
     </string>
-    <string id="ui_mcm_ag_general_prioritize_distant">
+    <string id="ui_mcm_ag_online_guard_prioritize_distant">
         <text>Remove farthest first</text>
     </string>
-    <string id="ui_mcm_ag_general_prioritize_distant_desc">
+    <string id="ui_mcm_ag_online_guard_prioritize_distant_desc">
         <text>Cull distant entities first. If disabled, random selection.</text>
     </string>
-    <string id="ui_mcm_ag_general_squad_culling">
+    <string id="ui_mcm_ag_online_guard_squad_culling">
         <text>Per-squad culling</text>
     </string>
-    <string id="ui_mcm_ag_general_squad_culling_desc">
+    <string id="ui_mcm_ag_online_guard_squad_culling_desc">
         <text>Thin squad members before touching commanders. Keeps squads alive, prevents respawn churn. If disabled, all entities released individually like v1.0.</text>
     </string>
-    <string id="ui_mcm_ag_general_round_robin">
+    <string id="ui_mcm_ag_online_guard_round_robin">
         <text>Round-robin fairness</text>
     </string>
-    <string id="ui_mcm_ag_general_round_robin_desc">
+    <string id="ui_mcm_ag_online_guard_round_robin_desc">
         <text>Spread removals evenly across factions and mutant types. If disabled, farthest entities removed regardless of faction.</text>
     </string>
 
-    <!-- General - Notifications -->
+    <!-- Online Guard - Notifications -->
     <string id="ui_mcm_ag_hdr_notifications">
         <text>Notifications</text>
     </string>
-    <string id="ui_mcm_ag_general_pda">
+    <string id="ui_mcm_ag_online_guard_pda">
         <text>PDA messages</text>
     </string>
-    <string id="ui_mcm_ag_general_pda_desc">
+    <string id="ui_mcm_ag_online_guard_pda_desc">
         <text>Show a brief PDA message when the Zone thins out. Messages are lore-flavoured and intentionally vague.</text>
     </string>
-    <string id="ui_mcm_ag_general_pda_sound">
+    <string id="ui_mcm_ag_online_guard_pda_sound">
         <text>Notification sound</text>
     </string>
-    <string id="ui_mcm_ag_general_pda_sound_desc">
+    <string id="ui_mcm_ag_online_guard_pda_sound_desc">
         <text>Play a brief psy-flavoured cue when a notification fires. Subtle. Disable for silent notifications.</text>
     </string>
 
-    <!-- General - Smart Sanitizer -->
+    <!-- ==================== SMART SANITIZER TAB ==================== -->
+    <string id="ui_mcm_ag_smart_sanitizer_info">
+        <text>Clamps corrupted already_spawned counters on smart terrains. Prevents save crashes and infinite spawn loops caused by spawner and despawner mods racing with the engine on_unregister decrement.</text>
+    </string>
     <string id="ui_mcm_ag_hdr_sanitize">
         <text>Smart Sanitizer</text>
     </string>
-    <string id="ui_mcm_ag_general_sanitize_smarts">
+    <string id="ui_mcm_ag_smart_sanitizer_sanitize_smarts">
         <text>Sanitize smart terrains</text>
     </string>
-    <string id="ui_mcm_ag_general_sanitize_smarts_desc">
-        <text>Clamps corrupted already_spawned counters on smart terrains. Negative or non-numeric values cause save crashes (u8 write at smart_terrain.script:955) and infinite spawn loops (max > num always true). Common when running per-NPC despawners that race with the engine's on_unregister decrement. Sanitize runs once on game/level load (before alife pump) and periodically during play. Safe to leave on. Default: on.</text>
+    <string id="ui_mcm_ag_smart_sanitizer_sanitize_smarts_desc">
+        <text>Clamps corrupted already_spawned counters on smart terrains. Negative or non-numeric values cause save crashes (u8 write at smart_terrain.script:955) and infinite spawn loops (max &gt; num always true). Common when running per-NPC despawners that race with the engine's on_unregister decrement. Sanitize runs once on game/level load (before alife pump) and periodically during play. Safe to leave on. Default: on.</text>
     </string>
-    <string id="ui_mcm_ag_general_sanitize_interval">
+    <string id="ui_mcm_ag_smart_sanitizer_sanitize_interval">
         <text>Sanitize interval (s)</text>
     </string>
-    <string id="ui_mcm_ag_general_sanitize_interval_desc">
+    <string id="ui_mcm_ag_smart_sanitizer_sanitize_interval_desc">
         <text>Real-time seconds between periodic sanitize passes. Sub-millisecond cost regardless of interval (pure Lua table walk over SIMBOARD.smarts). 300s is a sensible default; lower it only if you observe rapid corruption from another mod. Default: 300.</text>
     </string>
 
     <!-- ==================== DEVELOPMENT TAB ==================== -->
     <string id="ui_mcm_ag_development_desc">
         <text>Debug and development tools. DEBUG enables structured tracing with trace IDs, per-phase timing, and per-entity release logs. Written to alifeguard.log. Has performance cost.</text>
+    </string>
+
+    <!-- Development - Reset -->
+    <string id="ui_mcm_ag_development_btn_reset_all">
+        <text>Reset to defaults</text>
+    </string>
+    <string id="ui_mcm_ag_development_btn_reset_all_desc">
+        <text>Restore all AlifeGuard MCM settings to factory defaults. Use after upgrading from a version with different MCM structure (the old settings remain as orphaned keys in the MCM storage file but no longer apply).</text>
     </string>
 
     <!-- Development - Logging -->
@@ -141,30 +155,4 @@
         <text>Debug</text>
     </string>
 
-    <!-- Development - Diagnostics -->
-    <string id="ui_mcm_ag_hdr_diagnostics">
-        <text>Diagnostics</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_show_status">
-        <text>Show status</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_show_status_desc">
-        <text>Display current entity counts and protection statistics via PDA.</text>
-    </string>
-    <!-- Development - Population Reset -->
-    <string id="ui_mcm_ag_hdr_population">
-        <text>Population Reset</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_delete_common">
-        <text>Delete common squads</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_delete_common_desc">
-        <text>Remove all common (respawnable) squads. Story and quest squads kept. Smart terrains repopulate naturally.</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_delete_all">
-        <text>Delete all squads</text>
-    </string>
-    <string id="ui_mcm_ag_development_btn_delete_all_desc">
-        <text>Remove ALL squads including story squads. May break active quests. Use as last resort.</text>
-    </string>
 </string_table>

@@ -5,8 +5,8 @@
     <text>AlifeGuard</text>
   </string>
   <!-- ==================== TAB NAMES ==================== -->
-  <string id="ui_mcm_menu_general">
-    <text>Общие</text>
+  <string id="ui_mcm_menu_online_guard">
+    <text>Онлайн-охрана</text>
   </string>
   <string id="ui_mcm_menu_development">
     <text>Разработка</text>
@@ -15,73 +15,73 @@
   <string id="ui_mcm_ag_title">
     <text>AlifeGuard</text>
   </string>
-  <string id="ui_mcm_ag_general_info">
+  <string id="ui_mcm_ag_online_guard_info">
     <text>A-Life в поздней игре накапливает слишком много активных сущностей. AlifeGuard управляет онлайн-популяцией: поотрядная очистка, равномерное распределение между фракциями, гистерезис для предотвращения колебаний. Отряды выживают, умные территории работают стабильно.</text>
   </string>
   <!-- General - Entity limits -->
   <string id="ui_mcm_ag_hdr_online">
     <text>Лимиты сущностей</text>
   </string>
-  <string id="ui_mcm_ag_general_enabled">
+  <string id="ui_mcm_ag_online_guard_enabled">
     <text>Включить онлайн-контроль</text>
   </string>
-  <string id="ui_mcm_ag_general_enabled_desc">
+  <string id="ui_mcm_ag_online_guard_enabled_desc">
     <text>Ограничить активные сущности вокруг вас. Дальние уходят в офлайн первыми. Торговцы, компаньоны, квестовые цели защищены.</text>
   </string>
-  <string id="ui_mcm_ag_general_max">
+  <string id="ui_mcm_ag_online_guard_max">
     <text>Максимум онлайн</text>
   </string>
-  <string id="ui_mcm_ag_general_max_desc">
+  <string id="ui_mcm_ag_online_guard_max_desc">
     <text>Сколько сталкеров и мутантов могут быть активны одновременно. Меньше = лучше FPS в плотных зонах.</text>
   </string>
-  <string id="ui_mcm_ag_general_buffer">
+  <string id="ui_mcm_ag_online_guard_buffer">
     <text>Буфер гистерезиса</text>
   </string>
-  <string id="ui_mcm_ag_general_buffer_desc">
+  <string id="ui_mcm_ag_online_guard_buffer_desc">
     <text>Цель очистки = максимум минус буфер. Предотвращает колебания: очистка запускается реже, так как популяция должна снова превысить максимум. 0 отключает.</text>
   </string>
-  <string id="ui_mcm_ag_general_check_interval">
+  <string id="ui_mcm_ag_online_guard_check_interval">
     <text>Интервал проверки</text>
   </string>
-  <string id="ui_mcm_ag_general_check_interval_desc">
+  <string id="ui_mcm_ag_online_guard_check_interval_desc">
     <text>[секунды]\nКак часто проверять количество сущностей. Меньше = быстрее реакция, но небольшая нагрузка. 30 -- сбалансировано.</text>
   </string>
   <!-- General - Protection -->
   <string id="ui_mcm_ag_hdr_protection">
     <text>Правила защиты</text>
   </string>
-  <string id="ui_mcm_ag_general_check_tasks">
+  <string id="ui_mcm_ag_online_guard_check_tasks">
     <text>Защищать квестовых NPC</text>
   </string>
-  <string id="ui_mcm_ag_general_check_tasks_desc">
+  <string id="ui_mcm_ag_online_guard_check_tasks_desc">
     <text>NPC, связанные с активными заданиями, не могут быть удалены. Отключите, если Зона должна быть безразлична к вашим целям.</text>
   </string>
-  <string id="ui_mcm_ag_general_prioritize_distant">
+  <string id="ui_mcm_ag_online_guard_prioritize_distant">
     <text>Удалять дальних первыми</text>
   </string>
-  <string id="ui_mcm_ag_general_prioritize_distant_desc">
+  <string id="ui_mcm_ag_online_guard_prioritize_distant_desc">
     <text>Удалять дальние сущности первыми. Если выключено -- случайный выбор.</text>
   </string>
-  <string id="ui_mcm_ag_general_squad_culling">
+  <string id="ui_mcm_ag_online_guard_squad_culling">
     <text>Поотрядная очистка</text>
   </string>
-  <string id="ui_mcm_ag_general_squad_culling_desc">
+  <string id="ui_mcm_ag_online_guard_squad_culling_desc">
     <text>Удалять членов отрядов перед командирами. Сохраняет отряды, предотвращает цикл перерождения. Если выключено, все сущности удаляются индивидуально как в v1.0.</text>
   </string>
-  <string id="ui_mcm_ag_general_round_robin">
+  <string id="ui_mcm_ag_online_guard_round_robin">
     <text>Равномерная очистка</text>
   </string>
-  <string id="ui_mcm_ag_general_round_robin_desc">
+  <string id="ui_mcm_ag_online_guard_round_robin_desc">
     <text>Распределять удаления равномерно между фракциями и типами мутантов. Если выключено, удаляются дальние сущности независимо от фракции.</text>
   </string>
   <!-- General - Notifications -->
   <string id="ui_mcm_ag_hdr_notifications">
     <text>Уведомления</text>
   </string>
-  <string id="ui_mcm_ag_general_pda">
+  <string id="ui_mcm_ag_online_guard_pda">
     <text>Сообщения КПК</text>
   </string>
-  <string id="ui_mcm_ag_general_pda_desc">
+  <string id="ui_mcm_ag_online_guard_pda_desc">
     <text>Показывать статистику очистки через КПК при удалении сущностей.</text>
   </string>
   <!-- ==================== DEVELOPMENT TAB ==================== -->
@@ -115,47 +115,35 @@
   <string id="ui_mcm_ag_hdr_sanitize">
     <text>Санитайзер смарт-террейнов</text>
   </string>
-  <string id="ui_mcm_ag_general_sanitize_smarts">
+  <string id="ui_mcm_ag_smart_sanitizer_sanitize_smarts">
     <text>Очистка смарт-террейнов</text>
   </string>
-  <string id="ui_mcm_ag_general_sanitize_smarts_desc">
+  <string id="ui_mcm_ag_smart_sanitizer_sanitize_smarts_desc">
     <text>Очищает поврежденные счётчики already_spawned на смарт-террейнах. Отрицательные или нечисловые значения вызывают краш сохранения (запись u8 в smart_terrain.script:955) и бесконечный респаун (max &gt; num всегда истина). Возникает при использовании мод-деспавнеров отдельных NPC, которые конфликтуют с движковым декрементом в on_unregister. Очистка запускается при загрузке (до запуска alife pump) и периодически во время игры. Безопасно оставить включенным. По умолчанию: вкл.</text>
   </string>
-  <string id="ui_mcm_ag_general_sanitize_interval">
+  <string id="ui_mcm_ag_smart_sanitizer_sanitize_interval">
     <text>Интервал очистки (с)</text>
   </string>
-  <string id="ui_mcm_ag_general_sanitize_interval_desc">
+  <string id="ui_mcm_ag_smart_sanitizer_sanitize_interval_desc">
     <text>Интервал в секундах реального времени между периодическими проходами очистки. Стоимость менее миллисекунды независимо от интервала (чистый Lua-обход SIMBOARD.smarts). 300 с — разумное значение по умолчанию; уменьшайте только если наблюдаете быструю порчу данных от другого мода. По умолчанию: 300.</text>
   </string>
-  <string id="ui_mcm_ag_hdr_diagnostics">
-    <text>Диагностика</text>
-  </string>
-  <string id="ui_mcm_ag_development_btn_show_status">
-    <text>Показать статус</text>
-  </string>
-  <string id="ui_mcm_ag_development_btn_show_status_desc">
-    <text>Отобразить текущее количество сущностей и статистику защиты через КПК.</text>
-  </string>
   <!-- Development - Population Reset -->
-  <string id="ui_mcm_ag_hdr_population">
-    <text>Сброс популяции</text>
-  </string>
-  <string id="ui_mcm_ag_development_btn_delete_common">
-    <text>Удалить обычные отряды</text>
-  </string>
-  <string id="ui_mcm_ag_development_btn_delete_common_desc">
-    <text>Удалить все обычные (перерождаемые) отряды. Сюжетные и квестовые отряды сохранены. Умные территории восполнят естественно.</text>
-  </string>
-  <string id="ui_mcm_ag_development_btn_delete_all">
-    <text>Удалить все отряды</text>
-  </string>
-  <string id="ui_mcm_ag_development_btn_delete_all_desc">
-    <text>Удалить ВСЕ отряды, включая сюжетные. Может сломать активные квесты. Используйте как последнее средство.</text>
-  </string>
-  <string id="ui_mcm_ag_general_pda_sound">
+  <string id="ui_mcm_ag_online_guard_pda_sound">
     <text>Звук уведомления</text>
   </string>
-  <string id="ui_mcm_ag_general_pda_sound_desc">
+  <string id="ui_mcm_ag_online_guard_pda_sound_desc">
     <text>Краткий пси-сигнал при уведомлении. Не навязчивый. Отключите для тихих уведомлений.</text>
+  </string>
+  <string id="ui_mcm_menu_smart_sanitizer">
+    <text>Очиститель смарт-террейнов</text>
+  </string>
+  <string id="ui_mcm_ag_smart_sanitizer_info">
+    <text>Исправляет повреждённые счётчики already_spawned. Предотвращает падения сохранений и бесконечные циклы спавна от модов-спавнеров и деспавнеров.</text>
+  </string>
+  <string id="ui_mcm_ag_development_btn_reset_all">
+    <text>Сбросить настройки</text>
+  </string>
+  <string id="ui_mcm_ag_development_btn_reset_all_desc">
+    <text>Сбросить все настройки AlifeGuard MCM к заводским значениям. Используйте после обновления с версии с другой структурой MCM (старые ключи остаются в файле хранилища MCM, но больше не применяются).</text>
   </string>
 </string_table>

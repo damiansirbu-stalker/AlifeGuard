@@ -3,7 +3,7 @@
 -- ==================== DEFAULTS ====================
 
 defaults = {
-    -- Population Control
+    -- Online Guard
     enabled = true,
     max = 80,
     buffer = 10,
@@ -28,11 +28,14 @@ defaults = {
 local RegisterScriptCallback = RegisterScriptCallback
 
 local _key_to_tab = {
+    sanitize_smarts = "smart_sanitizer",
+    sanitize_interval = "smart_sanitizer",
     log_level = "development",
+    btn_reset_all = "development",
 }
 
 local function path_builder(key)
-    local tab = _key_to_tab[key] or "general"
+    local tab = _key_to_tab[key] or "online_guard"
     return "ag/" .. tab .. "/" .. key
 end
 
@@ -40,22 +43,37 @@ cfg, get_config, load_config = xmcm.create_config("ag", defaults, path_builder)
 
 -- ==================== BUTTON HANDLERS ====================
 
-function btn_show_status()
-    if ag_population and ag_population.show_status then
-        ag_population.show_status()
+-- functor_ui receives the UI_MCM instance as trailing arg (ui_mcm.script:1435).
+-- functor would receive nothing. MCM 1.7.2fix leaves the file-local GUI nil on fresh opens
+-- (only Open_to sets it, and Reset_last_opt skips Open_to when last_path is nil), so
+-- ui_mcm.get_gui() returns nil. functor_ui sidesteps that bug.
+-- MCM keeps file-local opt_temp (pending widget edits) at ui_mcm.script:175. Any widget
+-- the user touched before clicking the profile button is still there, and On_Accept at
+-- ui_mcm.script:2393 writes opt_temp AFTER our config writes, partially un-applying the
+-- profile. On_Discard flushes opt_temp and closes the dialog; same path the Cancel button
+-- takes.
+local function _apply_defaults(gui, msg)
+    local config = axr_main.config
+    for k, v in pairs(defaults) do
+        config:w_value("mcm", path_builder(k), v)
+    end
+    config:save()
+    load_config()
+    if gui then
+        if gui.owner and gui.owner.SetMsg then
+            gui.owner:SetMsg(msg, 5)
+        end
+        if gui.On_Discard then
+            gui:On_Discard()
+        end
+    end
+    if db.actor then
+        news_manager.send_tip(db.actor, msg, nil, nil, 5000)
     end
 end
 
-function btn_delete_common()
-    if ag_population and ag_population.delete_common_squads then
-        ag_population.delete_common_squads()
-    end
-end
-
-function btn_delete_all()
-    if ag_population and ag_population.delete_all_squads then
-        ag_population.delete_all_squads()
-    end
+function btn_reset_all(gui)
+    _apply_defaults(gui, "AlifeGuard: all settings restored to defaults.")
 end
 
 -- ==================== MCM DEFINITION ====================
@@ -64,16 +82,16 @@ function on_mcm_load()
     return {
         id = "ag",
         gr = {
-            -- ============ GENERAL TAB ============
+            -- ============ ONLINE GUARD TAB ============
             {
-                id = "general",
+                id = "online_guard",
                 sh = true,
                 gr = {
                     { id = "title", type = "slide", link = "ag_mcm_banner",
                         text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
-                    { id = "desc", type = "desc", text = "ui_mcm_ag_general_info" },
+                    { id = "desc", type = "desc", text = "ui_mcm_ag_online_guard_info" },
 
-                    -- Online Guard
+                    -- Entity Limits
                     { id = "div_online", type = "line" },
                     { id = "hdr_online", type = "desc", text = "ui_mcm_ag_hdr_online", clr = {255, 200, 200, 200} },
                     { id = "enabled", type = "check", val = 1, def = true },
@@ -95,7 +113,21 @@ function on_mcm_load()
                     { id = "pda", type = "check", val = 1, def = true },
                     { id = "pda_sound", type = "check", val = 1, def = true },
 
-                    -- Smart Sanitizer
+                    -- Version footer
+                    { id = "div_version", type = "line" },
+                    { id = "version", type = "desc", text = "ui_mcm_ag_title",
+                        ui_hook_functor = { set_version_text }, clr = {255, 212, 201, 168} },
+                },
+            },
+            -- ============ SMART SANITIZER TAB ============
+            {
+                id = "smart_sanitizer",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "ag_mcm_banner",
+                        text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_ag_smart_sanitizer_info" },
+
                     { id = "div_sanitize", type = "line" },
                     { id = "hdr_sanitize", type = "desc", text = "ui_mcm_ag_hdr_sanitize", clr = {255, 200, 200, 200} },
                     { id = "sanitize_smarts", type = "check", val = 1, def = true },
@@ -116,6 +148,10 @@ function on_mcm_load()
                         text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
                     { id = "desc", type = "desc", text = "ui_mcm_ag_development_desc" },
 
+                    -- Reset
+                    { id = "div_reset", type = "line" },
+                    { id = "btn_reset_all", type = "button", functor_ui = { btn_reset_all } },
+
                     -- Logging
                     { id = "div_logging", type = "line" },
                     { id = "hdr_logging", type = "desc", text = "ui_mcm_ag_hdr_logging", clr = {255, 200, 200, 200} },
@@ -128,16 +164,6 @@ function on_mcm_load()
                         },
                     },
 
-                    -- Diagnostics
-                    { id = "div_diagnostics", type = "line" },
-                    { id = "hdr_diagnostics", type = "desc", text = "ui_mcm_ag_hdr_diagnostics", clr = {255, 200, 200, 200} },
-                    { id = "btn_show_status", type = "button", functor = { btn_show_status } },
-
-                    -- Population Reset
-                    { id = "div_population", type = "line" },
-                    { id = "hdr_population", type = "desc", text = "ui_mcm_ag_hdr_population", clr = {255, 200, 200, 200} },
-                    { id = "btn_delete_common", type = "button", functor = { btn_delete_common } },
-                    { id = "btn_delete_all", type = "button", functor = { btn_delete_all } },
                 },
             },
         },
