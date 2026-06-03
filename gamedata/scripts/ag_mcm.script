@@ -63,8 +63,16 @@ local function _apply_defaults(gui, msg)
         if gui.owner and gui.owner.SetMsg then
             gui.owner:SetMsg(msg, 5)
         end
-        if gui.On_Discard then
-            gui:On_Discard()
+        -- Close via On_Cancel, not On_Discard. On_Discard calls Reset_opt -> scroll_opt:Clear
+        -- at ui_mcm.script:949, which destroys the btn_reset_all button while its click
+        -- handler is still on the stack; C++ dispatcher returns into the freed control and
+        -- SEH-fires on some exe builds (e.g. modified vanilla 1.5.3). On_Cancel only calls
+        -- HideDialog + Unregister_UI -- scroll_opt children stay alive long enough for the
+        -- handler to unwind. Trade-off: opt_temp is not cleared (vanilla Cancel-without-prompt
+        -- parity). If the user touched widgets before clicking reset, those edits remain
+        -- pending and will be re-applied on the next On_Accept.
+        if gui.On_Cancel then
+            gui:On_Cancel()
         end
     end
     if db.actor then
@@ -150,6 +158,7 @@ function on_mcm_load()
 
                     -- Reset
                     { id = "div_reset", type = "line" },
+                    { id = "warn_reset", type = "desc", text = "ui_mcm_ag_development_reset_warning", clr = {255, 240, 200, 80} },
                     { id = "btn_reset_all", type = "button", functor_ui = { btn_reset_all } },
 
                     -- Logging

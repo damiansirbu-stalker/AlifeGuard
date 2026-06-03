@@ -146,4 +146,7 @@
   <string id="ui_mcm_ag_development_btn_reset_all_desc">
     <text>Сбросить все настройки AlifeGuard MCM к заводским значениям. Используйте после обновления с версии с другой структурой MCM (старые ключи остаются в файле хранилища MCM, но больше не применяются).</text>
   </string>
+  <string id="ui_mcm_ag_development_reset_warning">
+    <text>Внимание: сохраните или отмените незавершённые изменения MCM; иначе они перезапишут сброс при следующем Принять.</text>
+  </string>
 </string_table>
