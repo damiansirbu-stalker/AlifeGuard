@@ -79,6 +79,7 @@ AlifeBalance (respawn pacing) -- https://www.moddb.com/mods/stalker-anomaly/addo
 
 Requirements:
 Anomaly 1.5.3
+themrdemonized modded exes 2026.6.1+ (https://github.com/themrdemonized/xray-monolith)
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
