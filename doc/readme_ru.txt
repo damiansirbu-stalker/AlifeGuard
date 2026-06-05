@@ -5,6 +5,12 @@ GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 English: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme.txt
 Баги, предложения: https://github.com/damiansirbu-stalker/AlifeGuard/issues
 
+Коллекция Alife:
+AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
+AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
+AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
+AlifeTactics: TBD
+
 ! Сбросьте настройки MCM при обновлении до новой версии !
 
 A-Life в поздней игре накапливает слишком много активных сущностей. AI, физика и
@@ -76,12 +82,6 @@ MCM:
   (квестовые NPC, дальние первыми, поотрядная очистка, round-robin), уведомления КПК,
   Санитайзер смарт-террейнов (переключатель, интервал).
   Разработка: уровень логов (ERROR/WARN/INFO/DEBUG), диагностика, сброс популяции.
-
-Коллекция Alife:
-AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
-AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
-AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
-AlifeTactics: TBD
 
 Требования:
 Anomaly 1.5.3

@@ -5,6 +5,12 @@ Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/chang
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
 Bugs, suggestions: https://github.com/damiansirbu-stalker/AlifeGuard/issues
 
+Alife Collection:
+AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
+AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
+AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
+AlifeTactics: TBD
+
 ! Reset MCM settings to defaults after updating !
 
 Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all
@@ -71,12 +77,6 @@ MCM:
   (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications,
   Smart Sanitizer (toggle, interval).
   Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
-
-Alife Collection:
-AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
-AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
-AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
-AlifeTactics: TBD
 
 Requirements:
 Anomaly 1.5.3
