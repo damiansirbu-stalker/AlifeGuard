@@ -1,5 +1,5 @@
 AlifeGuard: A-Life population governor for STALKER Anomaly, by Damian
-Version: 1.2.6 (xlibs 1.7.1)
+Version: 1.2.6 (xlibs 1.7.1, demonized 20260601)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
@@ -72,14 +72,15 @@ MCM:
   Smart Sanitizer (toggle, interval).
   Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
-Companion mods:
-
-AlifePlus (reactive A-Life framework) -- https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01 | https://www.nexusmods.com/stalkeranomaly/mods/105
-AlifeBalance (respawn pacing) -- https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance | https://www.nexusmods.com/stalkeranomaly/mods/110
+Alife Collection:
+AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
+AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
+AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
+AlifeTactics: TBD
 
 Requirements:
 Anomaly 1.5.3
-themrdemonized modded exes 2026.6.1+ (https://github.com/themrdemonized/xray-monolith)
+demonized 20260601+ (https://github.com/themrdemonized/xray-monolith)
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 

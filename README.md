@@ -4,11 +4,13 @@ Too many online entities kill performance. AlifeGuard keeps the count under a co
 
 [ModDB](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001) | [Nexus](https://www.nexusmods.com/stalkeranomaly/mods/104) | [Releases](https://github.com/damiansirbu-stalker/AlifeGuard/releases) | [Bugs, suggestions](https://github.com/damiansirbu-stalker/AlifeGuard/issues)
 
-Requires: Anomaly 1.5.3, Modded exes, [xlibs](https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001), MCM
+Requires: Anomaly 1.5.3, [demonized 20260601+](https://github.com/themrdemonized/xray-monolith), [xlibs 1.7.1](https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001), MCM
 
-Companion mods:
-- AlifePlus ([ModDB](https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01) · [Nexus](https://www.nexusmods.com/stalkeranomaly/mods/105)) — reactive A-Life framework
-- AlifeBalance ([ModDB](https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance) · [Nexus](https://www.nexusmods.com/stalkeranomaly/mods/110)) — respawn pacing
+Alife Collection:
+- [AlifePlus](https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01)
+- [AlifeBalance](https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance)
+- [AlifeGuard](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001)
+- [AlifeTactics](TBD)
 
 ## Documentation
 

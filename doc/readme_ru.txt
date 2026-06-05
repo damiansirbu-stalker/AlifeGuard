@@ -1,5 +1,5 @@
 AlifeGuard: Губернатор популяции A-Life для STALKER Anomaly, автор Damian
-Версия: 1.2.6 (xlibs 1.7.1)
+Версия: 1.2.6 (xlibs 1.7.1, demonized 20260601)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Список изменений: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 English: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme.txt
@@ -77,14 +77,15 @@ MCM:
   Санитайзер смарт-террейнов (переключатель, интервал).
   Разработка: уровень логов (ERROR/WARN/INFO/DEBUG), диагностика, сброс популяции.
 
-Моды-компаньоны:
-
-AlifePlus (реактивный фреймворк A-Life) -- https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01 | https://www.nexusmods.com/stalkeranomaly/mods/105
-AlifeBalance (темп респавна) -- https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance | https://www.nexusmods.com/stalkeranomaly/mods/110
+Коллекция Alife:
+AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
+AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
+AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
+AlifeTactics: TBD
 
 Требования:
 Anomaly 1.5.3
-themrdemonized modded exes 2026.6.1+ (https://github.com/themrdemonized/xray-monolith)
+demonized 20260601+ (https://github.com/themrdemonized/xray-monolith)
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
