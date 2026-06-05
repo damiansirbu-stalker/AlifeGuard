@@ -524,7 +524,6 @@ end
 
 function on_game_start()
     load_config()
-    log.info("AlifeGuard v%s (xlibs v%s)", _ag_deps.get_version(), xlibs.get_version())
     level_load_time = clock()
 
     RegisterScriptCallback("actor_on_update", actor_on_update)
