@@ -1,5 +1,5 @@
 AlifeGuard: A-Life population governor for STALKER Anomaly, by Damian
-Version: 1.2.6 (xlibs 1.7.1, demonized 20260601)
+Version: 1.2.6 (xlibs 1.7.1, demonized 20250908, AOEngine v0.55)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
@@ -80,7 +80,7 @@ MCM:
 
 Requirements:
 Anomaly 1.5.3
-demonized 20260601+ (https://github.com/themrdemonized/xray-monolith)
+demonized 20250908+ (https://github.com/themrdemonized/xray-monolith) OR AOEngine v0.55+ (https://github.com/Mirrowel/AOEngine-Assets)
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 

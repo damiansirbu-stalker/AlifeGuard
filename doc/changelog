@@ -1,3 +1,8 @@
+next
+  Summary: AOEngine compatibility
+
+  - Added AOEngine v0.55+ support.
+
 1.2.6
   Summary: MCM reset crash fix, reset warning
 
