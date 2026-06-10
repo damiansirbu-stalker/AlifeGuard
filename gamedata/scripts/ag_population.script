@@ -165,8 +165,10 @@ local function _classify(obj)
 end
 
 -- Process single online entity into _squads or orphans
-local function _process_entity(obj, ctx)
-    local id = obj:id()
+-- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
+local function _process_entity(obj, id, ctx)
+    local se_obj = alife_object(id)
+    if not se_obj then ctx.stats.skipped = ctx.stats.skipped + 1; return end
     if id == ctx.actor_id then return end
 
     local obj_is_stalker = _classify(obj)
@@ -179,8 +181,7 @@ local function _process_entity(obj, ctx)
 
     local obj_pos = obj:position()
     local dist_sq = obj_pos and ctx.actor_pos:distance_to_sqr(obj_pos) or 0
-    local se_obj = alife_object(id)
-    local group_id = se_obj and se_obj.group_id
+    local group_id = se_obj.group_id
     local is_orphan = not group_id or group_id == INVALID_GROUP
 
     if is_orphan and xcreature.is_unscriptable(obj) then ctx.stats.protected = ctx.stats.protected + 1; return end
@@ -226,8 +227,8 @@ local function _collect_online()
     local iter_timer = xprofiler.new_if(_dbg)
     iter_timer:start()
 
-    for obj in xcreature.online_iter() do
-        _process_entity(obj, ctx)
+    for id, obj in xcreature.online_iter_with_id() do
+        _process_entity(obj, id, ctx)
     end
 
     iter_timer:stop()
