@@ -37,7 +37,10 @@
 <h2>Uninstall (MO2)</h2>
 <p>Disable or remove in MO2.</p>
 <h2>Compatibility</h2>
-<p>Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).<br />Does not modify base scripts. Uses the standard engine API (alife_release).<br />Compatible with A-Life config tweaks (alife.ltx tuning, smart terrain max_population adjustments, Redone Alife Performance, x3 performance tweaks). These mods change engine parameters while AlifeGuard works at the script level, so they do not overlap.<br />Disable other despawn mods (e.g. Grok's Despawner) when using AlifeGuard. Running two population governors causes conflicting release decisions, respawn churn, and entity leaks.</p>
+<p>Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).<br />Does not modify base scripts. Uses the standard engine API (alife_release).</p>
+<p><b>Superseded (AlifeGuard does this - drop the other):</b><br />Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, churning respawns.</p>
+<p><b>Conflicts (pick one - two governors fight):</b><br />Any other despawn / population-release mod: conflicting releases, respawn churn, entity leaks.<br />Extended sim-distance / offline-range mods (Living Zone 2000m, Extended Offline, ROAD alife range 666): expand the population while AlifeGuard contracts it; they oscillate.</p>
+<p><b>Affects / coexists:</b><br />A-Life config tweaks (alife.ltx, smart max_population, Redone Alife Performance, x3 perf): engine-parameter layer, no overlap.<br />AlifeBalance: different axis (respawn acceleration vs distant-NPC release); composes.</p>
 <h2>Known issue</h2>
 <p>Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's inventory parent tracking, present in all population mods. No script-side fix exists.</p>
 <h2>Architecture</h2>
