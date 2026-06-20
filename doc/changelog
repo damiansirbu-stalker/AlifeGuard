@@ -1,15 +1,9 @@
-next
-  Summary: AOEngine compatibility, destroyed-object guard in population scan
+1.2.7
+  Summary: AOEngine compatibility, fewer engine warnings, MCM reset moved
 
   - Added AOEngine v0.55+ support.
-
-  Population
-    - _collect_online switched to xcreature.online_iter_with_id with alife_object(id) guard at
-      _process_entity entry. Skips entities whose alife server entry is already released, eliminating
-      the burst of "you are trying to use a destroyed object [N]" warnings (id, IsStalker:clsid,
-      IsMonster:clsid, alive, position) emitted per cycle when a creature is mid-destroy.
-    - Stats line shift: nil-server entries now counted in ctx.stats.skipped instead of orphans
-      (they would have been no-op'd by safe_release's own alife_object check anyway).
+  - Fixed a burst of "trying to use a destroyed object" warnings logged when a creature despawns during a cleanup cycle.
+  - Moved the Reset button to the bottom of the Development tab in MCM.
 
 1.2.6
   Summary: MCM reset crash fix, reset warning

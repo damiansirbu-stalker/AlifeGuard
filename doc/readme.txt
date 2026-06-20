@@ -1,5 +1,5 @@
 AlifeGuard: A-Life population governor for STALKER Anomaly, by Damian
-Version: 1.2.6 (xlibs 1.7.1, demonized 20250908, AOEngine v0.55)
+Version: 1.2.7 (xlibs 1.7.7)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
@@ -80,7 +80,6 @@ MCM:
 
 Requirements:
 Anomaly 1.5.3
-demonized 20250908+ (https://github.com/themrdemonized/xray-monolith) OR AOEngine v0.55+ (https://github.com/Mirrowel/AOEngine-Assets)
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
@@ -94,7 +93,9 @@ Uninstall (MO2):
 Disable or remove in MO2.
 
 Compatibility:
-Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).
+Requires xlibs.
+Runs on themrdemonized modded exes 2025.9.10 or newer, or AOEngine v0.55 or newer.
+The full feature set needs the latest demonized build. A feature that needs a newer build stays inactive on older exes.
 Does not modify base scripts. Uses the standard engine API (alife_release).
 Superseded (AlifeGuard does this - drop the other):
 - Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, churning respawns.
@@ -143,3 +144,14 @@ Usage and License:
   Addons, patches, integrations: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.
   Reproducing the implementation in other software: not allowed, even with credit.
   Full license in LICENSE file and on GitHub.
+
+Reporting issues and suggestions
+Open a bug report or a suggestion at https://github.com/damiansirbu-stalker/AlifeGuard/issues/new/choose.
+Also discussed on the GAMMA, EFP, Anomaly, and Zona Discord servers.
+
+Before posting, read this readme and the MCM options.
+
+Include:
+- Exact steps to reproduce, from a new game or a named save, with expected and actual result.
+- xray.log and the mod debug log (MCM log level DEBUG), plus engine build, modlist, load order.
+- Describe the behavior. With hundreds of mods and overrides, only the log shows whether this mod was involved and what caused it.

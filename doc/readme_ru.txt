@@ -1,5 +1,5 @@
 AlifeGuard: Губернатор популяции A-Life для STALKER Anomaly, автор Damian
-Версия: 1.2.6 (xlibs 1.7.1, demonized 20250908, AOEngine v0.55)
+Версия: 1.2.7 (xlibs 1.7.7)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Список изменений: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 English: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme.txt
@@ -85,7 +85,6 @@ MCM:
 
 Требования:
 Anomaly 1.5.3
-demonized 20250908+ (https://github.com/themrdemonized/xray-monolith) OR AOEngine v0.55+ (https://github.com/Mirrowel/AOEngine-Assets)
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
@@ -99,7 +98,9 @@ MCM
 Отключите или удалите в MO2.
 
 Совместимость:
-Протестирован на ванильном Anomaly 1.5.3, Demonized main, Demonized MT и AOEngine (актуальные версии).
+Требует xlibs.
+Работает на моддированных exe themrdemonized 2025.9.10 или новее, либо AOEngine v0.55 или новее.
+Полный набор функций требует последней сборки demonized. Функция, которой нужна более новая сборка, остаётся неактивной на старых exe.
 Не модифицирует базовые скрипты. Использует стандартный API движка (alife_release).
 Заменяет (AlifeGuard делает то же — отключите другой мод):
 - Grok's Dynamic Despawner: та же задача, но течёт память (table.remove во время итерации)
@@ -151,3 +152,14 @@ Altogolik -- поддержка, идеи, исходные материалы
   Аддоны, патчи, интеграции: разрешены. Укажите "AlifeGuard by Damian Sirbu" заметно на странице вашего мода.
   Воспроизведение реализации в другом программном обеспечении: запрещено, даже с указанием авторства.
   Полная лицензия в файле LICENSE и на GitHub.
+
+Сообщения о проблемах и предложения
+Создайте баг-репорт или предложение на https://github.com/damiansirbu-stalker/AlifeGuard/issues/new/choose.
+Также обсуждается на Discord-серверах GAMMA, EFP, Anomaly и Zona.
+
+Перед публикацией прочитайте этот readme и опции MCM.
+
+Приложите:
+- Точные шаги воспроизведения, с новой игры или с названного сохранения, ожидаемый и фактический результат.
+- xray.log и отладочный лог мода (уровень логов DEBUG в MCM), сборку движка, список модов и порядок загрузки.
+- Опишите поведение. Среди сотен модов и переопределений только лог показывает, причастен ли этот мод и в чём причина.

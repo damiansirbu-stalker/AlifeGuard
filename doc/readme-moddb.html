@@ -1,4 +1,4 @@
-<h3>Version: 1.2.6 (xlibs 1.7.1, demonized 20250908, AOEngine v0.55)</h3>
+<h3>Version: 1.2.7 (xlibs 1.7.7)</h3>
 <h3>GitHub: <a href="https://github.com/damiansirbu-stalker/AlifeGuard">https://github.com/damiansirbu-stalker/AlifeGuard</a></h3>
 <h3>Changelog: <a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog">doc/changelog</a> | <a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt">Na russkom</a> | <a href="https://github.com/damiansirbu-stalker/AlifeGuard/issues">Bugs, suggestions</a></h3>
 <h2>Alife Collection</h2>
@@ -31,13 +31,18 @@
 <h2>MCM</h2>
 <p>General: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications, Smart Sanitizer (toggle, interval).<br />Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.</p>
 <h2>Requirements</h2>
-<p>Anomaly 1.5.3<br /><a href="https://github.com/themrdemonized/xray-monolith">demonized</a> 20250908+ OR <a href="https://github.com/Mirrowel/AOEngine-Assets">AOEngine</a> v0.55+<br /><a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a><br />MCM</p>
+<p>Anomaly 1.5.3<br /><a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a><br />MCM</p>
 <h2>Install (MO2)</h2>
 <p>1. Install xlibs<br />2. Install AlifeGuard<br />3. Load order does not matter<br />4. Configure via MCM</p>
 <h2>Uninstall (MO2)</h2>
 <p>Disable or remove in MO2.</p>
 <h2>Compatibility</h2>
-<p>Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).<br />Does not modify base scripts. Uses the standard engine API (alife_release).</p>
+<ul>
+<li>Requires xlibs.</li>
+<li>Runs on themrdemonized modded exes 2025.9.10 or newer, or AOEngine v0.55 or newer.</li>
+<li>The full feature set needs the latest demonized build. A feature that needs a newer build stays inactive on older exes.</li>
+</ul>
+<p>Does not modify base scripts. Uses the standard engine API (alife_release).</p>
 <p><b>Superseded (AlifeGuard does this - drop the other):</b><br />Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, churning respawns.</p>
 <p><b>Conflicts (pick one - two governors fight):</b><br />Any other despawn / population-release mod: conflicting releases, respawn churn, entity leaks.<br />Extended sim-distance / offline-range mods (Living Zone 2000m, Extended Offline, ROAD alife range 666): expand the population while AlifeGuard contracts it; they oscillate.</p>
 <p><b>Affects / coexists:</b><br />A-Life config tweaks (alife.ltx, smart max_population, Redone Alife Performance, x3 perf): engine-parameter layer, no overlap.<br />AlifeBalance: different axis (respawn acceleration vs distant-NPC release); composes.</p>
@@ -67,3 +72,13 @@
 <p>Credits:<br />Altogolik - support, ideas, source materials</p>
 <h2>Usage and License</h2>
 <p>Modpacks: allowed and encouraged. Keep the readme and license files.<br />Addons, patches, integrations: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.<br />Reproducing the implementation in other software: not allowed, even with credit.<br />Full license in LICENSE file and on GitHub.</p>
+
+<h2>Reporting issues and suggestions</h2>
+<p>Open a <a href="https://github.com/damiansirbu-stalker/AlifeGuard/issues/new/choose">bug report or a suggestion on GitHub</a>.<br />Also discussed on the GAMMA, EFP, Anomaly, and Zona Discord servers.</p>
+<p>Before posting, read this readme and the MCM options.</p>
+<p>Include:</p>
+<ul>
+<li>Exact steps to reproduce, from a new game or a named save, with expected and actual result.</li>
+<li>xray.log and the mod debug log (MCM log level DEBUG), plus engine build, modlist, load order.</li>
+<li>Describe the behavior. With hundreds of mods and overrides, only the log shows whether this mod was involved and what caused it.</li>
+</ul>
