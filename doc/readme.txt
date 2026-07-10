@@ -52,6 +52,15 @@ Protection:
   are never removed. Squad-level checks with positive-only TTL cache. Per-member fallback
   catches named NPCs who are not squad commanders.
 
+Offline Guard:
+  The online guard only sees entities around you. Offline hubs on other levels can pack up
+  dozens of squads that all come online at once when you fast-travel in, spiking the count
+  before the online guard reacts. The Offline Guard scans offline population density per
+  region in the background and thins badly crowded regions down to the online maximum
+  before you arrive. Same protections as the online guard: commanders are kept, protected
+  squads are untouched, mod-scripted squads are thinned last. Toggle, headroom factor,
+  and scan tick in MCM.
+
 Smart Sanitizer:
   Defensive pass that clamps corrupted respawn counters on smart terrains. Negative or
   non-numeric already_spawned values cause save crashes (u8 write overflow at STATE_Write)
@@ -73,9 +82,10 @@ Mod compatibility:
   Other mods direct the world. AlifeGuard keeps it performant.
 
 MCM:
-  General: population limits, hysteresis buffer, check interval, protection rules
-  (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications,
-  Smart Sanitizer (toggle, interval).
+  Online Guard: population limits, hysteresis buffer, check interval, protection rules
+  (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.
+  Offline Guard: toggle, density headroom, scan tick.
+  Smart Sanitizer: toggle, interval.
   Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
 Requirements:

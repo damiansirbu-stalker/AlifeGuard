@@ -15,6 +15,11 @@ defaults = {
     pda = true,
     pda_sound = true,
 
+    -- Offline Guard
+    density_enabled = true,
+    density_headroom = 1.5,
+    density_interval = 1,
+
     -- Smart Sanitizer
     sanitize_smarts = true,
     sanitize_interval = 300,
@@ -28,6 +33,9 @@ defaults = {
 local RegisterScriptCallback = RegisterScriptCallback
 
 local _key_to_tab = {
+    density_enabled = "offline_guard",
+    density_headroom = "offline_guard",
+    density_interval = "offline_guard",
     sanitize_smarts = "smart_sanitizer",
     sanitize_interval = "smart_sanitizer",
     log_level = "development",
@@ -125,6 +133,22 @@ function on_mcm_load()
                     { id = "div_footer", type = "line" },
                     { id = "platform", type = "desc", text = "ui_mcm_xmcm_footer",
                         ui_hook_functor = { _ag_deps.platform_functor() }, clr = {255, 212, 201, 168} },                },
+            },
+            -- ============ OFFLINE GUARD TAB ============
+            {
+                id = "offline_guard",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "ag_mcm_banner",
+                        text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_ag_offline_guard_info" },
+
+                    { id = "div_density", type = "line" },
+                    { id = "hdr_density", type = "desc", text = "ui_mcm_ag_hdr_density", clr = {255, 200, 200, 200} },
+                    { id = "density_enabled", type = "check", val = 1, def = true },
+                    { id = "density_headroom", type = "track", val = 2, min = 1.0, max = 3.0, step = 0.1, prec = 1, def = 1.5 },
+                    { id = "density_interval", type = "track", val = 2, min = 1, max = 10, step = 1, def = 1 },
+                },
             },
             -- ============ SMART SANITIZER TAB ============
             {

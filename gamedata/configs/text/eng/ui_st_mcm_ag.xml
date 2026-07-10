@@ -9,6 +9,9 @@
     <string id="ui_mcm_menu_online_guard">
         <text>Online Guard</text>
     </string>
+    <string id="ui_mcm_menu_offline_guard">
+        <text>Offline Guard</text>
+    </string>
     <string id="ui_mcm_menu_smart_sanitizer">
         <text>Smart Sanitizer</text>
     </string>
@@ -97,6 +100,32 @@
     </string>
     <string id="ui_mcm_ag_online_guard_pda_sound_desc">
         <text>Play a brief psy-flavoured cue when a notification fires. Subtle. Disable for silent notifications.</text>
+    </string>
+
+    <!-- ==================== OFFLINE GUARD TAB ==================== -->
+    <string id="ui_mcm_ag_offline_guard_info">
+        <text>The online guard only sees entities around you. Offline hubs on other levels can pack up dozens of squads that all come online at once when you fast-travel in. The Offline Guard scans offline population density per region and thins badly crowded regions down to the online maximum before you arrive. Every squad survives: commanders are kept, protected squads are untouched, and mod-scripted squads are thinned last.</text>
+    </string>
+    <string id="ui_mcm_ag_hdr_density">
+        <text>Offline Density</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_enabled">
+        <text>Enable offline guard</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_enabled_desc">
+        <text>Thin overcrowded offline regions on levels away from you. Squads survive, commanders and protected NPCs are never removed.</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_headroom">
+        <text>Density headroom</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_headroom_desc">
+        <text>Culling triggers when a region holds more than Maximum online times this factor. Higher = more tolerant of crowded offline hubs, lower = stricter. Culling always stops at Maximum online, never below.</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_interval">
+        <text>Scan tick</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_interval_desc">
+        <text>[seconds]\nTime between scan steps. Each step examines a small batch of squads, so a full pass over the Zone takes several steps. Lower = fresher density data at slightly higher cost.</text>
     </string>
 
     <!-- ==================== SMART SANITIZER TAB ==================== -->

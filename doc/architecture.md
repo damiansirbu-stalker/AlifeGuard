@@ -191,6 +191,39 @@ Pure Lua walk. 0 luabind in the inner loop. `smart:name()` is lazy: called once 
 
 ---
 
+## Offline Guard (ag_density)
+
+### Why
+
+`_collect_online` sees only online entities. An offline hub on another level can accumulate dozens of squads that all come online at once on fast-travel, spiking well past `max` before the online guard's first cycle. The Offline Guard measures offline density per region and shaves badly crowded regions to the online ceiling before the player arrives.
+
+### Scan
+
+Time-event tick (`CreateTimeEvent`/`ResetTimeEvent`, no per-frame carrier), `density_interval` seconds apart. Each tick bins 25 squads from a `xsquad.collect_squad_ids` snapshot via a circular cursor; a full pass spreads across ticks at constant cost regardless of total squad count.
+
+Per squad: skip online, skip empty, skip the actor's level; bin `squad:npc_count()` into a cell keyed `level_id:floor(x/D):floor(z/D)` with `D = sim:switch_distance()`. The squad's own `position`/`m_game_vertex_id` is used directly: offline, the engine moves the group and syncs every member's position FROM it (`CSE_ALifeOnlineOfflineGroup::update`, alife_online_offline_group.cpp:73-87), so the group fields are the bodies' physical position. `[DENSITY]` lines at DEBUG per completed pass.
+
+### Cull
+
+At pass end, cells with `count > max * density_headroom` on non-actor levels are thinned by `count - max` members: commanders never queued, protected squads (`xsquad.is_protected`) skipped, members of unscripted squads before scripted ones, round-robin across `squad.player_id` categories. Per-member protection mirrors the online path's `xcreature.is_unscriptable` with its two offline-safe signals: named/story NPCs are skipped via the story-id registry (`get_object_story_id`, pure Lua id lookup) and the `xdata.unscriptable_npcs` section hash (traders, mechanics, guides who are not commanders). Task-giver and bounty/hostage protection is squad-level via `is_protected`, same as online. One combined queue drains through the shared xslice `"ag_despawn"` job (never concurrent with the online cull).
+
+Target is `max`, not `max - buffer`: the offline guard shaves the peak to the online ceiling and hands hysteresis to the online guard on arrival.
+
+### Release path (offline)
+
+Every entry revalidates at release time: entity still exists, section matches (id recycling), still offline (came online mid-drain -> left to the online guard), squad still valid, not the current commander (commander drift). Then, in order:
+
+1. `smart:unregister_npc(se)` with the NPC when `smart_terrain_id() ~= 65535` - clears the smart's `npc_info[npc_id]`/`arriving_npc[npc_id]` by the correct key and sets `m_smart_terrain_id = 0xffff`. Vanilla `remove_npc` passes the squad instead, which would leave a stale `npc_info` entry holding a destroyed server-object reference.
+2. `alife_release(se)` - routes to `squad:remove_npc(id, true)`: `unregister_member` detaches the engine-side member pointer BEFORE `safe_release_manager` destroys the entity. Offline entities have no binder, so the release completes on the manager's next pass.
+
+Direct `alife():release()` on a squad member is forbidden: the group's `update()` writes through raw `m_members` pointers and the engine has no member auto-detach on release (use-after-free).
+
+Keeping the commander keeps `npc_count() > 0`, so `remove_npc` never reaches its squad-deletion branch: the squad stays in SIMBOARD, `already_spawned` stays untouched, no respawn feedback.
+
+Full design record with engine citations: `stalker-dev/doc/todo/todo-alifeguard-offline-density.md`.
+
+---
+
 ## Performance
 
 ### Collection (frame 0, synchronous)
@@ -223,7 +256,8 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 | File | Lines | Purpose |
 |---|---|---|
 | ag_population.script | 535 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer |
-| ag_mcm.script | 180 | MCM defaults, UI definition, button handlers |
+| ag_density.script | 299 | Offline density scan per switch_distance cell, per-cell offline cull |
+| ag_mcm.script | 204 | MCM defaults, UI definition, button handlers |
 | _ag_deps.script | 125 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
 
 ---
@@ -242,6 +276,9 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 | round_robin | true | Spread removals evenly across factions and mutant types (false = linear) |
 | pda | true | PDA notifications on cleanup |
 | pda_sound | true | Play a sound with the cleanup notification |
+| density_enabled | true | Offline Guard master toggle |
+| density_headroom | 1.5 | Offline cull trigger factor (cull when cell count exceeds max * headroom) |
+| density_interval | 1 | Seconds between offline scan steps (1-10) |
 | sanitize_smarts | true | Periodic walk that clamps corrupted already_spawned counters |
 | sanitize_interval | 300 | Seconds between periodic sanitizer passes (60-1800) |
 | log_level | WARN | Logger verbosity (ERROR/WARN/INFO/DEBUG) |
