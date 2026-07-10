@@ -2,6 +2,7 @@ next
   Summary: Platform status
 
   - Added dynamic checking of xlibs and xray-monolith/AOEngine versions with a compatibility verdict.
+  - An outdated xlibs no longer crashes AlifeGuard on load. The dependency check now shows the update-xlibs message instead of a raw script error from the MCM platform footer.
 
 1.2.7
   Summary: AOEngine compatibility, fewer engine warnings, MCM reset moved

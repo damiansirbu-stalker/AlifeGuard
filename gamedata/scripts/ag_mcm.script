@@ -121,10 +121,10 @@ function on_mcm_load()
                     { id = "pda", type = "check", val = 1, def = true },
                     { id = "pda_sound", type = "check", val = 1, def = true },
 
-                    -- Platform footer (shared builder: xmcm.platform_status)
+                    -- Platform footer (self-contained builder in _ag_deps, not xlibs)
                     { id = "div_footer", type = "line" },
                     { id = "platform", type = "desc", text = "ui_mcm_xmcm_footer",
-                        ui_hook_functor = { xmcm.platform_functor(_ag_deps.platform_spec()) }, clr = {255, 212, 201, 168} },                },
+                        ui_hook_functor = { _ag_deps.platform_functor() }, clr = {255, 212, 201, 168} },                },
             },
             -- ============ SMART SANITIZER TAB ============
             {
