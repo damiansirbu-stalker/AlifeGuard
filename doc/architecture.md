@@ -24,7 +24,7 @@ actor_on_update (every frame)
   |
   v
 FRAME 0: _collect_online
-  |-- game_objects_iter -> _process_entity per obj
+  |-- xcreature.online_iter_with_id() -> _process_entity per obj
   |     classify (stalker/mutant/skip)
   |     distance_to_sqr from actor
   |     resolve squad via alife_object(id) -> se_obj.group_id -> alife_object(group_id)
@@ -204,7 +204,7 @@ Pure Lua walk. 0 luabind in the inner loop. `smart:name()` is lazy: called once 
 | alife_object(group_id) | 1 luabind medium | Squad resolution (skip if 65535) |
 | xcreature.is_unscriptable | 0 luabind (cached) | Weak-key, session lifetime |
 | xsquad.is_protected | 0 luabind (TTL cached) | Per squad, not per member |
-| obj:section() | 1 luabind heavy | Debug only (_dbg guard) |
+| obj:section() | 1 luabind heavy | Per collected entry; stored for the release-time id-recycle check |
 
 Total: ~9-10 luabind per entity (production), ~1-6 per squad. Sub-millisecond for 100-200 entities.
 
@@ -222,9 +222,9 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 
 | File | Lines | Purpose |
 |---|---|---|
-| ag_population.script | ~557 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer |
-| ag_mcm.script | ~155 | MCM defaults, UI definition, button handlers |
-| _ag_deps.script | ~34 | Version string, xlibs dependency gate |
+| ag_population.script | 535 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer |
+| ag_mcm.script | 180 | MCM defaults, UI definition, button handlers |
+| _ag_deps.script | 125 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
 
 ---
 
@@ -238,7 +238,10 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 | check_interval | 30 | Seconds between checks |
 | check_tasks | true | Protect task givers, companions, bounty/hostage targets |
 | prioritize_distant | true | Farthest first (false = random) |
+| squad_culling | true | Thin squad members before commanders (false = flat by distance) |
+| round_robin | true | Spread removals evenly across factions and mutant types (false = linear) |
 | pda | true | PDA notifications on cleanup |
+| pda_sound | true | Play a sound with the cleanup notification |
 | sanitize_smarts | true | Periodic walk that clamps corrupted already_spawned counters |
 | sanitize_interval | 300 | Seconds between periodic sanitizer passes (60-1800) |
 | log_level | WARN | Logger verbosity (ERROR/WARN/INFO/DEBUG) |
