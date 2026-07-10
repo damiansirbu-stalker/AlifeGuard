@@ -205,9 +205,9 @@ Per squad: skip online, skip empty, skip the actor's level; bin `squad:npc_count
 
 ### Cull
 
-At pass end, cells with `count > max * density_headroom` on non-actor levels are thinned by `count - max` members: commanders never queued, protected squads (`xsquad.is_protected`) skipped, members of unscripted squads before scripted ones, round-robin across `squad.player_id` categories. Per-member protection mirrors the online path's `xcreature.is_unscriptable` with its two offline-safe signals: named/story NPCs are skipped via the story-id registry (`get_object_story_id`, pure Lua id lookup) and the `xdata.unscriptable_npcs` section hash (traders, mechanics, guides who are not commanders). Task-giver and bounty/hostage protection is squad-level via `is_protected`, same as online. One combined queue drains through the shared xslice `"ag_despawn"` job (never concurrent with the online cull).
+At pass end, cells with `count > density_trigger` on non-actor levels are thinned by `count - density_target` members: commanders never queued, protected squads (`xsquad.is_protected`) skipped, members of unscripted squads before scripted ones, round-robin across `squad.player_id` categories. Per-member protection mirrors the online path's `xcreature.is_unscriptable` with its two offline-safe signals: named/story NPCs are skipped via the story-id registry (`get_object_story_id`, pure Lua id lookup) and the `xdata.unscriptable_npcs` section hash (traders, mechanics, guides who are not commanders). Task-giver and bounty/hostage protection is squad-level via `is_protected`, gated by the offline guard's own `density_check_tasks`. One combined queue drains through the shared xslice `"ag_despawn"` job (never concurrent with the online cull).
 
-Target is `max`, not `max - buffer`: the offline guard shaves the peak to the online ceiling and hands hysteresis to the online guard on arrival.
+Fully decoupled from the online guard. `density_trigger` (when a region is overcrowded) and `density_target` (what to thin it to) are absolute body counts, not derived from the online `max`. Target can go as low as 0 (strip a region to lone commanders), so offline can be culled harder than the online cap if wanted. A target above the trigger is clamped to the trigger. The offline pass reads none of the online guard's keys.
 
 ### Release path (offline)
 
@@ -277,7 +277,9 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 | pda | true | PDA notifications on cleanup |
 | pda_sound | true | Play a sound with the cleanup notification |
 | density_enabled | true | Offline Guard master toggle |
-| density_headroom | 1.5 | Offline cull trigger factor (cull when cell count exceeds max * headroom) |
+| density_trigger | 120 | Offline body count that flags a region as overcrowded (absolute, own setting) |
+| density_target | 80 | Body count a flagged region is thinned to (0-300, clamped to trigger; 0 = lone commanders) |
+| density_check_tasks | true | Protect task givers, bounty/hostage targets in the offline pass (own toggle) |
 | density_interval | 1 | Seconds between offline scan steps (1-10) |
 | sanitize_smarts | true | Periodic walk that clamps corrupted already_spawned counters |
 | sanitize_interval | 300 | Seconds between periodic sanitizer passes (60-1800) |

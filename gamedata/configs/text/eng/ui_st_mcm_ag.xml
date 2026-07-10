@@ -104,7 +104,7 @@
 
     <!-- ==================== OFFLINE GUARD TAB ==================== -->
     <string id="ui_mcm_ag_offline_guard_info">
-        <text>The online guard only sees entities around you. Offline hubs on other levels can pack up dozens of squads that all come online at once when you fast-travel in. The Offline Guard scans offline population density per region and thins badly crowded regions down to the online maximum before you arrive. Every squad survives: commanders are kept, protected squads are untouched, and mod-scripted squads are thinned last.</text>
+        <text>The online guard only sees entities around you. Offline hubs on other levels can pack up dozens of squads that all come online at once when you fast-travel in. The Offline Guard scans offline population density per region and thins overcrowded regions before you arrive. Fully independent of the online guard: it has its own trigger, target, and protection settings. Every squad survives: commanders are kept, protected squads are untouched, and mod-scripted squads are thinned last.</text>
     </string>
     <string id="ui_mcm_ag_hdr_density">
         <text>Offline Density</text>
@@ -115,11 +115,23 @@
     <string id="ui_mcm_ag_offline_guard_density_enabled_desc">
         <text>Thin overcrowded offline regions on levels away from you. Squads survive, commanders and protected NPCs are never removed.</text>
     </string>
-    <string id="ui_mcm_ag_offline_guard_density_headroom">
-        <text>Density headroom</text>
+    <string id="ui_mcm_ag_offline_guard_density_trigger">
+        <text>Cull trigger</text>
     </string>
-    <string id="ui_mcm_ag_offline_guard_density_headroom_desc">
-        <text>Culling triggers when a region holds more than Maximum online times this factor. Higher = more tolerant of crowded offline hubs, lower = stricter. Culling always stops at Maximum online, never below.</text>
+    <string id="ui_mcm_ag_offline_guard_density_trigger_desc">
+        <text>Offline body count that flags a region as overcrowded. A region is culled only when it holds more bodies than this. Lower = culls more regions.</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_target">
+        <text>Cull target</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_target_desc">
+        <text>Body count a flagged region is thinned down to. Lower = heavier culling. 0 strips a region to lone squad commanders. Independent of the online maximum. Clamped to the trigger if set higher.</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_check_tasks">
+        <text>Protect task NPCs</text>
+    </string>
+    <string id="ui_mcm_ag_offline_guard_density_check_tasks_desc">
+        <text>Squads tied to active tasks (task givers, bounty and hostage targets) are never culled offline. Separate from the online guard's own task protection.</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_interval">
         <text>Scan tick</text>

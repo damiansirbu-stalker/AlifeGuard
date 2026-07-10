@@ -19,12 +19,16 @@ local DESPAWN_JOB = "ag_despawn"
 local TIME_EVENT_ID = "ag_density"
 local TIME_EVENT_ACTION = "density_sweep"
 
+-- Fully decoupled from the online guard: own trigger/target/task-protection, own keys.
+-- trigger = cell body count that flags a cell as overcrowded; target = count to thin it to.
+-- Both absolute (not derived from the online max), so offline can cull as hard as wanted,
+-- including below the online cap (target as low as 0 = strip to lone commanders).
 local cfg = {
     density_enabled = true,
-    density_headroom = 1.5,
+    density_trigger = 120,
+    density_target = 80,
+    density_check_tasks = true,
     density_interval = 1,
-    max = 80,
-    check_tasks = true,
     log_level = "WARN",
 }
 
@@ -46,8 +50,8 @@ local _cull_stats = { gone = 0, online = 0, lone = 0, protected = 0, named = 0 }
 local function _update_protection_opts()
     _protection_opts.exclude_scripted = false
     _protection_opts.exclude_permanent = true
-    _protection_opts.exclude_active_role = cfg.check_tasks
-    _protection_opts.exclude_task_target = cfg.check_tasks
+    _protection_opts.exclude_active_role = cfg.density_check_tasks
+    _protection_opts.exclude_task_target = cfg.density_check_tasks
 end
 
 local function load_config()
@@ -55,19 +59,23 @@ local function load_config()
     if not get then return end
 
     cfg.density_enabled = get("density_enabled") ~= false
-    cfg.density_headroom = get("density_headroom") or 1.5
+    cfg.density_trigger = get("density_trigger") or 120
+    cfg.density_target = get("density_target") or 80
+    cfg.density_check_tasks = get("density_check_tasks") ~= false
     cfg.density_interval = get("density_interval") or 1
-    cfg.max = get("max") or 80
-    cfg.check_tasks = get("check_tasks")
     cfg.log_level = get("log_level") or "WARN"
+
+    -- A target above the trigger would fire on cells that yield no removals; clamp so the
+    -- lever is always meaningful (thin at least to the trigger).
+    if cfg.density_target > cfg.density_trigger then cfg.density_target = cfg.density_trigger end
 
     log.set_level(cfg.log_level)
     _dbg = log.get_level() >= 5
     _update_protection_opts()
 
-    log.info("[CONFIG] density=%s headroom=%.1f interval=%ds max=%d tasks=%s log=%s",
-        tostring(cfg.density_enabled), cfg.density_headroom, cfg.density_interval,
-        cfg.max, tostring(cfg.check_tasks), cfg.log_level)
+    log.info("[CONFIG] density=%s trigger=%d target=%d interval=%ds tasks=%s log=%s",
+        tostring(cfg.density_enabled), cfg.density_trigger, cfg.density_target,
+        cfg.density_interval, tostring(cfg.density_check_tasks), cfg.log_level)
 end
 
 -- ==================== SCAN ====================
@@ -114,7 +122,7 @@ local function _bin_squad(squad_id, graph, actor_level)
 end
 
 local function _log_density()
-    local log_floor = cfg.max * LOG_FLOOR_FRACTION
+    local log_floor = cfg.density_target * LOG_FLOOR_FRACTION
     local cell_count = 0
     for key, cell in pairs(_cells) do
         cell_count = cell_count + 1
@@ -195,7 +203,7 @@ local function _fill_round_robin(bucket, queue, limit)
 end
 
 local function _append_cell_queue(cell, queue)
-    local limit = #queue + (cell.count - cfg.max)
+    local limit = #queue + (cell.count - cfg.density_target)
     local buckets = { plain = {}, scripted = {} }
     for _, squad_id in ipairs(cell.squads) do
         local squad = _cull_squad(squad_id)
@@ -265,7 +273,7 @@ end
 local function _try_cull()
     if xslice.is_active(DESPAWN_JOB) then return end
     local actor_level = xlevel.get_actor_level_id()
-    local trigger = cfg.max * cfg.density_headroom
+    local trigger = cfg.density_trigger
     for key in pairs(_cull_stats) do _cull_stats[key] = 0 end
     local build_timer = xprofiler.new_if(_dbg)
     build_timer:start()
@@ -280,8 +288,8 @@ local function _try_cull()
     build_timer:stop()
     if #queue > 0 then
         local stats = _cull_stats
-        log.debug("[QUEUE] [tid=%d] cells=%d queue=%d trigger=%.0f gone=%d online=%d lone=%d protected=%d named=%d [%.2fms]",
-            _tid, cells_over, #queue, trigger, stats.gone, stats.online, stats.lone,
+        log.debug("[QUEUE] [tid=%d] cells=%d queue=%d trigger=%d target=%d gone=%d online=%d lone=%d protected=%d named=%d [%.2fms]",
+            _tid, cells_over, #queue, trigger, cfg.density_target, stats.gone, stats.online, stats.lone,
             stats.protected, stats.named, build_timer:get_ms())
         _drain_queue(queue, _tid)
     end

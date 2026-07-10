@@ -3,9 +3,10 @@ next
 
   - Added Offline Guard: thins overcrowded offline hubs before you arrive.
     A background scan counts offline squads per region on levels away from you.
-    Regions holding more than the online maximum times a headroom factor are culled to the maximum.
+    Regions over the cull trigger are thinned to the cull target, both your own settings.
     Every squad survives: commanders are kept, protected squads are untouched, scripted squads thin last.
-  - Added Offline Guard MCM tab with toggle, density headroom factor, and scan tick.
+  - Added Offline Guard MCM tab with toggle, cull trigger, cull target, task protection, and scan tick.
+    Fully independent of the online guard. Set the target low to cull offline hubs hard.
   - Added dynamic checking of xlibs and xray-monolith/AOEngine versions with a compatibility verdict.
   - An outdated xlibs no longer crashes AlifeGuard on load. The dependency check now shows the update-xlibs message instead of a raw script error from the MCM platform footer.
   - Added Russian localization for the PDA cleanup tips and the MCM reset confirmation.

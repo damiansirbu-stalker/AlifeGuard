@@ -15,9 +15,11 @@ defaults = {
     pda = true,
     pda_sound = true,
 
-    -- Offline Guard
+    -- Offline Guard (own settings, decoupled from the online guard)
     density_enabled = true,
-    density_headroom = 1.5,
+    density_trigger = 120,
+    density_target = 80,
+    density_check_tasks = true,
     density_interval = 1,
 
     -- Smart Sanitizer
@@ -34,7 +36,9 @@ local RegisterScriptCallback = RegisterScriptCallback
 
 local _key_to_tab = {
     density_enabled = "offline_guard",
-    density_headroom = "offline_guard",
+    density_trigger = "offline_guard",
+    density_target = "offline_guard",
+    density_check_tasks = "offline_guard",
     density_interval = "offline_guard",
     sanitize_smarts = "smart_sanitizer",
     sanitize_interval = "smart_sanitizer",
@@ -146,7 +150,9 @@ function on_mcm_load()
                     { id = "div_density", type = "line" },
                     { id = "hdr_density", type = "desc", text = "ui_mcm_ag_hdr_density", clr = {255, 200, 200, 200} },
                     { id = "density_enabled", type = "check", val = 1, def = true },
-                    { id = "density_headroom", type = "track", val = 2, min = 1.0, max = 3.0, step = 0.1, prec = 1, def = 1.5 },
+                    { id = "density_trigger", type = "track", val = 2, min = 10, max = 300, step = 5, def = 120 },
+                    { id = "density_target", type = "track", val = 2, min = 0, max = 300, step = 5, def = 80 },
+                    { id = "density_check_tasks", type = "check", val = 1, def = true },
                     { id = "density_interval", type = "track", val = 2, min = 1, max = 10, step = 1, def = 1 },
                 },
             },
