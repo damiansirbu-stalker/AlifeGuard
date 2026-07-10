@@ -46,22 +46,25 @@ local function _update_protection_opts()
 end
 
 local function load_config()
-    local mcm = ag_mcm and ag_mcm.cfg
-    if not mcm then return end
+    -- Read via ag_mcm.get_config(key), the phase-safe getter (reads through ui_mcm.get with
+    -- defaults fallback). Reading the ag_mcm.cfg table directly here would be an order-dependent
+    -- cross-module read (code-standards.md "on_game_start = declare").
+    local get = ag_mcm and ag_mcm.get_config
+    if not get then return end
 
-    cfg.enabled = mcm.enabled
-    cfg.max = mcm.max
-    cfg.buffer = mcm.buffer or 10
-    cfg.check_interval = mcm.check_interval
-    cfg.check_tasks = mcm.check_tasks
-    cfg.prioritize_distant = mcm.prioritize_distant
-    cfg.squad_culling = mcm.squad_culling ~= false
-    cfg.round_robin = mcm.round_robin ~= false
-    cfg.pda = mcm.pda
-    cfg.pda_sound = mcm.pda_sound
-    cfg.sanitize_smarts = mcm.sanitize_smarts ~= false
-    cfg.sanitize_interval = mcm.sanitize_interval or 300
-    cfg.log_level = mcm.log_level or "WARN"
+    cfg.enabled = get("enabled")
+    cfg.max = get("max")
+    cfg.buffer = get("buffer") or 10
+    cfg.check_interval = get("check_interval")
+    cfg.check_tasks = get("check_tasks")
+    cfg.prioritize_distant = get("prioritize_distant")
+    cfg.squad_culling = get("squad_culling") ~= false
+    cfg.round_robin = get("round_robin") ~= false
+    cfg.pda = get("pda")
+    cfg.pda_sound = get("pda_sound")
+    cfg.sanitize_smarts = get("sanitize_smarts") ~= false
+    cfg.sanitize_interval = get("sanitize_interval") or 300
+    cfg.log_level = get("log_level") or "WARN"
 
     log.set_level(cfg.log_level)
     _dbg = log.get_level() >= 5
@@ -84,16 +87,16 @@ local function send_pda(msg)
 end
 
 local cleanup_messages = {
-    "Zone thinned out. Breathe easier for now.",
-    "The Zone reshuffles. Some stalkers walked into the fog.",
-    "The Zone exhales. Long-range echoes drop out.",
+    "st_ag_cleanup_1",
+    "st_ag_cleanup_2",
+    "st_ag_cleanup_3",
 }
 
 local CLEANUP_SOUND = "ambient\\radar_1"
 
 local function notify_cleanup(removed, _stalkers, _mutants)
     if not cfg.pda or removed == 0 then return end
-    send_pda(cleanup_messages[math_random(#cleanup_messages)])
+    send_pda(game.translate_string(cleanup_messages[math_random(#cleanup_messages)]))
     if cfg.pda_sound then xsound.play(CLEANUP_SOUND) end
 end
 

@@ -149,4 +149,13 @@
   <string id="ui_mcm_ag_development_reset_warning">
     <text>Внимание: сохраните или отмените незавершённые изменения MCM; иначе они перезапишут сброс при следующем Принять.</text>
   </string>
+  <string id="st_ag_cleanup_1">
+    <text>Зона поредела. Пока можно вздохнуть свободнее.</text>
+  </string>
+  <string id="st_ag_cleanup_2">
+    <text>Зона тасует карты. Кто-то из сталкеров ушёл в туман.</text>
+  </string>
+  <string id="st_ag_cleanup_3">
+    <text>Зона выдыхает. Дальние отголоски стихают.</text>
+  </string>
 </string_table>
