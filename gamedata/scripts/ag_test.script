@@ -1,0 +1,234 @@
+--- ag_test: console conformity and load harness for AlifeGuard. Dormant; nothing runs
+--- until called from the console. Seeds real squads through SIMBOARD:create_squad so the
+--- offline guard is exercised through the real pipeline, never through internal state.
+---
+--- Console (run_string ag_test.<fn>):
+---   ag_test.smarts("bar_")            list smart names starting with a prefix (nil = all)
+---   ag_test.seed("bar_dolg_base", 10) burst-spawn 10 squads at a smart (default sections)
+---   ag_test.feed("bar_dolg_base", 15) spawn 1 squad every 15s at a smart until cap/stop
+---   ag_test.stop()                    stop the feeder
+---   ag_test.status()                  feeder state + spawned totals
+---   ag_test.density()                 independent per-cell offline count; diff against [DENSITY]
+---   ag_test.hub("bar_dolg_base")      squads within switch_distance of a smart: bodies,
+---                                     commanders, protected/scripted squads, named members
+---   ag_test.audit("bar_dolg_base")    npc_info/arriving_npc audit: total keys + stale ids
+---
+--- Conformity flow: seed a hub over max*headroom, wait one scan pass, then hub() before and
+--- after [OFFLINE-CULL] (commanders/protected/named survive, bodies drop to ~max), audit()
+--- after the cull (zero stale ids), density() any time (must match the [DENSITY] pass lines).
+
+local pairs, math_floor, string_format, tostring = pairs, math.floor, string.format, tostring
+local alife_object, alife, game_graph = alife_object, alife, game_graph
+local get_story_id = get_object_story_id
+local xlog, xsquad, xlevel, xdata = xlog, xsquad, xlevel, xdata
+
+local log = xlog.get_logger("AG.TEST", { outfile = "alifeguard.log" })
+
+local FEED_MAX = 200
+local DEFAULT_TICK_SEC = 15
+local TIME_EVENT_ID = "ag_test"
+local TIME_EVENT_ACTION = "feeder"
+local SECTIONS = { "stalker_sim_squad_novice", "bandit_sim_squad_novice", "simulation_dog" }
+
+local _feed_smart_name = nil
+local _feed_tick_sec = DEFAULT_TICK_SEC
+local _feed_section_idx = 0
+local _spawned = 0
+
+local _protection_opts = {
+    exclude_scripted = false,
+    exclude_permanent = true,
+    exclude_active_role = true,
+    exclude_task_target = true,
+}
+
+local function _tip(msg)
+    log.info("%s", msg)
+    if db and db.actor then news_manager.send_tip(db.actor, msg, nil, nil, 6000) end
+end
+
+local function _find_smart(name)
+    local smart = SIMBOARD and SIMBOARD.smarts_by_names and SIMBOARD.smarts_by_names[name]
+    if not smart then _tip("ag_test: no smart named " .. tostring(name)) end
+    return smart
+end
+
+-- ==================== SPAWN ====================
+
+local function _spawn_one(target_smart, smart_name)
+    _feed_section_idx = _feed_section_idx + 1
+    local section = SECTIONS[(_feed_section_idx % #SECTIONS) + 1]
+    local squad = xsquad.create_squad(target_smart, section)
+    if not squad then return nil end
+    _spawned = _spawned + 1
+    log.info("[SEED] squad=%d sec=%s smart=%s total=%d", squad.id, section, smart_name, _spawned)
+    return squad
+end
+
+--- Burst-spawn count squads at a named smart (section optional, else rotates defaults)
+function seed(smart_name, count, section)
+    local target_smart = _find_smart(smart_name)
+    if not target_smart then return end
+    count = count or 10
+    local created = 0
+    for _ = 1, count do
+        local squad = section and xsquad.create_squad(target_smart, section) or _spawn_one(target_smart, smart_name)
+        if squad then created = created + 1 end
+    end
+    _tip(string_format("ag_test: seeded %d/%d squads at %s", created, count, smart_name))
+end
+
+local function _feeder_tick()
+    ResetTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, _feed_tick_sec)
+    if not _feed_smart_name then return true end
+    if _spawned >= FEED_MAX then
+        _tip("ag_test: feeder cap reached (" .. FEED_MAX .. "), stopped")
+        _feed_smart_name = nil
+        return true
+    end
+    local target_smart = SIMBOARD and SIMBOARD.smarts_by_names and SIMBOARD.smarts_by_names[_feed_smart_name]
+    if not target_smart then return false end
+    _spawn_one(target_smart, _feed_smart_name)
+    return false
+end
+
+--- Start the periodic feeder: 1 squad every tick_sec at a named smart, until stop() or cap
+function feed(smart_name, tick_sec)
+    if not _find_smart(smart_name) then return end
+    _feed_smart_name = smart_name
+    _feed_tick_sec = tick_sec or DEFAULT_TICK_SEC
+    RemoveTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION)
+    CreateTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, _feed_tick_sec, _feeder_tick)
+    _tip(string_format("ag_test: feeding %s every %ds (cap %d)", smart_name, _feed_tick_sec, FEED_MAX))
+end
+
+--- Stop the feeder
+function stop()
+    _feed_smart_name = nil
+    RemoveTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION)
+    _tip(string_format("ag_test: feeder stopped, spawned %d total", _spawned))
+end
+
+--- Feeder state + spawned totals
+function status()
+    _tip(string_format("ag_test: feeder=%s tick=%ds spawned=%d/%d",
+        tostring(_feed_smart_name), _feed_tick_sec, _spawned, FEED_MAX))
+end
+
+-- ==================== CONFORMITY ====================
+
+--- List smart names starting with a prefix (case-sensitive; nil lists all)
+function smarts(prefix)
+    if not (SIMBOARD and SIMBOARD.smarts_by_names) then return end
+    local found = 0
+    local prefix_len = prefix and #prefix
+    for name in pairs(SIMBOARD.smarts_by_names) do
+        if not prefix or name:sub(1, prefix_len) == prefix then
+            found = found + 1
+            log.info("[SMARTS] %s", name)
+        end
+    end
+    _tip(string_format("ag_test: %d smarts matched, see alifeguard.log", found))
+end
+
+-- Same gates as ag_density._bin_squad, implemented independently for conformity diffing.
+local function _bin_offline(squad_id, graph, actor_level, cell_size, counts)
+    local squad = alife_object(squad_id)
+    if not squad then return end
+    if squad.online then return end
+    local body_count = squad:npc_count()
+    if body_count == 0 then return end
+    local gvid = squad.m_game_vertex_id
+    if not gvid or not graph:valid_vertex_id(gvid) then return end
+    local level_id = graph:vertex(gvid):level_id()
+    if level_id == actor_level then return end
+    local pos = squad.position
+    if not pos then return end
+    local key = level_id .. ":" .. math_floor(pos.x / cell_size) .. ":" .. math_floor(pos.z / cell_size)
+    counts[key] = (counts[key] or 0) + body_count
+end
+
+--- Independent offline density count per cell; diff the output against [DENSITY] pass lines
+function density()
+    local sim = alife()
+    local graph = game_graph()
+    if not (sim and graph and SIMBOARD and SIMBOARD.squads) then return end
+    local cell_size = sim:switch_distance()
+    local actor_level = xlevel.get_actor_level_id()
+    local counts = {}
+    local total = 0
+    for squad_id in pairs(SIMBOARD.squads) do
+        total = total + 1
+        _bin_offline(squad_id, graph, actor_level, cell_size, counts)
+    end
+    local cells = 0
+    for key, count in pairs(counts) do
+        cells = cells + 1
+        log.info("[CONFORM-DENSITY] cell=%s count=%d", key, count)
+    end
+    _tip(string_format("ag_test: %d squads walked, %d offline cells, see alifeguard.log", total, cells))
+end
+
+local function _count_named_members(squad, commander_id)
+    local named = 0
+    for member_id in xsquad.iter_member_ids(squad) do
+        local se = member_id ~= commander_id and alife_object(member_id)
+        local is_named = se and (get_story_id(member_id) or xdata.unscriptable_npcs[se:section_name()])
+        if is_named then named = named + 1 end
+    end
+    return named
+end
+
+local function _hub_squad_line(squad, smart_name, totals)
+    local commander_id = squad:commander_id()
+    local named = _count_named_members(squad, commander_id)
+    local protected = xsquad.is_protected(squad, _protection_opts) and 1 or 0
+    local scripted = xsquad.is_scripted(squad) and 1 or 0
+    totals.squads = totals.squads + 1
+    totals.bodies = totals.bodies + squad:npc_count()
+    totals.protected = totals.protected + protected
+    totals.scripted = totals.scripted + scripted
+    totals.named = totals.named + named
+    log.info("[HUB] smart=%s squad=%d sec=%s bodies=%d cmd=%d protected=%d scripted=%d named=%d online=%s",
+        smart_name, squad.id, squad:section_name(), squad:npc_count(), commander_id or -1,
+        protected, scripted, named, tostring(squad.online == true))
+end
+
+--- Squads within switch_distance of a named smart: per-squad lines + totals (run before/after a cull)
+function hub(smart_name)
+    local smart = _find_smart(smart_name)
+    if not smart then return end
+    local sim = alife()
+    if not (sim and SIMBOARD and SIMBOARD.squads) then return end
+    local max_dist = sim:switch_distance()
+    local max_dist_sqr = max_dist * max_dist
+    local smart_pos = smart.position
+    local totals = { squads = 0, bodies = 0, protected = 0, scripted = 0, named = 0 }
+    for squad_id in pairs(SIMBOARD.squads) do
+        local squad = alife_object(squad_id)
+        local near = squad and squad.position and smart_pos:distance_to_sqr(squad.position) <= max_dist_sqr
+        if near then _hub_squad_line(squad, smart_name, totals) end
+    end
+    _tip(string_format("ag_test: %s squads=%d bodies=%d protected=%d scripted=%d named=%d",
+        smart_name, totals.squads, totals.bodies, totals.protected, totals.scripted, totals.named))
+end
+
+local function _audit_table(tbl, label, smart_name)
+    local total, stale = 0, 0
+    for id in pairs(tbl) do
+        total = total + 1
+        local gone = not alife_object(id)
+        if gone then stale = stale + 1; log.warn("[AUDIT] smart=%s %s stale id=%s", smart_name, label, tostring(id)) end
+    end
+    return total, stale
+end
+
+--- npc_info/arriving_npc audit on a named smart: key counts + stale ids (expect 0 after a cull)
+function audit(smart_name)
+    local se_smart = _find_smart(smart_name)
+    if not se_smart then return end
+    local info_total, info_stale = _audit_table(se_smart.npc_info or {}, "npc_info", smart_name)
+    local arr_total, arr_stale = _audit_table(se_smart.arriving_npc or {}, "arriving_npc", smart_name)
+    _tip(string_format("ag_test: %s npc_info=%d (stale %d) arriving=%d (stale %d)",
+        smart_name, info_total, info_stale, arr_total, arr_stale))
+end
