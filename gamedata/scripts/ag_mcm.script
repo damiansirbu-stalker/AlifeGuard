@@ -81,7 +81,7 @@ local function _apply_defaults(gui, msg)
 end
 
 function btn_reset_all(gui)
-    _apply_defaults(gui, "AlifeGuard: all settings restored to defaults.")
+    _apply_defaults(gui, game.translate_string("st_ag_reset_all_done"))
 end
 
 -- ==================== MCM DEFINITION ====================

@@ -3,7 +3,7 @@ next
 
   - Added dynamic checking of xlibs and xray-monolith/AOEngine versions with a compatibility verdict.
   - An outdated xlibs no longer crashes AlifeGuard on load. The dependency check now shows the update-xlibs message instead of a raw script error from the MCM platform footer.
-  - Added Russian localization for the PDA cleanup notification tips.
+  - Added Russian localization for the PDA cleanup tips and the MCM reset confirmation.
 
 1.2.7
   Summary: AOEngine compatibility, fewer engine warnings, MCM reset moved

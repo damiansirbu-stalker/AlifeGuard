@@ -158,4 +158,7 @@
   <string id="st_ag_cleanup_3">
     <text>Зона выдыхает. Дальние отголоски стихают.</text>
   </string>
+  <string id="st_ag_reset_all_done">
+    <text>AlifeGuard: все настройки сброшены к значениям по умолчанию.</text>
+  </string>
 </string_table>

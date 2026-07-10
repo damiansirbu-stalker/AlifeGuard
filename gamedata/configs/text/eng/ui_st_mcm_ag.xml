@@ -168,5 +168,8 @@
     <string id="st_ag_cleanup_3">
         <text>The Zone exhales. Long-range echoes drop out.</text>
     </string>
+    <string id="st_ag_reset_all_done">
+        <text>AlifeGuard: all settings restored to defaults.</text>
+    </string>
 
 </string_table>
