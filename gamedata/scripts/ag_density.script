@@ -2,10 +2,10 @@
 
 local pairs, ipairs, math_floor, tostring = pairs, ipairs, math.floor, tostring
 local clock = os.clock
-local is_stalker, get_story_id = IsStalker, get_object_story_id
+local is_stalker = IsStalker
 local alife_object, alife_release, alife, clsid, game_graph = alife_object, alife_release, alife, clsid, game_graph
 local RegisterScriptCallback = RegisterScriptCallback
-local xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xdata = xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xdata
+local xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature = xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature
 
 local log = xlog.get_logger("AG.DEN", { outfile = "alifeguard.log" })
 local _dbg = false
@@ -140,17 +140,14 @@ end
 
 -- Skipping the commander keeps npc_count > 0, so remove_npc never reaches its
 -- squad-deletion branch and already_spawned stays untouched (no respawn feedback).
--- Per-member protection mirrors the online path's xcreature.is_unscriptable for named
--- NPCs who are not commanders (traders, mechanics, guides), using its two offline-safe
--- signals: story_id registry (pure Lua id lookup) and the unscriptable section hash.
+-- Per-member named/story protection uses xcreature.is_unscriptable_se, the offline-safe
+-- variant of the online path's is_unscriptable (single source, no inline duplication).
 local function _make_member_entry(member_id, commander_id)
     if member_id == commander_id then return nil end
     local se = alife_object(member_id)
     if not se then return nil end
-    if get_story_id(member_id) then _cull_stats.named = _cull_stats.named + 1; return nil end
-    local section = se:section_name()
-    if xdata.unscriptable_npcs[section] then _cull_stats.named = _cull_stats.named + 1; return nil end
-    return { id = member_id, section = section, is_stalker = is_stalker(nil, se:clsid()) }
+    if xcreature.is_unscriptable_se(se) then _cull_stats.named = _cull_stats.named + 1; return nil end
+    return { id = member_id, section = se:section_name(), is_stalker = is_stalker(nil, se:clsid()) }
 end
 
 local function _cull_squad(squad_id)
