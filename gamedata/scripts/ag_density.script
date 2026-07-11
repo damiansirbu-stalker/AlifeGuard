@@ -179,6 +179,11 @@ end
 -- One squad per frame: resolve fresh, release its surplus non-commander members down to the
 -- shared per-cell budget. Both the expensive resolution (is_protected) and the releases are
 -- frame-spread, so no single frame examines more than one squad. Commanders always kept.
+-- Member ids are snapshotted BEFORE any release: alife_release -> remove_npc ->
+-- unregister_member calls m_members.erase, which invalidates the return_stl_iterator that
+-- squad_members() holds (xrserver_objects_alife_monsters_script3.cpp squad_members binding).
+-- Releasing inside the live iterator is undefined behavior. Same reason Warfare snapshots
+-- (sim_offline_combat.script:727).
 local function _cull_one_squad(item, acc)
     local budget = item.budget
     if budget.n <= 0 then return end
@@ -186,9 +191,13 @@ local function _cull_one_squad(item, acc)
     if not squad then return end
     acc.squads = acc.squads + 1
     local commander_id = squad:commander_id()
+    local member_ids = {}
     for member_id in xsquad.iter_member_ids(squad) do
+        member_ids[#member_ids + 1] = member_id
+    end
+    for index = 1, #member_ids do
         if budget.n <= 0 then break end
-        local ok, member_is_stalker = _release_offline_member(member_id, commander_id)
+        local ok, member_is_stalker = _release_offline_member(member_ids[index], commander_id)
         if ok then
             budget.n = budget.n - 1
             acc.released = acc.released + 1
