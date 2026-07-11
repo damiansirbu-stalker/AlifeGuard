@@ -1,5 +1,5 @@
 STALKER Mod Validation Report
-Generated: 2026-06-21 00:36:44
+Generated: 2026-07-11 16:15:55
 Validator: stalker-manager validate
 Mods: 1
 
@@ -9,21 +9,23 @@ AlifeGuard
 
 Files:
   gamedata/scripts/_ag_deps.script
+  gamedata/scripts/ag_density.script
   gamedata/scripts/ag_mcm.script
   gamedata/scripts/ag_population.script
+  gamedata/scripts/ag_test.script
 
 [1/4] luacheck - static analysis (PASS)
   Checks: syntax errors, undefined globals, unused variables, type mismatches
-  Files checked: 3
+  Files checked: 5
   Errors: 0
 
 [2/4] selene - advanced linting (PASS)
   Checks: shadowing, deprecated API, misused variables, style violations
-  Files checked: 3
+  Files checked: 5
   Errors: 0, Warnings: 0
 
 [3/4] contract - project rules (PASS (S+))
-  Rules loaded: 250
+  Rules loaded: 251
   Score: 0
 
   PASS  [alao-table-insert] LUA-LOW w1 - table.insert optimization
@@ -273,6 +275,7 @@ Files:
   PASS  [standards-guard-only-param] LUA-MED w5 - standards-guard-only-param
   PASS  [standards-cross-module-in-on-game-start] LUA-HIGH w9 - standards-cross-module-in-on-game-start
   PASS  [standards-nil-check-on-boolean-field] LUA-MED w5 - standards-nil-check-on-boolean-field
+  PASS  [standards-no-raw-assign-smart] LUA-HIGH w12 - standards-no-raw-assign-smart
   PASS  [version-drift] LUA-HIGH w9 - Version drift
   PASS  [xlibs-engine-docs] LUA-MED w4 - xlibs-engine-docs
   PASS  [xlibs-private-docs] LUA-LOW w2 - xlibs-private-docs
@@ -280,48 +283,51 @@ Files:
 [4/4] load - runtime loading (PASS)
   Test: lua54 interpreter + X-Ray engine stubs
   Load test: AlifeGuard
-  LOAD: xstring
-  LOAD: xsmart
-  LOAD: xsquad
-  LOAD: xtime
-  LOAD: xpda
-  LOAD: xttltable
+  LOAD: xcreature
   LOAD: xslice
+  LOAD: ag_density
   LOAD: xdata
-  LOAD: xcombat
-  LOAD: xlibs
-  LOAD: xbus
-  LOAD: xevent
-  LOAD: ag_population
-  LOAD: xsound
-  LOAD: xactor
-  LOAD: xstash
-  LOAD: xtrace
-  LOAD: xlog
-  LOAD: xmcm
-  LOAD: xsmart_spawn
-  LOAD: xlevel
+  LOAD: ag_test
   LOAD: xlibs_mcm
   LOAD: xpp
-  LOAD: _ag_deps
-  LOAD: ag_mcm
-  LOAD: xtable
+  LOAD: xlibs
+  LOAD: xlevel
+  LOAD: xpda
   LOAD: xconst
-  LOAD: xprofiler
+  LOAD: xtable
+  LOAD: xtrace
+  LOAD: xcombat
   LOAD: xmath
-  LOAD: xobject
+  LOAD: ag_mcm
+  LOAD: xbus
+  LOAD: xsmart
+  LOAD: _ag_deps
   LOAD: xchange
-  LOAD: xcreature
+  LOAD: xevent
   LOAD: xinspect
+  LOAD: xlog
+  LOAD: ag_population
   LOAD: xinventory
+  LOAD: xttltable
+  LOAD: xtime
+  LOAD: xsmart_spawn
+  LOAD: xstring
+  LOAD: xsquad
+  LOAD: xstash
+  LOAD: xsound
+  LOAD: xprofiler
+  LOAD: xmcm
+  LOAD: xobject
+  LOAD: xactor
+  START: ag_density.on_game_start
   START: xtime.on_game_start
-  START: ag_mcm.on_game_start
-  START: xpp.on_game_start
   START: xsound.on_game_start
-  START: xlog.on_game_start
   START: ag_population.on_game_start
+  START: ag_mcm.on_game_start
   START: _ag_deps.on_game_start
-  OK: 34 loaded, 7 on_game_start
+  START: xlog.on_game_start
+  START: xpp.on_game_start
+  OK: 36 loaded, 8 on_game_start
 
 ========================================================================
 RESULT: PASS | Grade: S+ | Score: 0

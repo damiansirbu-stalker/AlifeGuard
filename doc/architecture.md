@@ -261,10 +261,11 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 
 | File | Lines | Purpose |
 |---|---|---|
-| ag_population.script | 535 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer |
-| ag_density.script | 299 | Offline density scan per switch_distance cell, per-cell offline cull |
-| ag_mcm.script | 204 | MCM defaults, UI definition, button handlers |
-| _ag_deps.script | 125 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
+| ag_population.script | 539 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer |
+| ag_density.script | 314 | Offline density scan per switch_distance cell, per-cell offline cull |
+| ag_mcm.script | 210 | MCM defaults, UI definition, button handlers |
+| _ag_deps.script | 121 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
+| ag_test.script | 180 | Dormant console load/conformity harness for the offline guard |
 
 ---
 

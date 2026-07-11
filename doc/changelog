@@ -1,15 +1,13 @@
-next
-  Summary: Offline guard, localized cleanup tips, platform status
+1.3.0
+  Summary: Offline guard, companion protection, platform status, localization, fixes
 
-  - Added Offline Guard: caps offline population density on levels away from you.
-    A staggered scan bins offline squads into regions by position; any region over the trigger
-    is thinned to the target, so a packed hub no longer spikes the count when it comes online.
-    Commanders and protected squads are never removed, so every squad survives.
-  - Added Offline Guard MCM tab: toggle, cull trigger, cull target, task protection, scan tick.
-    Independent of the online guard. Target down to 0 strips a region to lone commanders.
-  - Added dynamic checking of xlibs and xray-monolith/AOEngine versions with a compatibility verdict.
-  - An outdated xlibs no longer crashes AlifeGuard on load. The dependency check now shows the update-xlibs message instead of a raw script error from the MCM platform footer.
-  - Added Russian localization for the PDA cleanup tips and the MCM reset confirmation.
+  - Added Offline Guard: caps A-Life density on other levels so a hub no longer spikes the count.
+    A lighteight scan constantly checks offline squads by position and thins any region over its trigger to its target.
+    Named npcs, Commanders and protected squads are never removed.
+  - Companions are now always protected from culling, online and offline, whatever the task toggle.
+  - Added a platform status line in MCM with a live xlibs and engine compatibility verdict.
+  - Fixed a load crash when xlibs is outdated, showing an update-xlibs message instead of an error.
+  - Added Russian localization for the Offline Guard tab, cleanup tips, and MCM reset confirmation.
 
 1.2.7
   Summary: AOEngine compatibility, fewer engine warnings, MCM reset moved

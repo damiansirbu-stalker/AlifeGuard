@@ -2,8 +2,8 @@
 local assert, tostring, type, math_floor = assert, tostring, type, math.floor
 
 local MOD_NAME = "AlifeGuard"
-local _VERSION = "1.2.7"
-local XLIBS_MIN_VERSION = "1.7.7"
+local _VERSION = "1.3.0"
+local XLIBS_MIN_VERSION = "1.8.2"
 local XLIBS_URL = "https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001"
 
 -- Modded-exes minimum build in YYYYMMDD format. 20250908 = AOEngine v0.55 baseline
@@ -78,13 +78,9 @@ function platform_functor()
 end
 
 function on_game_start()
-    assert(xlog,
-        "\n\n! [" .. MOD_NAME .. "] xlibs is not installed.\n"..
-        "! " .. MOD_NAME .. " requires xlibs to function.\n"..
-        "! Install xlibs and restart the game.\n"..
-        "! " .. XLIBS_URL .. "\n"
-    )
-
+    -- No not-installed assert: with xlibs absent, ag_density.script:10 / ag_population.script:9
+    -- nil-index on xlog.get_logger during axr_main's body-load pass (axr_main.script:319-328),
+    -- before any on_game_start runs. Only the outdated-xlibs case survives to be reported here.
     assert(xlibs and xlibs.is_compatible,
         "\n\n! [" .. MOD_NAME .. "] xlibs is outdated (no compatibility API).\n"..
         "! Update xlibs and restart the game.\n"..
