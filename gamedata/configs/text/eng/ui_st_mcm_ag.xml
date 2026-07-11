@@ -104,7 +104,7 @@
 
     <!-- ==================== OFFLINE GUARD TAB ==================== -->
     <string id="ui_mcm_ag_offline_guard_info">
-        <text>The online guard only sees entities around you. Offline hubs on other levels can pack up dozens of squads that all come online at once when you fast-travel in. The Offline Guard scans offline population density per region and thins overcrowded regions before you arrive. Fully independent of the online guard: it has its own trigger, target, and protection settings. Every squad survives: commanders are kept, protected squads are untouched, and mod-scripted squads are thinned last.</text>
+        <text>The online guard only sees entities near you. A hub on another level can hold dozens of offline squads that all come online at once and spike the count. This scan bins offline squads into regions by position and thins any region over the trigger down to the target. Commanders and protected squads are never removed, so every squad survives. Independent of the online guard, with its own trigger, target, and task protection.</text>
     </string>
     <string id="ui_mcm_ag_hdr_density">
         <text>Offline Density</text>

@@ -53,14 +53,13 @@ Protection:
   catches named NPCs who are not squad commanders.
 
 Offline Guard:
-  The online guard only sees entities around you. Offline hubs on other levels can pack up
-  dozens of squads that all come online at once when you fast-travel in, spiking the count
-  before the online guard reacts. The Offline Guard scans offline population density per
-  region in the background and thins overcrowded regions before you arrive. Fully
-  independent of the online guard, with its own trigger, target, and task protection.
-  Set the target low to cull offline hubs hard, or high to only shave the worst spikes.
-  Commanders are kept, protected squads are untouched, mod-scripted squads are thinned
-  last. Toggle, cull trigger, cull target, task protection, and scan tick in MCM.
+  The online guard only sees entities near you. A hub on another level can hold dozens of
+  offline squads that all come online at once and spike the count. The Offline Guard runs a
+  staggered scan that bins offline squads into regions by position and thins any region over
+  the trigger down to the target. Commanders and protected squads are never removed, so every
+  squad survives. Independent of the online guard, with its own trigger, target, and task
+  protection. Target down to 0 strips a region to lone commanders. Toggle, cull trigger, cull
+  target, task protection, and scan tick in MCM.
 
 Smart Sanitizer:
   Defensive pass that clamps corrupted respawn counters on smart terrains. Negative or
