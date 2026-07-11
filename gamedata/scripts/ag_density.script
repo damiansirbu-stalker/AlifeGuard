@@ -57,12 +57,12 @@ local function load_config()
     local get = ag_mcm and ag_mcm.get_config
     if not get then return end
 
-    cfg.density_enabled = get("density_enabled") ~= false
-    cfg.density_trigger = get("density_trigger") or 120
-    cfg.density_target = get("density_target") or 80
-    cfg.density_check_tasks = get("density_check_tasks") ~= false
-    cfg.density_interval = get("density_interval") or 1
-    cfg.log_level = get("log_level") or "WARN"
+    cfg.density_enabled = get("density_enabled")
+    cfg.density_trigger = get("density_trigger")
+    cfg.density_target = get("density_target")
+    cfg.density_check_tasks = get("density_check_tasks")
+    cfg.density_interval = get("density_interval")
+    cfg.log_level = get("log_level")
 
     -- A target above the trigger would fire on cells that yield no removals; clamp so the
     -- lever is always meaningful (thin at least to the trigger).
@@ -145,6 +145,8 @@ local function _cull_squad(squad_id)
     if not squad then stats.gone = stats.gone + 1; return nil end
     if squad.online then stats.online = stats.online + 1; return nil end
     if squad:npc_count() <= 1 then stats.lone = stats.lone + 1; return nil end
+    -- Companions are always protected, ungated by density_check_tasks (never culled offline either).
+    if xsquad.is_companion(squad) then stats.protected = stats.protected + 1; return nil end
     if xsquad.is_protected(squad, _protection_opts) then stats.protected = stats.protected + 1; return nil end
     return squad
 end

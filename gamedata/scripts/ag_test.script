@@ -176,5 +176,5 @@ function run()
     _target_name = name
     RemoveTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION)
     CreateTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, TICK_SEC, _driver_tick)
-    _tip(string_format("ag_test: running, feeding %s every %ds (set max low + headroom 1.0 to force a cull)", name, TICK_SEC))
+    _tip(string_format("ag_test: running, feeding %s every %ds (set density_trigger/target low to force a cull)", name, TICK_SEC))
 end

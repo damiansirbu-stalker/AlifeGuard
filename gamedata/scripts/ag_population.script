@@ -16,6 +16,7 @@ local level_load_time = 0
 local LEVEL_LOAD_GRACE_PERIOD = 30
 local PROTECTION_TTL = 120
 local INVALID_GROUP = 65535
+local DESPAWN_JOB = "ag_despawn"
 
 local cfg = {
     enabled = true,
@@ -54,17 +55,17 @@ local function load_config()
 
     cfg.enabled = get("enabled")
     cfg.max = get("max")
-    cfg.buffer = get("buffer") or 10
+    cfg.buffer = get("buffer")
     cfg.check_interval = get("check_interval")
     cfg.check_tasks = get("check_tasks")
     cfg.prioritize_distant = get("prioritize_distant")
-    cfg.squad_culling = get("squad_culling") ~= false
-    cfg.round_robin = get("round_robin") ~= false
+    cfg.squad_culling = get("squad_culling")
+    cfg.round_robin = get("round_robin")
     cfg.pda = get("pda")
     cfg.pda_sound = get("pda_sound")
-    cfg.sanitize_smarts = get("sanitize_smarts") ~= false
-    cfg.sanitize_interval = get("sanitize_interval") or 300
-    cfg.log_level = get("log_level") or "WARN"
+    cfg.sanitize_smarts = get("sanitize_smarts")
+    cfg.sanitize_interval = get("sanitize_interval")
+    cfg.log_level = get("log_level")
 
     log.set_level(cfg.log_level)
     _dbg = log.get_level() >= 5
@@ -104,6 +105,11 @@ end
 
 local function _is_squad_protected(squad)
     local squad_id = squad.id
+    -- Companions are always protected, ungated by check_tasks (a recruited companion is never culled).
+    if xsquad.is_companion(squad) then
+        if _dbg then log.debug("[PROTECT] squad:%d companion", squad_id) end
+        return true
+    end
     local cached = _prot_cache[squad_id]
     if cached and clock() - cached < PROTECTION_TTL then
         if _dbg then log.debug("[PROTECT] squad:%d cached", squad_id) end
@@ -392,7 +398,7 @@ local function _despawn_from_queue(queue, current_count, target, tid)
     local failed_count, frames = 0, 0
     local start_time = clock()
 
-    xslice.start("ag_despawn", queue, {
+    xslice.start(DESPAWN_JOB, queue, {
         step = 1,
         func = function(ent)
             frames = frames + 1
@@ -487,7 +493,7 @@ local function actor_on_update()
         _sanitize_smart_terrains()
     end
 
-    if xslice.is_active("ag_despawn") then return end
+    if xslice.is_active(DESPAWN_JOB) then return end
     if tg - level_load_time < LEVEL_LOAD_GRACE_PERIOD then return end
     if tg - last_check_time < cfg.check_interval then return end
     last_check_time = tg

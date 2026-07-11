@@ -64,7 +64,7 @@
         <text>Protect task NPCs</text>
     </string>
     <string id="ui_mcm_ag_online_guard_check_tasks_desc">
-        <text>NPCs involved in active tasks cannot be removed. Disable if the Zone should be indifferent to your objectives.</text>
+        <text>Task NPCs (task givers, bounty and hostage targets) are protected while their task is active. Story characters, traders, named NPCs, and companions are always protected, whether this is on or off.</text>
     </string>
     <string id="ui_mcm_ag_online_guard_prioritize_distant">
         <text>Remove farthest first</text>
@@ -131,7 +131,7 @@
         <text>Protect task NPCs</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_check_tasks_desc">
-        <text>Squads tied to active tasks (task givers, bounty and hostage targets) are never culled offline. Separate from the online guard's own task protection.</text>
+        <text>Task NPCs (task givers, bounty and hostage targets) are protected while their task is active. Story characters, traders, named NPCs, and companions are always protected, whether this is on or off.</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_interval">
         <text>Scan tick</text>

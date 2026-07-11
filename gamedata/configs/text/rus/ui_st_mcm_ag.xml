@@ -54,7 +54,7 @@
     <text>Защищать квестовых NPC</text>
   </string>
   <string id="ui_mcm_ag_online_guard_check_tasks_desc">
-    <text>NPC, связанные с активными заданиями, не могут быть удалены. Отключите, если Зона должна быть безразлична к вашим целям.</text>
+    <text>Квестовые NPC (заказчики заданий, цели наград и заложники) защищены, пока их задание активно. Сюжетные персонажи, торговцы, именные NPC и напарники защищены всегда, независимо от этой настройки.</text>
   </string>
   <string id="ui_mcm_ag_online_guard_prioritize_distant">
     <text>Удалять дальних первыми</text>
@@ -160,5 +160,44 @@
   </string>
   <string id="st_ag_reset_all_done">
     <text>AlifeGuard: все настройки сброшены к значениям по умолчанию.</text>
+  </string>
+  <string id="ui_mcm_menu_offline_guard">
+    <text>Оффлайн-охрана</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_info">
+    <text>Онлайн-охрана видит только сущности рядом с вами. Узел на другом уровне может накопить десятки оффлайн-отрядов, которые разом выходят в онлайн и резко поднимают счётчик. Это сканирование распределяет оффлайн-отряды по регионам на основе позиции и прореживает любой регион выше порога до цели. Командиры и защищённые отряды никогда не удаляются, поэтому каждый отряд выживает. Независимо от онлайн-охраны, со своим порогом, целью и защитой заданий.</text>
+  </string>
+  <string id="ui_mcm_ag_hdr_density">
+    <text>Оффлайн-плотность</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_enabled">
+    <text>Включить оффлайн-охрану</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_enabled_desc">
+    <text>Прореживать перенаселённые оффлайн-регионы на уровнях вдали от вас. Отряды выживают, командиры и защищённые NPC никогда не удаляются.</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_trigger">
+    <text>Порог очистки</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_trigger_desc">
+    <text>Количество оффлайн-тел, при котором регион считается перенаселённым. Регион очищается только если тел больше этого значения. Меньше = очищается больше регионов.</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_target">
+    <text>Цель очистки</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_target_desc">
+    <text>До какого количества тел прореживается помеченный регион. Меньше = сильнее очистка. 0 оставляет в регионе только одиночных командиров отрядов. Независимо от онлайн-максимума. Ограничивается порогом, если задано выше.</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_check_tasks">
+    <text>Защищать квестовых NPC</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_check_tasks_desc">
+    <text>Квестовые NPC (заказчики заданий, цели наград и заложники) защищены, пока их задание активно. Сюжетные персонажи, торговцы, именные NPC и напарники защищены всегда, независимо от этой настройки.</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_interval">
+    <text>Шаг сканирования</text>
+  </string>
+  <string id="ui_mcm_ag_offline_guard_density_interval_desc">
+    <text>[секунды]\nВремя между шагами сканирования. Каждый шаг проверяет небольшую партию отрядов, поэтому полный проход по Зоне занимает несколько шагов. Меньше = свежее данные о плотности при чуть большей нагрузке.</text>
   </string>
 </string_table>
