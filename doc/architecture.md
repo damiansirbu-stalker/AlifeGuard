@@ -205,16 +205,22 @@ Per squad: skip online, skip empty, skip the actor's level; bin `squad:npc_count
 
 ### Cull
 
-At pass end, cells with `count > density_trigger` on non-actor levels are thinned by `count - density_target` members: commanders never queued, protected squads (`xsquad.is_protected`) skipped, members of unscripted squads before scripted ones, round-robin across `squad.player_id` categories. Per-member protection uses `xcreature.is_unscriptable_se`, the offline-safe variant of the online path's `is_unscriptable` (story-id registry, `xdata.unscriptable_npcs` section hash, squad story-id — everything the online check reads except the game-object-only companion flag). Task-giver and bounty/hostage protection is squad-level via `is_protected`, gated by the offline guard's own `density_check_tasks`. One combined queue drains through the shared xslice `"ag_despawn"` job (never concurrent with the online cull).
+At pass end, cells with `count > density_trigger` on non-actor levels are thinned by `count - density_target` members. The synchronous step is only a pure-Lua work list: each over-trigger cell contributes a shared budget table (`count - target`) and one `{squad_id, budget}` item per squad, with zero luabind. All squad resolution, protection, and release is deferred into the shared xslice `"ag_despawn"` job, one squad per frame, so no single frame examines more than one squad and the build stays flat regardless of cull size.
+
+Per squad in its frame: resolve fresh, skip if gone/online/lone/protected (`xsquad.is_protected`), then release its non-commander members down to the cell budget. Commanders are never queued. Per-member protection uses `xcreature.is_unscriptable_se`, the offline-safe variant of the online path's `is_unscriptable` (story-id registry, `xdata.unscriptable_npcs` section hash, squad story-id — everything the online check reads except the game-object-only companion flag). Task-giver and bounty/hostage protection is squad-level via `is_protected`, gated by the offline guard's own `density_check_tasks`.
+
+No round-robin across factions (that needs the whole member set built at once, which defeats frame-spreading). It is unnecessary offline: every squad keeps its commander and survives, so no faction is wiped and there is nothing to spread fairly. Cells are processed in scan order. The `xslice.is_active` guard means the offline and online culls never run despawn jobs concurrently; a cull that outlasts the next scan pass simply defers the next cull until it finishes.
 
 Fully decoupled from the online guard. `density_trigger` (when a region is overcrowded) and `density_target` (what to thin it to) are absolute body counts, not derived from the online `max`. Target can go as low as 0 (strip a region to lone commanders), so offline can be culled harder than the online cap if wanted. A target above the trigger is clamped to the trigger. The offline pass reads none of the online guard's keys.
 
 ### Release path (offline)
 
-Every entry revalidates at release time: entity still exists, section matches (id recycling), still offline (came online mid-drain -> left to the online guard), squad still valid, not the current commander (commander drift). Then, in order:
+The squad is resolved fresh in its own drain frame, so member id and commander id are current — there is no build/drain staleness window (the squad could have gone online, dissolved, or lost its commander between the pass end and this frame, all caught by the fresh `_cull_squad` resolve). Per member: skip if it is the commander, gone, online, or named/story (`is_unscriptable_se`). Then, in order:
 
 1. `smart:unregister_npc(se)` with the NPC when `smart_terrain_id() ~= 65535` - clears the smart's `npc_info[npc_id]`/`arriving_npc[npc_id]` by the correct key and sets `m_smart_terrain_id = 0xffff`. Vanilla `remove_npc` passes the squad instead, which would leave a stale `npc_info` entry holding a destroyed server-object reference.
 2. `alife_release(se)` - routes to `squad:remove_npc(id, true)`: `unregister_member` detaches the engine-side member pointer BEFORE `safe_release_manager` destroys the entity. Offline entities have no binder, so the release completes on the manager's next pass.
+
+A squad's surplus members release together in its one frame (bounded by squad size, ~9 max, all offline so no `switch_offline` dance and no binder wait). One squad per frame keeps per-frame work bounded and the synchronous build off the hot path.
 
 Direct `alife():release()` on a squad member is forbidden: the group's `update()` writes through raw `m_members` pointers and the engine has no member auto-detach on release (use-after-free).
 
