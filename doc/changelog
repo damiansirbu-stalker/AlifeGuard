@@ -1,4 +1,4 @@
-1.3.0
+next
   Summary: Offline guard, companion protection, platform status, localization, fixes
 
   - Added Offline Guard: caps A-Life density on other levels so a hub no longer spikes the count.
