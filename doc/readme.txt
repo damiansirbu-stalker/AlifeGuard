@@ -31,7 +31,7 @@ Squad-aware culling:
   Entities are processed as part of their squad, not individually. Non-commander members
   are thinned first. Commanders are removed only as a last resort.
   This preserves squads in SIMBOARD, keeps already_spawned counters intact, and prevents
-  the respawn churn that individual-NPC despawners cause.
+  the repeated respawns that individual-NPC despawners cause.
   Squads controlled by other mods (AlifePlus, Warfare, Guards Spawner) are deprioritized:
   their members go after unscripted members, their commanders last of all.
 
@@ -108,10 +108,10 @@ Runs on themrdemonized modded exes 2025.9.10 or newer, or AOEngine v0.55 or newe
 The full feature set needs the latest demonized build. A feature that needs a newer build stays inactive on older exes.
 Does not modify base scripts. Uses the standard engine API (alife_release).
 Superseded (AlifeGuard does this - drop the other):
-- Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, churning respawns.
+- Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, forcing repeated respawns.
 
 Conflicts (pick one - two governors fight):
-- Any other despawn / population-release mod: conflicting releases, respawn churn, entity leaks.
+- Any other despawn / population-release mod: conflicting releases, repeated respawns, entity leaks.
 - Extended sim-distance / offline-range mods (Living Zone 2000m, Extended Offline, ROAD alife range 666): expand the population while AlifeGuard contracts it; they oscillate.
 
 Affects / coexists:

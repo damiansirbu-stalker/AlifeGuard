@@ -76,7 +76,7 @@
         <text>Per-squad culling</text>
     </string>
     <string id="ui_mcm_ag_online_guard_squad_culling_desc">
-        <text>Thin squad members before touching commanders. Keeps squads alive, prevents respawn churn. If disabled, all entities released individually like v1.0.</text>
+        <text>Thin squad members before touching commanders. Keeps squads alive, prevents repeated respawns. If disabled, all entities released individually like v1.0.</text>
     </string>
     <string id="ui_mcm_ag_online_guard_round_robin">
         <text>Round-robin fairness</text>

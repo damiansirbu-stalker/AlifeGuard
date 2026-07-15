@@ -20,7 +20,7 @@ Simple despawners remove individual NPCs without considering squad structure. Th
 
 [size=3][b]Squad-aware culling[/b][/size]
 Entities are processed as part of their squad, not individually. Non-commander members are thinned first. Commanders are removed only as a last resort.
-This preserves squads in SIMBOARD, keeps already_spawned counters intact, and prevents the respawn churn that individual-NPC despawners cause.
+This preserves squads in SIMBOARD, keeps already_spawned counters intact, and prevents the repeated respawns that individual-NPC despawners cause.
 Squads controlled by other mods (AlifePlus, Warfare, Guards Spawner) are deprioritized: their members go after unscripted members, their commanders last of all.
 
 [size=3][b]Round-robin fairness[/b][/size]
@@ -78,9 +78,9 @@ Disable or remove in MO2.
 [/list]
 Does not modify base scripts. Uses the standard engine API (alife_release).
 Superseded (AlifeGuard does this - drop the other):
-- Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, churning respawns.
+- Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, forcing repeated respawns.
 Conflicts (pick one - two governors fight):
-- Any other despawn / population-release mod: conflicting releases, respawn churn, entity leaks.
+- Any other despawn / population-release mod: conflicting releases, repeated respawns, entity leaks.
 - Extended sim-distance / offline-range mods (Living Zone 2000m, Extended Offline, ROAD alife range 666): expand the population while AlifeGuard contracts it; they oscillate.
 Affects / coexists:
 - A-Life config tweaks (alife.ltx, smart max_population, Redone Alife Performance, x3 perf): engine-parameter layer, no overlap.

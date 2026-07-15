@@ -13,7 +13,7 @@
 <p>AlifeGuard keeps the online population under control while preserving how A-Life works. Squads remain valid, smart terrains behave correctly, no respawn loops. It reduces load without breaking the simulation.</p>
 <p>Simple despawners remove individual NPCs without considering squad structure. This can delete entire squads, open respawn slots, leave smart terrains in a malformed state where they stop spawning, and interfere with mods that script squads. AlifeGuard works at the squad level and accounts for the engine's spawn bookkeeping.</p>
 <h2>Squad-aware culling</h2>
-<p>Entities are processed as part of their squad, not individually. Non-commander members are thinned first. Commanders are removed only as a last resort.<br />This preserves squads in SIMBOARD, keeps already_spawned counters intact, and prevents the respawn churn that individual-NPC despawners cause.<br />Squads controlled by other mods (AlifePlus, Warfare, Guards Spawner) are deprioritized: their members go after unscripted members, their commanders last of all.</p>
+<p>Entities are processed as part of their squad, not individually. Non-commander members are thinned first. Commanders are removed only as a last resort.<br />This preserves squads in SIMBOARD, keeps already_spawned counters intact, and prevents the repeated respawns that individual-NPC despawners cause.<br />Squads controlled by other mods (AlifePlus, Warfare, Guards Spawner) are deprioritized: their members go after unscripted members, their commanders last of all.</p>
 <h2>Round-robin fairness</h2>
 <p>Removals are spread across factions and mutant types. One entity per category per round. No single group is disproportionately affected.</p>
 <h2>Hysteresis</h2>
@@ -43,8 +43,8 @@
 <li>The full feature set needs the latest demonized build. A feature that needs a newer build stays inactive on older exes.</li>
 </ul>
 <p>Does not modify base scripts. Uses the standard engine API (alife_release).</p>
-<p><b>Superseded (AlifeGuard does this - drop the other):</b><br />Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, churning respawns.</p>
-<p><b>Conflicts (pick one - two governors fight):</b><br />Any other despawn / population-release mod: conflicting releases, respawn churn, entity leaks.<br />Extended sim-distance / offline-range mods (Living Zone 2000m, Extended Offline, ROAD alife range 666): expand the population while AlifeGuard contracts it; they oscillate.</p>
+<p><b>Superseded (AlifeGuard does this - drop the other):</b><br />Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, forcing repeated respawns.</p>
+<p><b>Conflicts (pick one - two governors fight):</b><br />Any other despawn / population-release mod: conflicting releases, repeated respawns, entity leaks.<br />Extended sim-distance / offline-range mods (Living Zone 2000m, Extended Offline, ROAD alife range 666): expand the population while AlifeGuard contracts it; they oscillate.</p>
 <p><b>Affects / coexists:</b><br />A-Life config tweaks (alife.ltx, smart max_population, Redone Alife Performance, x3 perf): engine-parameter layer, no overlap.<br />AlifeBalance: different axis (respawn acceleration vs distant-NPC release); composes.</p>
 <h2>Known issue</h2>
 <p>Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's inventory parent tracking, present in all population mods. No script-side fix exists.</p>
