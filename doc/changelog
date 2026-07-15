@@ -1,9 +1,8 @@
-next
+1.3.0
   Summary: Offline guard, companion protection, platform status, localization, fixes
 
   - Added Offline Guard: caps A-Life density on other levels so a hub no longer spikes the count.
-    A lightweight scan constantly checks offline squads by position and thins any region over its trigger to its target.
-    Named NPCs, commanders, and protected squads are never removed.
+    A lightweight scan constantly checks offline squads by position and thins any region over its trigger to its target. Named NPCs, commanders, and protected squads are never removed.
   - Companions are now always protected from culling, online and offline, whatever the task toggle.
   - Added a platform status line in MCM with a live xlibs and engine compatibility verdict.
   - Fixed a load crash when xlibs is outdated, showing an update-xlibs message instead of an error.

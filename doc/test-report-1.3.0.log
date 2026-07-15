@@ -1,5 +1,5 @@
 STALKER Mod Validation Report
-Generated: 2026-07-11 20:21:32
+Generated: 2026-07-15 21:48:53
 Validator: stalker-manager validate
 Mods: 1
 
@@ -283,50 +283,50 @@ Files:
 [4/4] load - runtime loading (PASS)
   Test: lua54 interpreter + X-Ray engine stubs
   Load test: AlifeGuard
-  LOAD: xstash
-  LOAD: xevent
-  LOAD: _ag_deps
-  LOAD: xlibs
-  LOAD: xtime
-  LOAD: xpp
-  LOAD: xsmart
-  LOAD: xdata
-  LOAD: xinventory
-  LOAD: xstring
-  LOAD: xchange
-  LOAD: xprofiler
-  LOAD: xactor
-  LOAD: xlog
-  LOAD: xslice
-  LOAD: xtable
-  LOAD: ag_density
-  LOAD: xsquad
-  LOAD: xsmart_spawn
-  LOAD: xinspect
-  LOAD: xcreature
-  LOAD: xconst
-  LOAD: xobject
-  LOAD: xmcm
-  LOAD: ag_test
-  LOAD: ag_population
-  LOAD: ag_mcm
-  LOAD: xmath
-  LOAD: xbus
-  LOAD: xcombat
-  LOAD: xttltable
-  LOAD: xtrace
-  LOAD: xsound
-  LOAD: xpda
   LOAD: xlibs_mcm
+  LOAD: xtrace
+  LOAD: xtable
+  LOAD: xobject
+  LOAD: xlog
+  LOAD: xcombat
+  LOAD: xcreature
+  LOAD: xslice
+  LOAD: xpp
+  LOAD: xmath
+  LOAD: xpda
+  LOAD: xconst
+  LOAD: _ag_deps
+  LOAD: ag_test
+  LOAD: xsquad
+  LOAD: xchange
+  LOAD: xinventory
+  LOAD: xbus
+  LOAD: xlibs
+  LOAD: xmcm
+  LOAD: xinspect
+  LOAD: xstring
+  LOAD: xevent
+  LOAD: xttltable
+  LOAD: xactor
+  LOAD: xdata
+  LOAD: ag_population
+  LOAD: xsound
+  LOAD: ag_density
+  LOAD: xtime
+  LOAD: xstash
+  LOAD: ag_mcm
+  LOAD: xsmart
+  LOAD: xsmart_spawn
+  LOAD: xprofiler
   LOAD: xlevel
+  START: xlog.on_game_start
+  START: ag_mcm.on_game_start
+  START: xtime.on_game_start
+  START: ag_density.on_game_start
   START: xsound.on_game_start
   START: ag_population.on_game_start
-  START: xlog.on_game_start
-  START: ag_density.on_game_start
-  START: xpp.on_game_start
   START: _ag_deps.on_game_start
-  START: xtime.on_game_start
-  START: ag_mcm.on_game_start
+  START: xpp.on_game_start
   OK: 36 loaded, 8 on_game_start
 
 ========================================================================
