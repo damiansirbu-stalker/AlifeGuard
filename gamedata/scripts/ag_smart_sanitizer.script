@@ -1,0 +1,112 @@
+--- ag_smart_sanitizer: Smart Sanitizer - clamps corrupted already_spawned respawn counters
+
+local pairs, type, string, tostring = pairs, type, string, tostring
+local clock, RegisterScriptCallback = os.clock, RegisterScriptCallback
+local xlog, xprofiler = xlog, xprofiler
+
+local log = xlog.get_logger("AG.SANITIZE", { outfile = "alifeguard.log" })
+local _dbg = false
+
+local last_sanitize_time = 0
+
+local cfg = {
+    sanitize_smarts = true,
+    sanitize_interval = 300,
+    log_level = "WARN",
+}
+
+-- ==================== CONFIG ====================
+
+local function load_config()
+    local get = ag_mcm and ag_mcm.get_config
+    if not get then return end
+
+    cfg.sanitize_smarts = get("sanitize_smarts")
+    cfg.sanitize_interval = get("sanitize_interval")
+    cfg.log_level = get("log_level")
+
+    log.set_level(cfg.log_level)
+    _dbg = log.get_level() >= 5
+
+    log.info("[CONFIG] sanitize=%s interval=%ds log=%s",
+        tostring(cfg.sanitize_smarts), cfg.sanitize_interval, cfg.log_level)
+end
+
+-- ==================== SANITIZE ====================
+
+-- Clamp smart.already_spawned[k] corruption (value not a table, num not a number, num < 0).
+-- Source: sim_squad_scripted.script:1028 over-decrement racing with external despawners.
+-- Effect: prevents save CTD (smart_terrain.script:955-966 u8 write) and infinite spawn
+-- (smart_terrain.script:1696 max>num decision). Pure Lua field writes; 0 luabind.
+local function _sanitize_smart(smart)
+    if not smart or not smart.already_spawned then return 0 end
+    local fixed = 0
+    local name
+    for k, v in pairs(smart.already_spawned) do
+        local fix_msg
+        if type(v) ~= "table" then
+            fix_msg = string.format("value type=%s -> { num=0 }", type(v))
+            smart.already_spawned[k] = { num = 0 }
+        elseif type(v.num) ~= "number" then
+            fix_msg = string.format("num type=%s -> 0", type(v.num))
+            v.num = 0
+        elseif v.num < 0 then
+            fix_msg = string.format("num=%d -> 0", v.num)
+            v.num = 0
+        end
+        if fix_msg then
+            name = name or smart:name()
+            log.warn("[SANITIZE] smart=%s key=%s %s", name, k, fix_msg)
+            fixed = fixed + 1
+        end
+    end
+    return fixed
+end
+
+local function _sanitize_smart_terrains()
+    if not SIMBOARD or not SIMBOARD.smarts then
+        log.debug("[SANITIZE] SIMBOARD not ready")
+        return 0, 0
+    end
+    local timer = xprofiler.new_if(_dbg):start()
+    local scanned, fixed = 0, 0
+    for _, rec in pairs(SIMBOARD.smarts) do
+        scanned = scanned + 1
+        fixed = fixed + _sanitize_smart(rec.smrt)
+    end
+    timer:stop()
+    log.info("[SANITIZE] scanned=%d fixed=%d [%.2fms]", scanned, fixed, timer:get_ms())
+    return scanned, fixed
+end
+
+-- ==================== LIFECYCLE ====================
+
+-- Independent of the Online Guard's enabled toggle: state hygiene runs whenever the Smart
+-- Sanitizer itself is on, so a disabled population guard never leaves save-CTD counters unclamped.
+local function actor_on_update()
+    if not cfg.sanitize_smarts then return end
+    if not db or not db.actor then return end
+    local tg = clock()
+    if tg - last_sanitize_time < cfg.sanitize_interval then return end
+    last_sanitize_time = tg
+    _sanitize_smart_terrains()
+end
+
+-- Reinit fires after STATE_Read restores already_spawned but before the alife pump
+-- (bind_stalker.script:198-200). Sanitizing here prevents try_respawn from reading
+-- corrupted counters during the 65534-objects-per-update burst on load.
+local function actor_on_reinit()
+    if not cfg.sanitize_smarts then return end
+    _sanitize_smart_terrains()
+end
+
+function on_option_change()
+    load_config()
+end
+
+function on_game_start()
+    load_config()
+    RegisterScriptCallback("actor_on_update", actor_on_update)
+    RegisterScriptCallback("actor_on_reinit", actor_on_reinit)
+    RegisterScriptCallback("on_option_change", on_option_change)
+end

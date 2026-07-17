@@ -1,17 +1,16 @@
---- ag_population: Population control - per-squad culling with round-robin fairness and hysteresis
+--- ag_online_guard: Online Guard - per-squad online culling with round-robin fairness and hysteresis
 
-local pairs, ipairs, math_sqrt, math_random, tostring, type, string = pairs, ipairs, math.sqrt, math.random, tostring, type, string
+local math_sqrt, math_random, tostring = math.sqrt, math.random, tostring
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
 local alife_object, alife_release, alife, clsid, RegisterScriptCallback = alife_object, alife_release, alife, clsid, RegisterScriptCallback
-local xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature, xsound = xlog, xtrace, xsquad, xtable, xslice, xprofiler, xcreature, xsound
+local xlog, xtrace, xsquad, xslice, xprofiler, xcreature, xsound = xlog, xtrace, xsquad, xslice, xprofiler, xcreature, xsound
 
-local log = xlog.get_logger("AG.POP", { outfile = "alifeguard.log" })
+local log = xlog.get_logger("AG.ONLINE", { outfile = "alifeguard.log" })
 local _dbg = false
 local _null_trace = xtrace.new_if(false)
 
 local last_check_time = 0
-local last_sanitize_time = 0
 local level_load_time = 0
 local LEVEL_LOAD_GRACE_PERIOD = 30
 local PROTECTION_TTL = 120
@@ -29,8 +28,6 @@ local cfg = {
     round_robin = true,
     pda = true,
     pda_sound = true,
-    sanitize_smarts = true,
-    sanitize_interval = 300,
     log_level = "WARN",
 }
 
@@ -63,8 +60,6 @@ local function load_config()
     cfg.round_robin = get("round_robin")
     cfg.pda = get("pda")
     cfg.pda_sound = get("pda_sound")
-    cfg.sanitize_smarts = get("sanitize_smarts")
-    cfg.sanitize_interval = get("sanitize_interval")
     cfg.log_level = get("log_level")
 
     log.set_level(cfg.log_level)
@@ -72,11 +67,10 @@ local function load_config()
     _update_protection_opts()
     _prot_cache = {}
 
-    log.info("[CONFIG] enabled=%s max=%d buffer=%d interval=%ds tasks=%s squads=%s rr=%s dist=%s pda=%s sanitize=%s/%ds log=%s",
+    log.info("[CONFIG] enabled=%s max=%d buffer=%d interval=%ds tasks=%s squads=%s rr=%s dist=%s pda=%s log=%s",
         tostring(cfg.enabled), cfg.max, cfg.buffer, cfg.check_interval,
         tostring(cfg.check_tasks), tostring(cfg.squad_culling), tostring(cfg.round_robin),
-        tostring(cfg.prioritize_distant), tostring(cfg.pda),
-        tostring(cfg.sanitize_smarts), cfg.sanitize_interval, cfg.log_level)
+        tostring(cfg.prioritize_distant), tostring(cfg.pda), cfg.log_level)
 end
 
 -- ==================== PDA NOTIFICATIONS ====================
@@ -250,135 +244,22 @@ end
 
 -- ==================== RELEASE QUEUE ====================
 
--- Add entity to a category bucket within a tier
-local function _add_to_tier(tier, category, entry)
-    local cat = tier[category]
-    if not cat then cat = {}; tier[category] = cat end
-    cat[#cat + 1] = entry
-end
-
--- Resolve tier index for a squad record
-local function _member_tier(rec)
-    if not cfg.squad_culling then return 1 end
-    return rec.scripted and 2 or 1
-end
-
-local function _commander_tier(rec)
-    if not cfg.squad_culling then return 1 end
-    return rec.scripted and 4 or 3
-end
-
--- Sort squad members into 4 priority tiers by scripted status
--- Tier 1: non-commander from unscripted squads + orphans (first to go)
--- Tier 2: non-commander from scripted squads
--- Tier 3: commander from unscripted squads
--- Tier 4: commander from scripted squads (last resort)
-local function _categorize_squads(_squads, orphans, tiers)
-    for _, rec in pairs(_squads) do
-        if rec.protected then goto next_squad end
-        local mt = _member_tier(rec)
-        for _, ent in ipairs(rec.removable) do
-            _add_to_tier(tiers[mt], rec.category, ent)
-        end
-        if rec.commander_entry then
-            _add_to_tier(tiers[_commander_tier(rec)], rec.category, rec.commander_entry)
-        end
-        ::next_squad::
-    end
-    if #orphans > 0 then
-        tiers[1]["orphan"] = orphans
-    end
-end
-
--- Sort or shuffle entries within a single tier's categories
-local function _sort_tier(tier, sort_fn)
-    for cat, entries in pairs(tier) do
-        if #entries > 1 then
-            tier[cat] = sort_fn and xtable.sort(entries, sort_fn) or xtable.shuffle(entries)
-        end
-    end
-end
-
-local function _sort_categories(tiers)
-    local sort_fn = cfg.prioritize_distant and function(a, b) return a.dist_sq > b.dist_sq end or nil
-    for tier_idx = 1, 4 do
-        _sort_tier(tiers[tier_idx], sort_fn)
-    end
-end
-
--- Take one entity from a source if available
-local function _take_from_source(src, queue)
-    if src.idx > #src.items then return false end
-    queue[#queue + 1] = src.items[src.idx]
-    src.idx = src.idx + 1
-    return true
-end
-
--- One round of round-robin: take 1 from each source, return true if any taken
-local function _round_robin_step(sources, queue, target)
-    local any = false
-    for i = 1, #sources do
-        if #queue >= target then return any end
-        if _take_from_source(sources[i], queue) then any = true end
-    end
-    return any
-end
-
--- Round-robin: take 1 entity from each category per round until target reached
-local function _round_robin_fill(tier, queue, target)
-    local sources = {}
-    for _, entries in pairs(tier) do
-        sources[#sources + 1] = { items = entries, idx = 1 }
-    end
-    if #sources == 0 then return end
-    while #queue < target do
-        if not _round_robin_step(sources, queue, target) then return end
-    end
-end
-
--- Linear fill: merge all categories in tier into flat sorted/shuffled list
-local function _linear_fill(tier, queue, target)
-    local merged = {}
-    for _, entries in pairs(tier) do
-        for _, ent in ipairs(entries) do
-            merged[#merged + 1] = ent
-        end
-    end
-    if #merged == 0 then return end
-    if cfg.prioritize_distant then
-        merged = xtable.sort(merged, function(a, b) return a.dist_sq > b.dist_sq end)
-    else
-        merged = xtable.shuffle(merged)
-    end
-    for i = 1, #merged do
-        if #queue >= target then return end
-        queue[#queue + 1] = merged[i]
-    end
-end
-
--- Build release queue: 4 tiers, fill within each (round-robin or linear), stop at target
+-- Order the collected records via ag_queue (pure strategy), timing and logging the build here
+-- where the logger and _dbg live. cfg flags pass in as opts per the dependency-injection rule.
 local function _build_release_queue(_squads, orphans, target, tid)
     if target <= 0 then return {} end
     local queue_timer = xprofiler.new_if(_dbg):start()
-    local tiers = { {}, {}, {}, {} }
-    _categorize_squads(_squads, orphans, tiers)
-
-    local fill_fn
-    if cfg.round_robin then
-        _sort_categories(tiers)
-        fill_fn = _round_robin_fill
-    else
-        fill_fn = _linear_fill
-    end
-
-    local queue = {}
-    for tier_idx = 1, 4 do
-        if #queue >= target then break end
-        local before = #queue
-        fill_fn(tiers[tier_idx], queue, target)
-        if _dbg then log.debug("[QUEUE] [tid=%d] tier%d +%d", tid, tier_idx, #queue - before) end
-    end
+    local queue, tier_counts = ag_queue.build(_squads, orphans, target, {
+        round_robin = cfg.round_robin,
+        prioritize_distant = cfg.prioritize_distant,
+        squad_culling = cfg.squad_culling,
+    })
     queue_timer:stop()
+    if _dbg then
+        for tier_idx = 1, #tier_counts do
+            log.debug("[QUEUE] [tid=%d] tier%d +%d", tid, tier_idx, tier_counts[tier_idx])
+        end
+    end
     log.debug("[QUEUE] [tid=%d] %d/%d entities [%.2fms]", tid, #queue, target, queue_timer:get_ms())
     return queue
 end
@@ -432,53 +313,6 @@ local function _despawn_from_queue(queue, current_count, target, tid)
     })
 end
 
--- ==================== SANITIZE ====================
-
--- Clamp smart.already_spawned[k] corruption (cases A/B/C, see todo-alifeguard-backlog n07).
--- Source: sim_squad_scripted.script:1028 over-decrement racing with external despawners.
--- Effect: prevents save CTD (smart_terrain.script:955-966 u8 write) and infinite spawn
--- (smart_terrain.script:1696 max>num decision). Pure Lua field writes; 0 luabind.
-local function _sanitize_smart(smart)
-    if not smart or not smart.already_spawned then return 0 end
-    local fixed = 0
-    local name
-    for k, v in pairs(smart.already_spawned) do
-        local fix_msg
-        if type(v) ~= "table" then
-            fix_msg = string.format("value type=%s -> { num=0 }", type(v))
-            smart.already_spawned[k] = { num = 0 }
-        elseif type(v.num) ~= "number" then
-            fix_msg = string.format("num type=%s -> 0", type(v.num))
-            v.num = 0
-        elseif v.num < 0 then
-            fix_msg = string.format("num=%d -> 0", v.num)
-            v.num = 0
-        end
-        if fix_msg then
-            name = name or smart:name()
-            log.warn("[SANITIZE] smart=%s key=%s %s", name, k, fix_msg)
-            fixed = fixed + 1
-        end
-    end
-    return fixed
-end
-
-local function _sanitize_smart_terrains()
-    if not SIMBOARD or not SIMBOARD.smarts then
-        log.debug("[SANITIZE] SIMBOARD not ready")
-        return 0, 0
-    end
-    local timer = xprofiler.new_if(_dbg):start()
-    local scanned, fixed = 0, 0
-    for _, rec in pairs(SIMBOARD.smarts) do
-        scanned = scanned + 1
-        fixed = fixed + _sanitize_smart(rec.smrt)
-    end
-    timer:stop()
-    log.info("[SANITIZE] scanned=%d fixed=%d [%.2fms]", scanned, fixed, timer:get_ms())
-    return scanned, fixed
-end
-
 -- ==================== MAIN UPDATE ====================
 
 local function actor_on_update()
@@ -486,13 +320,6 @@ local function actor_on_update()
     if not db or not db.actor then return end
 
     local tg = clock()
-
-    -- Sanitize gate (independent of cull/despawn cadence)
-    if cfg.sanitize_smarts and tg - last_sanitize_time >= cfg.sanitize_interval then
-        last_sanitize_time = tg
-        _sanitize_smart_terrains()
-    end
-
     if xslice.is_active(DESPAWN_JOB) then return end
     if tg - level_load_time < LEVEL_LOAD_GRACE_PERIOD then return end
     if tg - last_check_time < cfg.check_interval then return end
@@ -517,15 +344,6 @@ local function on_actor_first_update()
     level_load_time = clock()
 end
 
--- Reinit fires after STATE_Read restores already_spawned but before alife pump
--- (bind_stalker.script:198-200). Sanitizing here prevents try_respawn from reading
--- corrupted counters during the 65534-objects-per-update burst on load.
-local function actor_on_reinit()
-    if not cfg.enabled then return end
-    if not cfg.sanitize_smarts then return end
-    _sanitize_smart_terrains()
-end
-
 function on_option_change()
     load_config()
 end
@@ -539,6 +357,4 @@ function on_game_start()
     RegisterScriptCallback("actor_on_update", actor_on_update)
     RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("actor_on_first_update", on_actor_first_update)
-    RegisterScriptCallback("actor_on_reinit", actor_on_reinit)
 end
-

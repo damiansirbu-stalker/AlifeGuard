@@ -1,0 +1,140 @@
+--- ag_queue: Release-queue strategy - orders cull candidates by priority tier and fairness
+
+local pairs, ipairs = pairs, ipairs
+
+-- Add entity to a category bucket within a tier
+local function _add_to_tier(tier, category, entry)
+    local cat = tier[category]
+    if not cat then cat = {}; tier[category] = cat end
+    cat[#cat + 1] = entry
+end
+
+-- Resolve member tier for a squad record (1 unscripted, 2 scripted; 1 for all when squad culling off)
+local function _member_tier(rec, squad_culling)
+    return squad_culling and (rec.scripted and 2 or 1) or 1
+end
+
+-- Resolve commander tier for a squad record (3 unscripted, 4 scripted; 1 for all when squad culling off)
+local function _commander_tier(rec, squad_culling)
+    return squad_culling and (rec.scripted and 4 or 3) or 1
+end
+
+-- Sort squad members into 4 priority tiers by scripted status
+-- Tier 1: non-commander from unscripted squads + orphans (first to go)
+-- Tier 2: non-commander from scripted squads
+-- Tier 3: commander from unscripted squads
+-- Tier 4: commander from scripted squads (last resort)
+local function _categorize_squads(squads, orphans, tiers, squad_culling)
+    for _, rec in pairs(squads) do
+        if rec.protected then goto next_squad end
+        local mt = _member_tier(rec, squad_culling)
+        for _, ent in ipairs(rec.removable) do
+            _add_to_tier(tiers[mt], rec.category, ent)
+        end
+        if rec.commander_entry then
+            _add_to_tier(tiers[_commander_tier(rec, squad_culling)], rec.category, rec.commander_entry)
+        end
+        ::next_squad::
+    end
+    if #orphans > 0 then
+        tiers[1]["orphan"] = orphans
+    end
+end
+
+-- Sort or shuffle entries within a single tier's categories
+local function _sort_tier(tier, sort_fn)
+    for cat, entries in pairs(tier) do
+        if #entries > 1 then
+            tier[cat] = sort_fn and xtable.sort(entries, sort_fn) or xtable.shuffle(entries)
+        end
+    end
+end
+
+local function _sort_categories(tiers, prioritize_distant)
+    local sort_fn = prioritize_distant and function(a, b) return a.dist_sq > b.dist_sq end or nil
+    for tier_idx = 1, 4 do
+        _sort_tier(tiers[tier_idx], sort_fn)
+    end
+end
+
+-- Take one entity from a source if available
+local function _take_from_source(src, queue)
+    if src.idx > #src.items then return false end
+    queue[#queue + 1] = src.items[src.idx]
+    src.idx = src.idx + 1
+    return true
+end
+
+-- One round of round-robin: take 1 from each source, return true if any taken
+local function _round_robin_step(sources, queue, target)
+    local any = false
+    for i = 1, #sources do
+        if #queue >= target then return any end
+        if _take_from_source(sources[i], queue) then any = true end
+    end
+    return any
+end
+
+-- Round-robin: take 1 entity from each category per round until target reached
+local function _round_robin_fill(tier, queue, target)
+    local sources = {}
+    for _, entries in pairs(tier) do
+        sources[#sources + 1] = { items = entries, idx = 1 }
+    end
+    if #sources == 0 then return end
+    while #queue < target do
+        if not _round_robin_step(sources, queue, target) then return end
+    end
+end
+
+-- Linear fill: merge all categories in tier into one flat sorted/shuffled list
+local function _linear_fill(tier, queue, target, prioritize_distant)
+    local merged = {}
+    for _, entries in pairs(tier) do
+        for _, ent in ipairs(entries) do
+            merged[#merged + 1] = ent
+        end
+    end
+    if #merged == 0 then return end
+    if prioritize_distant then
+        merged = xtable.sort(merged, function(a, b) return a.dist_sq > b.dist_sq end)
+    else
+        merged = xtable.shuffle(merged)
+    end
+    for i = 1, #merged do
+        if #queue >= target then return end
+        queue[#queue + 1] = merged[i]
+    end
+end
+
+--- Order cull candidates into a release queue by priority tier and fairness policy
+--- 4 tiers (members before commanders, unscripted before scripted); within each tier either
+--- round-robin across factions or a flat distance/random fill. Pure Lua, no engine calls.
+--- @param squads table group_id -> record { protected, scripted, category, removable, commander_entry }
+--- @param orphans table array of entries { id, dist_sq, is_stalker, section }
+--- @param target number number of entities to select
+--- @param opts table { round_robin, prioritize_distant, squad_culling }
+--- @return table queue of entries, table per-tier selection counts (processed tiers only)
+function build(squads, orphans, target, opts)
+    if target <= 0 then return {}, {} end
+    local tiers = { {}, {}, {}, {} }
+    _categorize_squads(squads, orphans, tiers, opts.squad_culling)
+
+    local fill_fn
+    if opts.round_robin then
+        _sort_categories(tiers, opts.prioritize_distant)
+        fill_fn = _round_robin_fill
+    else
+        fill_fn = _linear_fill
+    end
+
+    local queue = {}
+    local tier_counts = {}
+    for tier_idx = 1, 4 do
+        if #queue >= target then break end
+        local before = #queue
+        fill_fn(tiers[tier_idx], queue, target, opts.prioritize_distant)
+        tier_counts[tier_idx] = #queue - before
+    end
+    return queue, tier_counts
+end

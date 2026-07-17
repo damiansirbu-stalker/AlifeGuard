@@ -2,7 +2,9 @@
 
 Population control for STALKER Anomaly. Keeps online entity count under a configurable threshold by releasing NPCs back to offline simulation. Squad-aware: thins squad members before touching commanders, spreads removals evenly across factions and mutant types via round-robin, uses hysteresis to prevent oscillation. Releases are frame-spread (1 per frame via xslice) to bound `safe_release_manager`'s per-frame work and keep cleanup smooth.
 
-Built on xlibs (xsquad, xcreature, xslice, xprofiler, xlog).
+Built on xlibs (xsquad, xcreature, xslice, xprofiler, xtable, xlog).
+
+Runtime split: **ag_online_guard** (online culling), **ag_offline_guard** (offline density culling), **ag_smart_sanitizer** (respawn-counter hygiene), and **ag_queue** (the online guard's pure release-queue strategy). File and MCM-tab names share one vocabulary: Online Guard, Offline Guard, Smart Sanitizer.
 
 Part of a three-mod alife family: **AlifePlus** extends A-Life with new behaviors, **AlifeBalance** tunes existing rates and counts, **AlifeGuard** keeps alife state clean (this mod).
 
@@ -97,7 +99,7 @@ After squad-level check passes, each non-commander member is checked individuall
 
 ---
 
-## Priority Tiers
+## Priority Tiers (ag_queue)
 
 Entities are sorted into 4 tiers. Each tier is fully exhausted before the next is touched.
 
@@ -112,7 +114,7 @@ Most cycles never leave tier 1. Heavy load reaches tier 2. Tiers 3-4 are edge ca
 
 ---
 
-## Round-Robin Fairness
+## Round-Robin Fairness (ag_queue)
 
 Within each tier, entities are grouped by category (`squad.player_id`: "bandit", "duty", "monster_predatory_day", etc.). Orphans form their own category.
 
@@ -162,7 +164,7 @@ Stale entity IDs (entity died between collection and release): `alife_object(id)
 
 ---
 
-## Smart Sanitizer
+## Smart Sanitizer (ag_smart_sanitizer)
 
 ### Why
 
@@ -183,7 +185,7 @@ Periodic walk over `SIMBOARD.smarts` clamping three invariant violations on each
 
 Hooks:
 - `actor_on_reinit` fires after STATE_Read (data live) and before `bind_stalker.script:200` runs `set_objects_per_update(65534)` (engine load burst). Cleans corrupted save data before `try_respawn` reads it.
-- `actor_on_update` interval gate fires every 300 seconds during play. Catches mid-session corruption from misbehaving mods still installed.
+- `actor_on_update` interval gate fires every 300 seconds during play. Catches mid-session corruption from misbehaving mods still installed. Runs on the Smart Sanitizer's own toggle, independent of the Online Guard's `enabled` flag, so disabling population culling never leaves save-CTD counters unclamped.
 
 ### Cost
 
@@ -191,7 +193,7 @@ Pure Lua walk. 0 luabind in the inner loop. `smart:name()` is lazy: called once 
 
 ---
 
-## Offline Guard (ag_density)
+## Offline Guard (ag_offline_guard)
 
 ### Why
 
@@ -261,8 +263,10 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 
 | File | Lines | Purpose |
 |---|---|---|
-| ag_population.script | 539 | Collection, squad grouping, tier/round-robin queue, frame-spread release, smart sanitizer |
-| ag_density.script | 314 | Offline density scan per switch_distance cell, per-cell offline cull |
+| ag_online_guard.script | 362 | Online Guard: collection, squad grouping, protection, frame-spread release, PDA notify, orchestration |
+| ag_offline_guard.script | 316 | Offline Guard: offline density scan per switch_distance cell, per-cell offline cull |
+| ag_queue.script | 143 | Release-queue strategy: 4 priority tiers, round-robin/linear fairness fill (pure Lua) |
+| ag_smart_sanitizer.script | 113 | Smart Sanitizer: clamps corrupted already_spawned respawn counters |
 | ag_mcm.script | 210 | MCM defaults, UI definition, button handlers |
 | _ag_deps.script | 121 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
 | ag_test.script | 180 | Dormant console load/conformity harness for the offline guard |

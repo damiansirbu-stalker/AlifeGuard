@@ -1,4 +1,4 @@
---- ag_density: Offline Guard - offline population density scan and per-cell cull
+--- ag_offline_guard: Offline Guard - offline population density scan and per-cell cull
 
 local pairs, math_floor, tostring = pairs, math.floor, tostring
 local clock = os.clock
@@ -7,7 +7,7 @@ local alife_object, alife_release, alife, clsid, game_graph = alife_object, alif
 local RegisterScriptCallback = RegisterScriptCallback
 local xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature = xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature
 
-local log = xlog.get_logger("AG.DEN", { outfile = "alifeguard.log" })
+local log = xlog.get_logger("AG.OFFLINE", { outfile = "alifeguard.log" })
 local _dbg = false
 local _null_trace = xtrace.new_if(false)
 
@@ -15,7 +15,7 @@ local SWEEP_BATCH = 25
 local LOG_FLOOR_FRACTION = 0.5
 local INVALID_SMART = 65535
 local DESPAWN_JOB = "ag_despawn"
-local TIME_EVENT_ID = "ag_density"
+local TIME_EVENT_ID = "ag_offline_guard"
 local TIME_EVENT_ACTION = "density_sweep"
 
 -- Fully decoupled from the online guard: own trigger/target/task-protection, own keys.
@@ -255,8 +255,11 @@ local function _try_cull()
     build_timer:start()
     local work = {}
     local cells_over = 0
+    -- cell.count > #squads requires at least one removable (non-commander) body. The drain keeps
+    -- every commander, so a cell already at its one-per-squad floor can never drop under trigger;
+    -- without this gate it re-flags every pass and drains to release nothing (offline hysteresis).
     for _, cell in pairs(_cells) do
-        if cell.count > trigger and cell.level ~= actor_level then
+        if cell.count > trigger and cell.level ~= actor_level and cell.count > #cell.squads then
             cells_over = cells_over + 1
             _append_cell_work(cell, work)
         end

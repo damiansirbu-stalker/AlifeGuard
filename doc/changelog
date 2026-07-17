@@ -1,3 +1,10 @@
+next
+  Summary: Refactor, cleanup, offline culling fix
+
+  - Fixed the Offline Guard re-processing an over-crowded region it could not thin any further, doing background work each pass with nothing to remove.
+  - Changed the Smart Sanitizer to run on its own setting, so save-crash protection stays active even when the Online Guard is turned off.
+  - Reorganized the guard logic into focused Online Guard, Offline Guard, and Smart Sanitizer modules and cleaned up the internals.
+
 1.3.0
   Summary: Offline guard, companion protection, platform status, localization, fixes
 
