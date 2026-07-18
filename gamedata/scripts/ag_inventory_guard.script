@@ -13,16 +13,27 @@
 ---      save bloat, server-object inflation, and steady performance drag. (Companions,
 ---      story NPCs, and named characters are filtered at the scheduler via
 ---      xcreature.is_unscriptable. Service NPCs (traders, mechanics, medics, barmen),
----      including dynamically spawned ones, are filtered via xsmart.get_npc_roles.
----      Neither reaches trim_npc.)
+---      including dynamically spawned ones, are detected via xsmart.get_npc_roles and
+---      routed to the trader condition purge instead. Neither reaches trim_npc.)
 ---   2. Save bloat. Every looted item is a server object persisted in the save. Continuous
 ---      trim bounds live state; death-time only releases when (and if) the NPC dies.
 ---   3. Bursty performance. N deaths in a firefight = N trims in the same frame as the
 ---      corpse spawn. xslice spreads the cost across frames.
 ---
+--- Trader pass: service NPCs ride the same scheduler but get purge_trader instead of
+--- trim_npc: release free-floating stock in wear-bearing categories (weapon / outfit /
+--- helmet) whose condition sits below the MCM threshold. Player selling drives trader
+--- stock upward between engine restocks (each restock already destroys unslotted stock:
+--- CInventoryOwner::buy_supplies -> CPurchaseList::process -> sell_useless_items); every
+--- held item is a server object against the 65535 alife-ID cap, so the purge bounds the
+--- between-restock creep. Untouchable and equipped items drop out inside
+--- xinventory.get_category; consumables, ammo, and money are out of scope by category.
+---
 --- Public API:
----   - trim_npc(npc, opts)  apply inventory policy to one NPC; opts.dry_run reports
----                          without releasing
+---   - trim_npc(npc, opts)      apply inventory policy to one NPC; opts.dry_run reports
+---                              without releasing
+---   - purge_trader(npc, opts)  release low-condition trader stock; opts.dry_run reports
+---                              without releasing
 ---
 --- Logging: every log.debug call gated by cached _dbg flag; xprofiler.new_if(_dbg)
 --- returns a null timer when DEBUG off — zero luabind cost off-path. Self-contained
@@ -30,7 +41,7 @@
 
 local table_sort, os_clock, next = table.sort, os.clock, next
 local xlog, xprofiler, xslice, xcreature, xtime, xinventory, xsmart = xlog, xprofiler, xslice, xcreature, xtime, xinventory, xsmart
-local level, IsStalker, RegisterScriptCallback, alife_object = level, IsStalker, RegisterScriptCallback, alife_object
+local level, IsStalker, IsTrader, RegisterScriptCallback, alife_object = level, IsStalker, IsTrader, RegisterScriptCallback, alife_object
 
 -- LTX policy loaded at on_game_start via xinventory.load_policy. Shape:
 --   { entries = ordered_list, rules = { [category] = {min, max} }, specials = {} }
@@ -43,6 +54,12 @@ local INVENTORY_POLICY = nil
 local SCAN_QUEUE = "ag_inventory_guard_scan"
 local DEFAULT_NPCS_PER_FRAME = 1
 local UPDATE_INTERVAL_SEC = 30
+
+-- Trader pass. Only these categories carry real wear condition; a consumable's condition
+-- is a multi-use counter (use_condition flag), never wear, so category scoping keeps
+-- consumables, ammo, and money out of the purge by construction.
+local DEFAULT_TRADER_CONDITION_MIN = 0.75
+local PURGE_CATEGORIES = { weapon = true, outfit = true, helmet = true }
 
 local CALLBACK = {
     ACTOR_ON_FIRST_UPDATE = "actor_on_first_update",
@@ -71,6 +88,38 @@ local _last_update = 0
 local function _load_policy()
     local block = xinventory.load_policy(POLICY_PATH, { POLICY_SECTION })[POLICY_SECTION]
     INVENTORY_POLICY = { entries = block.entries, rules = block.rules }
+end
+
+-- ==================== CONFIG ====================
+
+local function _cfg()
+    return ag_mcm and ag_mcm.cfg or nil
+end
+
+local function _enabled()
+    local mcm = _cfg()
+    return mcm and mcm.enabled_inventory ~= false
+end
+
+local function _cfg_step()
+    local mcm = _cfg()
+    return (mcm and mcm.npcs_per_frame) or DEFAULT_NPCS_PER_FRAME
+end
+
+local function _cfg_cooldown_sec()
+    local mcm = _cfg()
+    local hours = mcm and mcm.scan_cooldown_h or 12
+    return hours * 3600
+end
+
+local function _trader_purge_enabled()
+    local mcm = _cfg()
+    return mcm and mcm.enabled_trader_purge ~= false
+end
+
+local function _cfg_trader_condition_min()
+    local mcm = _cfg()
+    return (mcm and mcm.trader_condition_min) or DEFAULT_TRADER_CONDITION_MIN
 end
 
 -- ==================== PER-NPC TRIM (PUBLIC) ====================
@@ -117,38 +166,61 @@ function trim_npc(npc, opts)
     return result
 end
 
+--- Release a trader's free-floating low-condition stock: items in wear-bearing categories
+--- (weapon / outfit / helmet) whose condition sits below the MCM threshold. Public; the
+--- scheduler calls this for each service NPC in its batch but callers (probes, tests) may
+--- call it directly. The cooldown table is the scheduler's concern: purge_trader never
+--- touches it. Untouchable (quest / story_id / companion-gift / strapped) and equipped
+--- items resolve to categories outside PURGE_CATEGORIES and are never released.
+--- @safety SAFE - returns nil on nil npc; iterate tolerates nil items
+--- @cost O(items) | 1 xinventory.iterate_inventory walk; per item get_category + 0-1 condition read; 0-N release_item
+--- @param npc game_object Online service NPC (trader / mechanic / medic / barman)
+--- @param opts table|nil { dry_run = false }
+--- @return table|nil { released, dt_ms }
+function purge_trader(npc, opts)
+    if not npc then return nil end
+    opts = opts or {}
+    local dry_run = opts.dry_run == true
+    local threshold = _cfg_trader_condition_min()
+
+    local timer = xprofiler.new_if(_dbg):start()
+
+    local npc_id = npc:id()
+    local cat_opts = xinventory.get_category_opts(npc)
+    local result = { released = 0, dt_ms = 0 }
+
+    xinventory.iterate_inventory(npc_id, function(_, item)
+        if not item then return end
+        if not PURGE_CATEGORIES[xinventory.get_category(item, cat_opts)] then return end
+        local cond = xinventory.get_condition(item)
+        if not cond or cond >= threshold then return end
+        if not dry_run then xinventory.release_item(item) end
+        result.released = result.released + 1
+        if _dbg then log.debug("[PURGE] trader=%d section=%s cond=%.2f", npc_id, xinventory.get_section(item), cond) end
+    end)
+
+    timer:stop()
+    result.dt_ms = timer:get_ms()
+    if _dbg then log.debug("[VISIT] trader=%d purged=%d dt=%.3fms", npc_id, result.released, result.dt_ms) end
+
+    return result
+end
+
 -- ==================== SCHEDULER ====================
 
-local function _cfg()
-    return ag_mcm and ag_mcm.cfg or nil
-end
-
-local function _enabled()
-    local mcm = _cfg()
-    return mcm and mcm.enabled_inventory ~= false
-end
-
-local function _cfg_step()
-    local mcm = _cfg()
-    return (mcm and mcm.npcs_per_frame) or DEFAULT_NPCS_PER_FRAME
-end
-
-local function _cfg_cooldown_sec()
-    local mcm = _cfg()
-    local hours = mcm and mcm.scan_cooldown_h or 12
-    return hours * 3600
-end
-
--- Single-NPC eligibility predicate.
+-- Single-NPC eligibility predicate. Two passes share it: random stalkers (trim_npc) and
+-- service NPCs (purge_trader). IsTrader admits script_trader-clsid hub traders that fail
+-- IsStalker. Service NPCs (xsmart.get_npc_roles non-empty: traders/mechanics/medics/barmen,
+-- including dynamically spawned ones) skip the is_unscriptable roster on purpose — named
+-- traders are exactly the purge's subject — and drop out entirely when the purge is off.
 -- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
 local function _is_eligible(obj, id, actor_id, now, cooldown_sec)
     if id == actor_id then return nil, "actor" end
-    if not IsStalker(obj) then return nil, "nonstalker" end
+    if not (IsStalker(obj) or IsTrader(obj)) then return nil, "nonstalker" end
     if not obj:alive() then return nil, "dead" end
-    if xcreature.is_unscriptable(obj) then return nil, "unscriptable" end
-    -- Runtime service-NPC guard: catches dynamically spawned traders/mechanics/medics/barmen
-    -- that the is_unscriptable roster misses. See AG.INV header.
-    if next(xsmart.get_npc_roles(obj)) ~= nil then return nil, "service_npc" end
+    local service = next(xsmart.get_npc_roles(obj)) ~= nil
+    if service and not _trader_purge_enabled() then return nil, "service_npc" end
+    if not service and xcreature.is_unscriptable(obj) then return nil, "unscriptable" end
     local last = _last_scan_game_sec[id] or 0
     if now - last < cooldown_sec then return nil, "cooldown" end
     return id, last
@@ -217,7 +289,12 @@ local function _visit(npc_id)
         return true
     end
 
-    local result = trim_npc(npc)
+    local result
+    if next(xsmart.get_npc_roles(npc)) ~= nil then
+        if _trader_purge_enabled() then result = purge_trader(npc) end
+    else
+        result = trim_npc(npc)
+    end
     _last_scan_game_sec[npc_id] = xtime.game_sec()
     _cycle_visited = _cycle_visited + 1
     if result then _cycle_released = _cycle_released + result.released end

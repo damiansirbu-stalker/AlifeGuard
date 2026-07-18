@@ -1,10 +1,14 @@
 next
-  Summary: Inventory Guard, refactor, cleanup, offline culling fix
+  Summary: Inventory Guard, trader stock purge, refactor, cleanup, offline culling fix
 
   - Added Inventory Guard: bounds NPC inventory hoarding so anti-loot addons are no longer needed. Moved from AlifeBalance, where it was called Inventory Balance, with identical behavior.
     A lightweight scanner walks online stalkers one per frame, releasing the surplus above per-category limits and rescanning each NPC at most twice per game-day.
-    Companions, story characters, named NPCs, and service NPCs matched by role (including runtime-spawned traders, mechanics, medics, and barmen) are never touched.
+    Companions, story characters, and named NPCs are never touched. Service NPCs matched by role (including runtime-spawned traders, mechanics, medics, and barmen) are excluded from the per-category trim.
     Per-category limits live in configs/alifeguard/ag_inventory_policy.ltx (DLTX-overridable).
+  - Added a trader stock condition purge: worn-out weapons, outfits, and helmets below a condition threshold are released from trader inventories,
+    so a long selling session no longer piles junk stock toward the engine's alife object cap.
+    Covers traders, mechanics, medics, and barmen (including runtime-spawned ones) on the same scanner cadence. Stock at or above the threshold stays for sale,
+    and the trader's equipped gear, quest items, consumables, ammo, and money are never touched. Toggle and threshold in MCM under Inventory Guard.
   - Fixed the Offline Guard re-processing an over-crowded region it could not thin any further, doing background work each pass with nothing to remove.
   - Changed the Smart Sanitizer to run on its own setting, so save-crash protection stays active even when the Online Guard is turned off.
   - Reorganized the guard logic into focused Online Guard, Offline Guard, and Smart Sanitizer modules and cleaned up the internals.

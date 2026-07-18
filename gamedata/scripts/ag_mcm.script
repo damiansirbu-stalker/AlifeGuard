@@ -30,6 +30,8 @@ defaults = {
     enabled_inventory = true,
     npcs_per_frame = 1,
     scan_cooldown_h = 12,
+    enabled_trader_purge = true,
+    trader_condition_min = 0.75,
 
     -- Development
     log_level = "WARN",
@@ -50,6 +52,8 @@ local _key_to_tab = {
     enabled_inventory = "inventory_guard",
     npcs_per_frame = "inventory_guard",
     scan_cooldown_h = "inventory_guard",
+    enabled_trader_purge = "inventory_guard",
+    trader_condition_min = "inventory_guard",
     log_level = "development",
     btn_reset_all = "development",
 }
@@ -191,6 +195,9 @@ function on_mcm_load()
                     { id = "enabled_inventory", type = "check", val = 1, def = true },
                     { id = "npcs_per_frame", type = "track", val = 2, min = 1, max = 10, step = 1, def = 1 },
                     { id = "scan_cooldown_h", type = "track", val = 2, min = 1, max = 72, step = 1, def = 12 },
+                    { id = "div_trader", type = "line" },
+                    { id = "enabled_trader_purge", type = "check", val = 1, def = true },
+                    { id = "trader_condition_min", type = "track", val = 2, min = 0.05, max = 0.95, step = 0.05, def = 0.75 },
                 },
             },
             -- ============ DEVELOPMENT TAB ============

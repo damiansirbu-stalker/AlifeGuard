@@ -4,6 +4,7 @@
 --- Console:
 ---   run_string ag_test.run()   toggle the driver; it does everything on its own
 ---   run_string ag_test.ag_test_inventory_sanitization()   Inventory Guard flow test
+---   run_string ag_test.ag_test_trader_purge()   trader stock condition purge flow test
 ---
 --- On start it auto-picks a smart on a level away from the actor (so squads spawn offline
 --- and the offline guard actually engages), then every 10s spawns one squad there through
@@ -189,10 +190,10 @@ end
 -- explicit flush per line so the file appears immediately. PASS / FAIL also surfaces as a
 -- yellow news_manager tip.
 
-local ipairs, type = ipairs, type
+local ipairs, type, next = ipairs, type, next
 local math_max, math_min, math_huge = math.max, math.min, math.huge
-local xcreature, xinventory = xcreature, xinventory
-local IsStalker, level, alife_release_id = IsStalker, level, alife_release_id
+local xcreature, xinventory, xsmart = xcreature, xinventory, xsmart
+local IsStalker, IsTrader, level, alife_release_id = IsStalker, IsTrader, level, alife_release_id
 
 local MOD = "alifeguard"
 
@@ -385,6 +386,122 @@ function ag_test_inventory_sanitization()
         local a_cleaned = _cleanup(ammo_ids)
         _log_info("[TEARDOWN] released %d/%d medkit ids, %d/%d ammo ids (others already gone via trim)",
             m_cleaned, #medkit_ids, a_cleaned, #ammo_ids)
+        return true
+    end)
+end
+
+-- Pick the nearest online service NPC (trader/mechanic/medic/barman): the trader-pass
+-- eligibility shape (IsStalker or IsTrader, alive, non-empty xsmart.get_npc_roles).
+local function _pick_trader()
+    local actor = db.actor
+    if not actor then return nil end
+    local actor_pos = actor:position()
+    local actor_id = actor:id()
+    local best, best_dist = nil, math_huge
+    for id, obj in xcreature.online_iter_with_id() do
+        if id ~= actor_id and alife_object(id) and (IsStalker(obj) or IsTrader(obj)) and obj:alive()
+            and next(xsmart.get_npc_roles(obj)) ~= nil then
+            local dist = obj:position():distance_to_sqr(actor_pos)
+            if dist < best_dist then best, best_dist = obj, dist end
+        end
+    end
+    return best
+end
+
+local function _find_weapon_section()
+    local candidates = { "wpn_pm", "wpn_ak74", "wpn_toz34", "wpn_mp5" }
+    for _, sec in ipairs(candidates) do
+        if ini_sys:section_exist(sec) and xinventory.get_section_category(sec) == "weapon" then
+            return sec
+        end
+    end
+    return nil
+end
+
+-- Inject one item at an explicit condition (xinventory.create_item cond path forces the
+-- condition onto non-degradable sections like weapons via alife_process_item).
+local function _inject_cond(npc, sec, cond)
+    local se = xinventory.create_item(sec, npc:id(), { cond = cond })
+    local ids = _extract_ids(se)
+    if #ids == 0 then
+        _log_info("[INJECT WARN] %s create returned type=%s (no ids)", sec, type(se))
+    end
+    return ids
+end
+
+--- Trader stock condition purge: ag_inventory_guard.purge_trader end-to-end.
+--- Inject 2 weapons into the nearest service NPC, one below and one above the MCM
+--- condition threshold. Dry-run purges before/after injection isolate the delta (only the
+--- low-condition weapon may count), then the real purge must release exactly the dry-run set.
+--- @export console
+function ag_test_trader_purge()
+    local TEST = "trader_purge"
+    _log_info("[BEGIN] %s", TEST)
+
+    local npc = _pick_trader()
+    if not npc then
+        _log_info("[FAIL] %s: no service NPC (trader/mechanic/medic/barman) near actor", TEST)
+        _flow_tip("[FAIL] " .. TEST .. ": no trader near actor")
+        return
+    end
+    local npc_id = npc:id()
+    local npc_name = npc:name() or "?"
+    local threshold = ag_mcm.get_config("trader_condition_min") or ag_mcm.defaults.trader_condition_min
+    _log_info("[SETUP] trader=%d name=%s threshold=%.2f", npc_id, npc_name, threshold)
+
+    local weapon_sec = _find_weapon_section()
+    if not weapon_sec then
+        _log_info("[FAIL] %s: no spawnable weapon section found", TEST)
+        _flow_tip("[FAIL] " .. TEST .. ": no weapon section")
+        return
+    end
+
+    local baseline = ag_inventory_guard.purge_trader(npc, { dry_run = true }).released
+    local low_cond = math_max(threshold - 0.05, 0.01)
+    local high_cond = math_min(threshold + 0.05, 1)
+    local low_ids = _inject_cond(npc, weapon_sec, low_cond)
+    local high_ids = _inject_cond(npc, weapon_sec, high_cond)
+    _log_info("[INJECT] %s low=%.2f ids=%d, high=%.2f ids=%d (baseline dry-run released=%d)",
+        weapon_sec, low_cond, #low_ids, high_cond, #high_ids, baseline)
+
+    -- alife->CInventory sync takes one frame. Defer the assertion by 1 second.
+    CreateTimeEvent(0, "ag_test_trader_purge_phase2", 1, function()
+        local npc2 = level.object_by_id(npc_id)
+        if not npc2 then
+            _log_info("[FAIL] %s: trader went offline before phase 2", TEST)
+            _flow_tip("[FAIL] " .. TEST .. ": trader offline")
+            _cleanup(low_ids); _cleanup(high_ids)
+            return true
+        end
+
+        local mid = ag_inventory_guard.purge_trader(npc2, { dry_run = true }).released
+        local result = ag_inventory_guard.purge_trader(npc2)
+        local expected_mid = baseline + #low_ids
+
+        local ok_low = mid == expected_mid
+        local ok_real = result.released == mid
+
+        local summary = string_format(
+            "trader=%d %s | %s low=%.2f high=%.2f threshold=%.2f | dry-run %d->%d (expected %d) | released=%d dt=%.2fms",
+            npc_id, npc_name, weapon_sec, low_cond, high_cond, threshold,
+            baseline, mid, expected_mid, result.released, result.dt_ms)
+        _log_info("[SUMMARY] %s", summary)
+
+        if ok_low and ok_real then
+            _log_info("[PASS] %s | %s", TEST, summary)
+            _flow_tip(string_format("[PASS] %s\n%s", TEST, summary), 30000)
+        else
+            local reason = string_format(
+                "dry-run delta==low injection ok=%s (high must not count) | real released==dry-run ok=%s",
+                tostring(ok_low), tostring(ok_real))
+            _log_info("[FAIL] %s | %s | %s", TEST, summary, reason)
+            _flow_tip(string_format("[FAIL] %s\n%s\n%s", TEST, summary, reason), 30000)
+        end
+
+        local l_cleaned = _cleanup(low_ids)
+        local h_cleaned = _cleanup(high_ids)
+        _log_info("[TEARDOWN] released %d/%d low ids, %d/%d high ids (others already gone via purge)",
+            l_cleaned, #low_ids, h_cleaned, #high_ids)
         return true
     end)
 end

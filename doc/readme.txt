@@ -86,8 +86,8 @@ Inventory Guard:
     Long-lived stalkers carry a believable loadout instead of a trader-sized hoard.
     Killing a random stalker yields reasonable loot, not a vendor run.
     Saves stay performant across long sessions.
-    Companions, story characters, named NPCs, and service NPCs are never touched.
-    Traders, mechanics, and medics are matched by role, so even ones spawned at runtime (Warfare and similar) keep their full stock.
+    Companions, story characters, and named NPCs are never touched.
+    Traders, mechanics, and medics are matched by role, so even ones spawned at runtime (Warfare and similar) skip the per-category trim; only the trader stock purge below applies to them.
     Vanilla looting still works. Stalkers loot their kills.
 
   Important:
@@ -106,6 +106,14 @@ Inventory Guard:
     Defaults cover equipped ammo (in rounds, per tier), grenades, and consumables: medkit, bandage, antirad, stim, pill, food, drink.
     Gear coverage: weapons, outfits, helmets, artefacts, crafting items, devices.
     Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are protected by xlibs and never touched.
+
+  Trader stock purge:
+    Selling to a trader piles your junk into their inventory, and each item there is a permanent alife server object.
+    The engine clears trader stock at restock, but between restocks a heavy selling session walks the object count toward the cap.
+    The same scanner visits traders, mechanics, medics, and barmen and releases weapons, outfits, and helmets below a condition threshold (default 0.75).
+    Stock at or above the threshold stays for sale; the trader's own equipped gear and quest items are never touched.
+    Consumables, ammo, and money are never touched: only wear-bearing gear is judged by condition.
+    Toggle and threshold in MCM.
 
   Moved from AlifeBalance (where it was called Inventory Balance). Same behavior, new home.
   If updating both mods, configure it here; the AlifeBalance tab is gone.
@@ -127,7 +135,7 @@ MCM:
   (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.
   Offline Guard: toggle, cull trigger, cull target, task protection, scan tick.
   Smart Sanitizer: toggle, interval.
-  Inventory Guard: toggle, NPCs per frame, rescan cooldown.
+  Inventory Guard: toggle, NPCs per frame, rescan cooldown, trader purge toggle, trader condition threshold.
   Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
 Requirements:
