@@ -69,6 +69,47 @@ Smart Sanitizer:
   Lua table walk over SIMBOARD.smarts. Sub-millisecond on 50-200 smarts. Toggle and
   interval in MCM.
 
+Inventory Guard:
+  Vanilla NPCs loot corpses, and over a long session this builds up two costs.
+  A long-lived stalker carries a trader run of gear, so killing them becomes a jackpot.
+  Every looted item is also a permanent alife server object, and the engine tracks at most around 65000 of those.
+  Long saves drift toward the cap and the game eventually slows, then crashes.
+
+  Why not just disable NPC looting?
+    Mods like NPC Stop Looting Dead Bodies and BoltBeGone sidestep the problem by blocking the engine's loot path.
+    That fixes the symptom but stalkers no longer loot their kills, which is one of the things that makes A-Life feel alive.
+    Inventory Guard keeps vanilla looting on and bounds the cause instead.
+    A lightweight scanner walks online stalkers in small batches and releases anything above each category's limit.
+    Killing a stalker still yields what they actually need to carry, not what they have accumulated over 50 game-days.
+
+  What you'll notice:
+    Long-lived stalkers carry a believable loadout instead of a trader-sized hoard.
+    Killing a random stalker yields reasonable loot, not a vendor run.
+    Saves stay performant across long sessions.
+    Companions, story characters, named NPCs, and service NPCs are never touched.
+    Traders, mechanics, and medics are matched by role, so even ones spawned at runtime (Warfare and similar) keep their full stock.
+    Vanilla looting still works. Stalkers loot their kills.
+
+  Important:
+    Inventory Guard never spawns items.
+    It releases what NPCs already accumulated above the per-category limits.
+    Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are always preserved.
+
+  Example:
+    An online stalker on Cordon has been alive for 50 game-days.
+    They have picked up 47 medkits, 23 bandages, 18 grenades, and 600 rounds of mismatched ammo.
+    The scanner's next visit releases 42 medkits (cap 5), 18 bandages (cap 5), 15 grenades (cap 3), and the 600 mismatched rounds (cap 0).
+    The NPC walks around with a believable load: a few medkits, a stack of bandages, three grenades, and ammo for the gun they actually carry.
+
+  Policy:
+    Per-category limits live in configs/alifeguard/ag_inventory_policy.ltx (DLTX-overridable).
+    Defaults cover equipped ammo (in rounds, per tier), grenades, and consumables: medkit, bandage, antirad, stim, pill, food, drink.
+    Gear coverage: weapons, outfits, helmets, artefacts, crafting items, devices.
+    Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are protected by xlibs and never touched.
+
+  Moved from AlifeBalance (where it was called Inventory Balance). Same behavior, new home.
+  If updating both mods, configure it here; the AlifeBalance tab is gone.
+
 Performance:
   Single-pass collection (native C++ iterator). Cached protection lookups. Sub-millisecond
   scan for 200 entities. 0.05ms per release. Zero debug overhead when log level < DEBUG.
@@ -86,6 +127,7 @@ MCM:
   (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.
   Offline Guard: toggle, cull trigger, cull target, task protection, scan tick.
   Smart Sanitizer: toggle, interval.
+  Inventory Guard: toggle, NPCs per frame, rescan cooldown.
   Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
 Requirements:
@@ -109,6 +151,7 @@ The full feature set needs the latest demonized build. A feature that needs a ne
 Does not modify base scripts. Uses the standard engine API (alife_release).
 Superseded (AlifeGuard does this - drop the other):
 - Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, forcing repeated respawns.
+- Anti-loot addons (NPC Stop Looting Dead Bodies, BoltBeGone): Inventory Guard handles NPC looting at the source.
 
 Conflicts (pick one - two governors fight):
 - Any other despawn / population-release mod: conflicting releases, repeated respawns, entity leaks.
@@ -116,7 +159,8 @@ Conflicts (pick one - two governors fight):
 
 Affects / coexists:
 - A-Life config tweaks (alife.ltx, smart max_population, Redone Alife Performance, x3 perf): engine-parameter layer, no overlap.
-- AlifeBalance: different axis (respawn acceleration vs distant-NPC release); composes.
+- AlifeBalance: different axis (respawn acceleration vs release work); composes.
+- Weapons Drop on Bodies: only moves the dying NPC's weapon (corpse vs floor); doesn't block looting.
 
 Known issue:
 Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's

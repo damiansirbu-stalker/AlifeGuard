@@ -1,6 +1,10 @@
 next
-  Summary: Refactor, cleanup, offline culling fix
+  Summary: Inventory Guard, refactor, cleanup, offline culling fix
 
+  - Added Inventory Guard: bounds NPC inventory hoarding so anti-loot addons are no longer needed. Moved from AlifeBalance, where it was called Inventory Balance, with identical behavior.
+    A lightweight scanner walks online stalkers one per frame, releasing the surplus above per-category limits and rescanning each NPC at most twice per game-day.
+    Companions, story characters, named NPCs, and service NPCs matched by role (including runtime-spawned traders, mechanics, medics, and barmen) are never touched.
+    Per-category limits live in configs/alifeguard/ag_inventory_policy.ltx (DLTX-overridable).
   - Fixed the Offline Guard re-processing an over-crowded region it could not thin any further, doing background work each pass with nothing to remove.
   - Changed the Smart Sanitizer to run on its own setting, so save-crash protection stays active even when the Online Guard is turned off.
   - Reorganized the guard logic into focused Online Guard, Offline Guard, and Smart Sanitizer modules and cleaned up the internals.
