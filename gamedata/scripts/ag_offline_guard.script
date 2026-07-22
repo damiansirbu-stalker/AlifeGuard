@@ -1,6 +1,6 @@
 --- ag_offline_guard: Offline Guard - offline population density scan and per-cell cull
 
-local pairs, math_floor, tostring = pairs, math.floor, tostring
+local pairs, tostring = pairs, tostring
 local clock = os.clock
 local is_stalker = IsStalker
 local alife_object, alife_release, alife, clsid, game_graph = alife_object, alife_release, alife, clsid, game_graph
@@ -110,7 +110,10 @@ local function _bin_squad(squad_id, graph, actor_level)
     local pos = squad.position
     if not pos then stats.bad_gvid = stats.bad_gvid + 1; return end
     stats.binned = stats.binned + 1
-    local key = level_id .. ":" .. math_floor(pos.x / _cell_size) .. ":" .. math_floor(pos.z / _cell_size)
+    -- Cell partitioning via xlevel.cell_key: the shared grid convention, so the crowd
+    -- gates reading the same-shaped cells elsewhere compare like for like.
+    local key = xlevel.cell_key(level_id, pos, _cell_size)
+    if not key then stats.bad_gvid = stats.bad_gvid + 1; return end
     local cell = _cells[key]
     if not cell then
         cell = { count = 0, level = level_id, squads = {} }
