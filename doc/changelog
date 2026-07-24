@@ -11,7 +11,7 @@
     - Added Inventory Guard: bounds NPC inventory hoarding so anti-loot addons are no longer needed. Moved from AlifeBalance, where it was called Inventory Balance, with identical behavior.
       A lightweight scanner walks online stalkers one per frame, releasing the surplus above per-category limits and rescanning each NPC at most twice per game-day.
       Companions, story characters, and named NPCs are never touched. Service NPCs matched by role (including runtime-spawned traders, mechanics, medics, and barmen) are excluded from the per-category trim.
-      Per-category limits live in configs/alifeguard/ag_inventory_policy.ltx (DLTX-overridable).
+      Per-category limits live in configs/alifeguard/ag_inventory_policy.ltx, moved from AlifeBalance's ab_inventory_policy.ltx (DLTX-overridable).
     - Added a trader stock condition purge: worn-out weapons, outfits, and helmets below a condition threshold are released from trader inventories,
       so a long selling session no longer piles junk stock toward the engine's alife object cap.
       Covers traders, mechanics, medics, and barmen (including runtime-spawned ones) on the same scanner cadence. Stock at or above the threshold stays for sale,

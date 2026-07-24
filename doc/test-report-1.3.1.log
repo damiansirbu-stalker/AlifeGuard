@@ -1,5 +1,5 @@
 STALKER Mod Validation Report
-Generated: 2026-07-15 21:48:53
+Generated: 2026-07-24 21:48:19
 Validator: stalker-manager validate
 Mods: 1
 
@@ -9,19 +9,22 @@ AlifeGuard
 
 Files:
   gamedata/scripts/_ag_deps.script
-  gamedata/scripts/ag_density.script
+  gamedata/scripts/ag_inventory_guard.script
   gamedata/scripts/ag_mcm.script
-  gamedata/scripts/ag_population.script
+  gamedata/scripts/ag_offline_guard.script
+  gamedata/scripts/ag_online_guard.script
+  gamedata/scripts/ag_queue.script
+  gamedata/scripts/ag_smart_sanitizer.script
   gamedata/scripts/ag_test.script
 
 [1/4] luacheck - static analysis (PASS)
   Checks: syntax errors, undefined globals, unused variables, type mismatches
-  Files checked: 5
+  Files checked: 8
   Errors: 0
 
 [2/4] selene - advanced linting (PASS)
   Checks: shadowing, deprecated API, misused variables, style violations
-  Files checked: 5
+  Files checked: 8
   Errors: 0, Warnings: 0
 
 [3/4] contract - project rules (PASS (S+))
@@ -283,51 +286,56 @@ Files:
 [4/4] load - runtime loading (PASS)
   Test: lua54 interpreter + X-Ray engine stubs
   Load test: AlifeGuard
-  LOAD: xlibs_mcm
-  LOAD: xtrace
   LOAD: xtable
-  LOAD: xobject
-  LOAD: xlog
-  LOAD: xcombat
   LOAD: xcreature
-  LOAD: xslice
-  LOAD: xpp
-  LOAD: xmath
+  LOAD: xsmart
+  LOAD: xtime
+  LOAD: xcombat
+  LOAD: xbus
+  LOAD: ag_online_guard
+  LOAD: xdata
+  LOAD: xprofiler
   LOAD: xpda
-  LOAD: xconst
-  LOAD: _ag_deps
-  LOAD: ag_test
-  LOAD: xsquad
+  LOAD: xobject
+  LOAD: xactor
   LOAD: xchange
   LOAD: xinventory
-  LOAD: xbus
   LOAD: xlibs
-  LOAD: xmcm
-  LOAD: xinspect
-  LOAD: xstring
+  LOAD: xlog
   LOAD: xevent
+  LOAD: xmath
+  LOAD: _ag_deps
+  LOAD: ag_offline_guard
+  LOAD: xinspect
+  LOAD: ag_test
   LOAD: xttltable
-  LOAD: xactor
-  LOAD: xdata
-  LOAD: ag_population
-  LOAD: xsound
-  LOAD: ag_density
-  LOAD: xtime
-  LOAD: xstash
+  LOAD: ag_smart_sanitizer
+  LOAD: ag_queue
+  LOAD: xslice
   LOAD: ag_mcm
-  LOAD: xsmart
-  LOAD: xsmart_spawn
-  LOAD: xprofiler
+  LOAD: ag_inventory_guard
+  LOAD: xtrace
+  LOAD: xstring
   LOAD: xlevel
+  LOAD: xstash
+  LOAD: xpp
+  LOAD: xsquad
+  LOAD: xsound
+  LOAD: xsmart_spawn
+  LOAD: xmcm
+  LOAD: xlibs_mcm
+  LOAD: xconst
+  START: ag_inventory_guard.on_game_start
+  START: ag_smart_sanitizer.on_game_start
   START: xlog.on_game_start
-  START: ag_mcm.on_game_start
-  START: xtime.on_game_start
-  START: ag_density.on_game_start
-  START: xsound.on_game_start
-  START: ag_population.on_game_start
   START: _ag_deps.on_game_start
+  START: xsound.on_game_start
+  START: ag_online_guard.on_game_start
   START: xpp.on_game_start
-  OK: 36 loaded, 8 on_game_start
+  START: xtime.on_game_start
+  START: ag_mcm.on_game_start
+  START: ag_offline_guard.on_game_start
+  OK: 39 loaded, 10 on_game_start
 
 ========================================================================
 RESULT: PASS | Grade: S+ | Score: 0
