@@ -1,4 +1,4 @@
-Version: 1.3.0 (xlibs 1.8.2, demonized 20250908)
+Version: 1.3.1 (xlibs 1.8.3, demonized 20250908)
 
 [url=https://github.com/damiansirbu-stalker/AlifeGuard]GitHub[/url] | [url=https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog]Changelog[/url] | [url=https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt]Na russkom[/url] | [url=https://github.com/damiansirbu-stalker/AlifeGuard/issues]Bugs, suggestions[/url]
 
@@ -35,8 +35,41 @@ Entities are released one per frame via xslice (cooperative time-slicing). 30 ex
 [size=3][b]Protection[/b][/size]
 Story squads, traders, named NPCs, companions, task givers, bounty and hostage targets are never removed. Squad-level checks with positive-only TTL cache. Per-member fallback catches named NPCs who are not squad commanders.
 
+[size=3][b]Offline Guard[/b][/size]
+The online guard only sees entities near you. A hub on another level can hold dozens of offline squads that all come online at once and spike the count. The Offline Guard runs a staggered scan that bins offline squads into regions by position and thins any region over the trigger down to the target. Commanders and protected squads are never removed, so every squad survives. Independent of the online guard, with its own trigger, target, and task protection. Target down to 0 strips a region to lone commanders. Toggle, cull trigger, cull target, task protection, and scan tick in MCM.
+
 [size=3][b]Smart Sanitizer[/b][/size]
 Defensive pass that clamps corrupted respawn counters on smart terrains. Negative or non-numeric already_spawned values cause save crashes (u8 write overflow at STATE_Write) and infinite spawn loops (max > num respawn gate always true). The sanitizer runs on actor_on_reinit before the load-time alife burst, then every 300 seconds during play. Lua table walk over SIMBOARD.smarts. Sub-millisecond on 50-200 smarts. Toggle and interval in MCM.
+
+[size=3][b]Inventory Guard[/b][/size]
+Vanilla NPCs loot corpses, and over a long session this builds up two costs. A long-lived stalker carries a trader run of gear, so killing them becomes a jackpot. Every looted item is also a permanent alife server object, and the engine tracks at most around 65000 of those. Long saves drift toward the cap and the game eventually slows, then crashes.
+
+[b]Why not just disable NPC looting?[/b]
+Mods like NPC Stop Looting Dead Bodies and BoltBeGone sidestep the problem by blocking the engine's loot path. That fixes the symptom but stalkers no longer loot their kills, which is one of the things that makes A-Life feel alive. Inventory Guard keeps vanilla looting on and bounds the cause instead. A lightweight scanner walks online stalkers in small batches and releases anything above each category's limit. Killing a stalker still yields what they actually need to carry, not what they have accumulated over 50 game-days.
+
+[b]What you'll notice[/b]
+[list]
+[*]Long-lived stalkers carry a believable loadout instead of a trader-sized hoard.
+[*]Killing a random stalker yields reasonable loot, not a vendor run.
+[*]Saves stay performant across long sessions.
+[*]Companions, story characters, and named NPCs are never touched.
+[*]Traders, mechanics, and medics are matched by role, so even ones spawned at runtime (Warfare and similar) skip the per-category trim; only the trader stock purge below applies to them.
+[*]Vanilla looting still works. Stalkers loot their kills.
+[/list]
+
+[b]Important[/b]
+Inventory Guard never spawns items. It releases what NPCs already accumulated above the per-category limits. Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are always preserved.
+
+[b]Example[/b]
+An online stalker on Cordon has been alive for 50 game-days. They have picked up 47 medkits, 23 bandages, 18 grenades, and 600 rounds of mismatched ammo. The scanner's next visit releases 42 medkits (cap 5), 18 bandages (cap 5), 15 grenades (cap 3), and the 600 mismatched rounds (cap 0). The NPC walks around with a believable load: a few medkits, a stack of bandages, three grenades, and ammo for the gun they actually carry.
+
+[b]Policy[/b]
+Per-category limits live in configs/alifeguard/ag_inventory_policy.ltx (DLTX-overridable). Defaults cover equipped ammo (in rounds, per tier), grenades, and consumables: medkit, bandage, antirad, stim, pill, food, drink. Gear coverage: weapons, outfits, helmets, artefacts, crafting items, devices. Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are protected by xlibs and never touched.
+
+[b]Trader stock purge[/b]
+Selling to a trader piles your junk into their inventory, and each item there is a permanent alife server object. The engine clears trader stock at restock, but between restocks a heavy selling session walks the object count toward the cap. The same scanner visits traders, mechanics, medics, and barmen and releases weapons, outfits, and helmets below a condition threshold (default 0.75). Stock at or above the threshold stays for sale; the trader's own equipped gear and quest items are never touched. Consumables, ammo, and money are never touched: only wear-bearing gear is judged by condition. Toggle and threshold in MCM.
+
+Moved from AlifeBalance (where it was called Inventory Balance). Same behavior, new home. If updating both mods, configure it here; the AlifeBalance tab is gone.
 
 [size=3][b]Performance[/b][/size]
 Single-pass collection (native C++ iterator). Cached protection lookups. Sub-millisecond scan for 200 entities. 0.05ms per release. Zero debug overhead when log level < DEBUG.
@@ -47,7 +80,10 @@ Scripted squads are preserved as long as possible. Commanders remain, so squad a
 Other mods direct the world. AlifeGuard keeps it performant.
 
 [size=3][b]MCM[/b][/size]
-General: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications, Smart Sanitizer (toggle, interval).
+Online Guard: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.
+Offline Guard: toggle, cull trigger, cull target, task protection, scan tick.
+Smart Sanitizer: toggle, interval.
+Inventory Guard: toggle, NPCs per frame, rescan cooldown, trader purge toggle, trader condition threshold.
 Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.
 
 [line]
@@ -79,12 +115,14 @@ Disable or remove in MO2.
 Does not modify base scripts. Uses the standard engine API (alife_release).
 Superseded (AlifeGuard does this - drop the other):
 - Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, forcing repeated respawns.
+- Anti-loot addons (NPC Stop Looting Dead Bodies, BoltBeGone): Inventory Guard handles NPC looting at the source.
 Conflicts (pick one - two governors fight):
 - Any other despawn / population-release mod: conflicting releases, repeated respawns, entity leaks.
 - Extended sim-distance / offline-range mods (Living Zone 2000m, Extended Offline, ROAD alife range 666): expand the population while AlifeGuard contracts it; they oscillate.
 Affects / coexists:
 - A-Life config tweaks (alife.ltx, smart max_population, Redone Alife Performance, x3 perf): engine-parameter layer, no overlap.
-- AlifeBalance: different axis (respawn acceleration vs distant-NPC release); composes.
+- AlifeBalance: different axis (respawn acceleration vs release work); composes.
+- Weapons Drop on Bodies: only moves the dying NPC's weapon (corpse vs floor); doesn't block looting.
 
 [size=3][b]Known issue[/b][/size]
 Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's inventory parent tracking, present in all population mods. No script-side fix exists.

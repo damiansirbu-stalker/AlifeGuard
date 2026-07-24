@@ -1,4 +1,4 @@
-<h3>Version: 1.3.0 (xlibs 1.8.2, demonized 20250908)</h3>
+<h3>Version: 1.3.1 (xlibs 1.8.3, demonized 20250908)</h3>
 <h3>GitHub: <a href="https://github.com/damiansirbu-stalker/AlifeGuard">https://github.com/damiansirbu-stalker/AlifeGuard</a></h3>
 <h3>Changelog: <a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog">doc/changelog</a> | <a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt">Na russkom</a> | <a href="https://github.com/damiansirbu-stalker/AlifeGuard/issues">Bugs, suggestions</a></h3>
 <h2>Alife Collection</h2>
@@ -22,6 +22,8 @@
 <p>Entities are released one per frame via xslice (cooperative time-slicing). 30 excess entities = 30 frames to clear. No spikes, no freezes.</p>
 <h2>Protection</h2>
 <p>Story squads, traders, named NPCs, companions, task givers, bounty and hostage targets are never removed. Squad-level checks with positive-only TTL cache. Per-member fallback catches named NPCs who are not squad commanders.</p>
+<h2>Offline Guard</h2>
+<p>The online guard only sees entities near you. A hub on another level can hold dozens of offline squads that all come online at once and spike the count. The Offline Guard runs a staggered scan that bins offline squads into regions by position and thins any region over the trigger down to the target. Commanders and protected squads are never removed, so every squad survives. Independent of the online guard, with its own trigger, target, and task protection. Target down to 0 strips a region to lone commanders. Toggle, cull trigger, cull target, task protection, and scan tick in MCM.</p>
 <h2>Smart Sanitizer</h2>
 <p>Defensive pass that clamps corrupted respawn counters on smart terrains. Negative or non-numeric already_spawned values cause save crashes (u8 write overflow at STATE_Write) and infinite spawn loops (max &gt; num respawn gate always true). The sanitizer runs on actor_on_reinit before the load-time alife burst, then every 300 seconds during play. Lua table walk over SIMBOARD.smarts. Sub-millisecond on 50-200 smarts. Toggle and interval in MCM.</p>
 <h2>Inventory Guard</h2>
@@ -33,8 +35,8 @@
 <li>Long-lived stalkers carry a believable loadout instead of a trader-sized hoard.</li>
 <li>Killing a random stalker yields reasonable loot, not a vendor run.</li>
 <li>Saves stay performant across long sessions.</li>
-<li>Companions, story characters, named NPCs, and service NPCs are never touched.</li>
-<li>Traders, mechanics, and medics are matched by role, so even ones spawned at runtime (Warfare and similar) keep their full stock.</li>
+<li>Companions, story characters, and named NPCs are never touched.</li>
+<li>Traders, mechanics, and medics are matched by role, so even ones spawned at runtime (Warfare and similar) skip the per-category trim; only the trader stock purge below applies to them.</li>
 <li>Vanilla looting still works. Stalkers loot their kills.</li>
 </ul>
 <h3>Important</h3>
@@ -43,13 +45,15 @@
 <p>An online stalker on Cordon has been alive for 50 game-days. They have picked up 47 medkits, 23 bandages, 18 grenades, and 600 rounds of mismatched ammo. The scanner's next visit releases 42 medkits (cap 5), 18 bandages (cap 5), 15 grenades (cap 3), and the 600 mismatched rounds (cap 0). The NPC walks around with a believable load: a few medkits, a stack of bandages, three grenades, and ammo for the gun they actually carry.</p>
 <h3>Policy</h3>
 <p>Per-category limits live in <i>configs/alifeguard/ag_inventory_policy.ltx</i> (DLTX-overridable). Defaults cover equipped ammo (in rounds, per tier), grenades, and consumables: medkit, bandage, antirad, stim, pill, food, drink. Gear coverage: weapons, outfits, helmets, artefacts, crafting items, devices. Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are protected by xlibs and never touched.</p>
+<h3>Trader stock purge</h3>
+<p>Selling to a trader piles your junk into their inventory, and each item there is a permanent alife server object. The engine clears trader stock at restock, but between restocks a heavy selling session walks the object count toward the cap. The same scanner visits traders, mechanics, medics, and barmen and releases weapons, outfits, and helmets below a condition threshold (default 0.75). Stock at or above the threshold stays for sale; the trader's own equipped gear and quest items are never touched. Consumables, ammo, and money are never touched: only wear-bearing gear is judged by condition. Toggle and threshold in MCM.</p>
 <p>Moved from AlifeBalance (where it was called Inventory Balance). Same behavior, new home. If updating both mods, configure it here; the AlifeBalance tab is gone.</p>
 <h2>Performance</h2>
 <p>Single-pass collection (native C++ iterator). Cached protection lookups. Sub-millisecond scan for 200 entities. 0.05ms per release. Zero debug overhead when log level &lt; DEBUG.</p>
 <h2>Mod compatibility</h2>
 <p>Most population mods conflict with A-Life mods. AlifeGuard is designed to coexist with AlifePlus, Warfare, ZCP, GAMMA, Guards Spawner, and any mod that uses scripted_target.<br />Scripted squads are preserved as long as possible. Commanders remain, so squad assignments continue. Spawn counters stay consistent. Warfare population tracking stays accurate. AlifePlus cause/consequence chains complete because target squads persist.<br />Other mods direct the world. AlifeGuard keeps it performant.</p>
 <h2>MCM</h2>
-<p>General: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications, Smart Sanitizer (toggle, interval).<br />Inventory Guard: toggle, NPCs per frame, rescan cooldown.<br />Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.</p>
+<p>Online Guard: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.<br />Offline Guard: toggle, cull trigger, cull target, task protection, scan tick.<br />Smart Sanitizer: toggle, interval.<br />Inventory Guard: toggle, NPCs per frame, rescan cooldown, trader purge toggle, trader condition threshold.<br />Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.</p>
 <h2>Requirements</h2>
 <p>Anomaly 1.5.3<br /><a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a><br />MCM</p>
 <h2>Install (MO2)</h2>
