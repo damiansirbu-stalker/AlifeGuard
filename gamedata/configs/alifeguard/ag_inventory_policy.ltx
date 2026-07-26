@@ -32,6 +32,14 @@ outfit            = 1
 helmet            = 1
 artefact          = 3
 device            = 1
+; Binoculars classify as "weapon" and night-vision torches as "device", so under weapon = 1 and
+; device = 1 a stalker carrying a rifle loses his binoculars and one carrying any other device
+; loses his NVG. These section rows give each its own budget of one so the cull stops destroying
+; them; the category caps still bound everything else.
+wpn_binoc         = 1
+device_torch_nv_1 = 1
+device_torch_nv_2 = 1
+device_torch_nv_3 = 1
 crafting          = 3
 other             = 3
 
