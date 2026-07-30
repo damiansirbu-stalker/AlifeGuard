@@ -1,5 +1,8 @@
 next
-  Summary: trader purge removed
+  Summary: online limit default, trader purge removed
+
+  Online Guard
+    - Changed the online population limit default from 80 to 120 NPCs. Custom settings are unaffected.
 
   Inventory Guard
     - Removed the trader stock condition purge. Trader, mechanic, medic, and barman stock is now left to the trade flow that already bounds it,

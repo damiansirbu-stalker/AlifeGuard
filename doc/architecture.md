@@ -134,8 +134,8 @@ Categories with fewer members exhaust first and are skipped in subsequent rounds
 
 Prevents oscillation between cull cycles.
 
-- **Trigger**: `total > max` (e.g., 81 > 80)
-- **Target**: `max - buffer` (e.g., 80 - 10 = 70)
+- **Trigger**: `total > max` (e.g., 121 > 120)
+- **Target**: `max - buffer` (e.g., 120 - 10 = 110)
 - **Next trigger**: not until `total > max` again
 
 Without hysteresis: cull to 80, 2 NPCs respawn, cull again next cycle. With buffer=10: cull to 70, population rises to 78, no cull. Only triggers when it crosses 81 again.
@@ -417,7 +417,7 @@ Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventor
 | Setting | Default | Effect |
 |---|---|---|
 | enabled | true | Master toggle |
-| max | 80 | Trigger threshold (cull when total exceeds this) |
+| max | 120 | Trigger threshold (cull when total exceeds this) |
 | buffer | 10 | Hysteresis gap (cull target = max - buffer) |
 | check_interval | 30 | Seconds between checks |
 | check_tasks | true | Protect task givers, companions, bounty/hostage targets |

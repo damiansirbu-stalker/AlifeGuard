@@ -19,7 +19,7 @@ local DESPAWN_JOB = "ag_despawn"
 
 local cfg = {
     enabled = true,
-    max = 80,
+    max = 120,
     buffer = 10,
     check_interval = 30,
     check_tasks = true,

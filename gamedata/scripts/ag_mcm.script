@@ -5,7 +5,7 @@
 defaults = {
     -- Online Guard
     enabled = true,
-    max = 80,
+    max = 120,
     buffer = 10,
     check_interval = 30,
     check_tasks = true,
@@ -123,7 +123,7 @@ function on_mcm_load()
                     { id = "div_online", type = "line" },
                     { id = "hdr_online", type = "desc", text = "ui_mcm_ag_hdr_online", clr = {255, 200, 200, 200} },
                     { id = "enabled", type = "check", val = 1, def = true },
-                    { id = "max", type = "track", val = 2, min = 10, max = 200, step = 5, def = 80 },
+                    { id = "max", type = "track", val = 2, min = 10, max = 200, step = 5, def = 120 },
                     { id = "buffer", type = "track", val = 2, min = 0, max = 50, step = 5, def = 10 },
                     { id = "check_interval", type = "track", val = 2, min = 10, max = 120, step = 10, def = 30 },
 
