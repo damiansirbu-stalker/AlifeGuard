@@ -1,3 +1,10 @@
+next
+  Summary: trader purge removed
+
+  Inventory Guard
+    - Removed the trader stock condition purge. Trader, mechanic, medic, and barman stock is now left to the trade flow that already bounds it,
+      so the inventory guard no longer touches any trader.
+
 1.3.1
   Summary: Inventory Guard, trader stock purge, sanitizer setting, offline culling fix
 

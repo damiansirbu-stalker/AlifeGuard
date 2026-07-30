@@ -263,13 +263,13 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 
 The goal is to let the player keep vanilla NPC corpse looting enabled. Vanilla looting pays two costs over long sessions: jackpot bodies (one stalker carrying a vendor run of gear), and creep toward the engine's 65535 alife-ID cap as every looted item consumes one ID (vanilla Anomaly warns at 64000 via `alife_on_limit`). Anti-loot addons (NPC Stop Looting Dead Bodies, Weapons Drop on Bodies, BoltBeGone) sidestep both by blocking or rewriting the loot path. Inventory Guard bounds hoarding at the source instead, so anti-loot addons are no longer needed.
 
-Periodic scanner over online stalkers. Walks the online set in small batches, trims one NPC per frame, rescans each NPC at most twice per game-day (default 12 game-hour cooldown). Scope is random long-lived stalkers (gulag survivors, generic patrols). Companions, story NPCs, and named characters are filtered at the scheduler via `xcreature.is_unscriptable`. Service NPCs (traders, mechanics, medics, barmen), including dynamically spawned ones, are detected via `xsmart.get_npc_roles` and routed to the trader stock condition purge (`purge_trader`) instead. Neither reaches `trim_npc`.
+Periodic scanner over online stalkers. Walks the online set in small batches, trims one NPC per frame, rescans each NPC at most twice per game-day (default 12 game-hour cooldown). Scope is random long-lived stalkers (gulag survivors, generic patrols). Companions, story NPCs, and named characters are filtered at the scheduler via `xcreature.is_unscriptable`. Service NPCs (traders, mechanics, medics, barmen), including dynamically spawned ones, are detected via `xsmart.get_npc_roles` and skipped — their stock is trade stock managed by the trade flow, never trimmed. Neither reaches `trim_npc`.
 
 ### Why scanner, not death-time hook
 
 A death-time hook (wrapping `death_manager.keep_item`) only runs when an NPC dies. Three failure modes are missed:
 
-1. **Long-lived NPCs never trim**. The population that survives is the population that hoards. Hundreds of random online stalkers (gulag survivors, generic patrols) keep looting corpses they walk over and never die. Death-time only catches NPCs that die; the survivors drive save bloat and steady performance drag indefinitely. (Companions, story NPCs, and named characters are scripted-identity holders filtered at the scheduler via `xcreature.is_unscriptable`, and service NPCs are routed by role (`xsmart.get_npc_roles`) to the trader stock condition purge, so the hoarding problem `trim_npc` addresses is the random long-lived population only.)
+1. **Long-lived NPCs never trim**. The population that survives is the population that hoards. Hundreds of random online stalkers (gulag survivors, generic patrols) keep looting corpses they walk over and never die. Death-time only catches NPCs that die; the survivors drive save bloat and steady performance drag indefinitely. (Companions, story NPCs, and named characters are scripted-identity holders filtered at the scheduler via `xcreature.is_unscriptable`, and service NPCs are skipped by role (`xsmart.get_npc_roles`) since their stock is trade-flow-managed, so the hoarding problem `trim_npc` addresses is the random long-lived population only.)
 2. **Save bloat accumulates between deaths**. Every looted item is a server object persisted in the save. Long sessions accumulate without bound. Continuous trim bounds live state instead of waiting for the death event.
 3. **Bursty performance**. N deaths in a firefight = N trims in the same frame as the corpse spawn. xslice spreads the trim cost across frames.
 
@@ -287,9 +287,9 @@ _start_cycle()
   - now = xtime.game_sec()
   - eligible = [ npc_id for id, npc in xcreature.online_iter_with_id()
                  if alife_object(id)
-                    and (IsStalker(npc) or IsTrader(npc)) and npc:alive()
-                    and (service NPC (xsmart.get_npc_roles non-empty) ? enabled_trader_purge
-                         : not xcreature.is_unscriptable(npc))
+                    and IsStalker(npc) and npc:alive()
+                    and xsmart.get_npc_roles(npc) empty        (service NPCs skipped; hub traders fail IsStalker)
+                    and not xcreature.is_unscriptable(npc)      (companions / story / named skipped)
                     and now - _last_scan_game_sec[npc_id] >= scan_cooldown_h * 3600 ]
   - sort eligible by oldest scan first
   - picks = all eligible (xslice paces the actual trim at npcs_per_frame)
@@ -303,7 +303,7 @@ FRAME (each frame while queue active)
 _visit(npc_id)
   - npc = level.object_by_id(npc_id)
   - if not npc or not npc:alive(): return true  (drain; went offline)
-  - r = service NPC ? purge_trader(npc) : trim_npc(npc)
+  - r = trim_npc(npc)
   - _last_scan_game_sec[npc_id] = xtime.game_sec()
   - cycle counters += r
   - return true  (drain)
@@ -321,24 +321,21 @@ The scanner's xslice queue (`ag_inventory_guard_scan`) is independent of the des
 
 | Function | Purpose | Returns |
 |---|---|---|
-| `trim_npc(npc, opts)` | Apply inventory policy to one NPC. opts: `{ dry_run }`. Cooldown table NOT touched. | `{ released, released_by_category, dt_ms }` |
-| `purge_trader(npc, opts)` | Release low-condition trader stock from one service NPC. opts: `{ dry_run }`. Cooldown table NOT touched. | `{ released, dt_ms }` |
+| `trim_npc(npc, opts)` | Apply inventory policy to one NPC. opts: `{ dry_run }`. Cooldown table NOT touched. Both walks capped at `MAX_SCAN_ITEMS` (80). | `{ released, released_by_category, dt_ms }` |
 
-Probes, MCM "trim now" buttons, TestZone probes, and console diagnostics call `trim_npc` / `purge_trader` directly without scheduler involvement.
+Probes, MCM "trim now" buttons, TestZone probes, and console diagnostics call `trim_npc` directly without scheduler involvement.
 
-### Trader stock condition purge
+### Traders skipped
 
-Player selling drives trader stock upward between engine restocks; every held item is a server object against the engine's 65535 alife-ID cap, and low-condition junk never leaves because the trade system's buy-condition gate has no matching purge side. The engine already destroys a trader's unslotted stock at each restock (`CInventoryOwner::buy_supplies` -> `CPurchaseList::process` -> `sell_useless_items`, everything except bolts, slotted weapons, and the trader's own PDA; cadence is the "restock" eco factor, default 24 game-hours, and for stalker-class traders the check only runs on talk). The purge bounds the creep inside that window.
+Service NPCs (traders, mechanics, medics, barmen — detected by section, community, or clsid via `xsmart.get_npc_roles`; hub traders also fail the `IsStalker` admit by `script_trader` clsid) are skipped entirely at the scheduler. Their inventory is trade stock, not a lootable hoard, and it is already bounded by the trade flow: the engine destroys a trader's unslotted stock at each restock (`CInventoryOwner::buy_supplies` -> `CPurchaseList::process` -> `sell_useless_items`), and the Trader Destockifier caps weapon/outfit/helmet count per trader on every trade-open. Trimming a trader with the stalker policy would gut the shelf, so the guard never touches one.
 
-Service NPCs ride the same scheduler, cooldown table, and xslice queue as the trim pass; `_visit` dispatches on `xsmart.get_npc_roles`. Eligibility differs in two ways: `IsTrader` admits `script_trader`-clsid hub traders that fail `IsStalker`, and service NPCs skip the `xcreature.is_unscriptable` roster on purpose — named traders are exactly the purge's subject.
+### Frame-cost cap
 
-The predicate is a condition gate, not a category count: release every item whose category is in {weapon, outfit, helmet} and whose `condition()` sits below `trader_condition_min` (default 0.75). Only those categories carry real wear; a consumable's condition is a multi-use counter (`use_condition` flag), so consumables, ammo, and money are out of scope by construction. Untouchable (quest / story_id / companion-gift / strapped) and equipped items resolve to categories outside the purge set inside `xinventory.get_category` and are never released — the trader's own weapon survives at any condition. No policy LTX row: the gate is one MCM threshold, not a per-category ceiling.
-
-Cross-mod threshold relationship: a mod that injects goods into trader stock at a configured condition stays safe while its injection condition is at or above `trader_condition_min`; the defaults hold that relationship (0.9 injection vs 0.75 purge) and the MCM tooltip documents it.
+`trim_npc` bounds each walk to `MAX_SCAN_ITEMS` (80): `classify` and `iterate_surplus` each forward the cap to `xinventory.iterate_inventory`, which stops the engine walk after that many items and reports the truncation as its second return value. This holds a single trim under the ~2ms frame ceiling (`code-standards` Performance budget) even on a pathological inventory. A stalker past the cap is a fat corpse-hoarder; the surplus beyond the window is trimmed on the next cooldown pass as releases shrink the inventory and the tail shifts into the first-`MAX_SCAN_ITEMS` slots (`m_all` iteration order is stable across the two walks, so `classify` and `iterate_surplus` cover the identical items). Truncation is logged as `capped=true` on the `[VISIT]` line when DEBUG is on. Capping only ever under-releases; it never touches a legitimate item.
 
 ### Policy
 
-Policy values live in `gamedata/configs/alifeguard/ag_inventory_policy.ltx` (DLTX-overridable). Single uniform block `[ag_inventory_policy]` with single-value `<category> = <max>` rows; loaded once at on_game_start via `xinventory.load_policy` and applied per-NPC via `xinventory.classify` (counts) + `xinventory.iterate_surplus` (release pass with `on_surplus = xinventory.release_item`).
+Policy values live in `gamedata/configs/alifeguard/ag_inventory_policy.ltx` (DLTX-overridable). Single uniform block `[ag_inventory_policy]` with single-value `<category> = <max>` rows; loaded once at on_game_start via `xinventory.load_policy` and applied per-NPC via `xinventory.classify` (counts) + `xinventory.iterate_surplus` (release pass with `on_surplus = xinventory.release_item`); each walk is capped at `MAX_SCAN_ITEMS` (see Frame-cost cap).
 
 | Category | max | Effect |
 |---|---|---|
@@ -361,7 +358,7 @@ Policy values live in `gamedata/configs/alifeguard/ag_inventory_policy.ltx` (DLT
 
 Ammo categories count in ROUNDS (sum of `ammo_get_count` per stack via `xinventory.classify`); other categories count in items. Untouchables (quest / anim / blacklisted) and equipped items are pre-filtered by `xinventory.get_category`. Three runtime per-item untouchable checks also gate via xinventory: items with `get_object_story_id`, items the actor gave to a companion (`axr_companions.is_assigned_item`), and player-strapped weapons (`se_load_var "strapped_item"`). None of these reach the policy.
 
-Companions, story characters, and named NPCs are filtered at the scheduler via `xcreature.is_unscriptable(obj)`; service NPCs (traders, mechanics, medics, barmen, including dynamically spawned ones) are detected via `xsmart.get_npc_roles(obj)` and routed to `purge_trader`. Neither reaches `trim_npc`; the policy only sees random extras whose identities no script depends on.
+Companions, story characters, and named NPCs are filtered at the scheduler via `xcreature.is_unscriptable(obj)`; service NPCs (traders, mechanics, medics, barmen, including dynamically spawned ones) are detected via `xsmart.get_npc_roles(obj)` and skipped (their stock is trade-flow-managed). Neither reaches `trim_npc`; the policy only sees random extras whose identities no script depends on.
 
 ### State
 
@@ -381,7 +378,7 @@ No persistence. The cooldown table not saved; on game load every NPC is fresh an
 | Anti-loot addons (`311- NPC Stop Looting Dead Bodies`, `BoltBeGone`, equivalents) | Anti-loot addons Inventory Guard replaces. Disable. They were created to work around two costs of vanilla looting (jackpot kills, 65k alife-ID cap) by blocking or rewriting the corpse-loot path. Inventory Guard bounds the cause, so the workarounds are no longer needed. |
 | Jabbers' "Weapons Drop on bodies" 134 | No conflict. They patch `death_manager.keep_item`; we do not touch that seam. The scanner releases from online inventories; their wrap fires at death on whatever the scanner left behind. |
 | Ish's BoltBeGone in Nitpicker's Modpack 124 | Same as Jabbers'. No conflict. |
-| Unscriptable NPCs (`xcreature.is_unscriptable`) | Skipped at scheduler level for the trim pass. Covers story characters (Strider, Magpie, Sidorovich) via engine story_id, companions via `npcx_is_companion` info-portion, named NPCs (traders, medics, mechanics, guides, guards, bodyguards, leaders, quest-givers) via `xdata.unscriptable_npcs`, and members of story squads. These NPCs have scripted identities the rest of the game depends on; trimming their inventories risks breaking quest scripts. Service NPCs (`xsmart.get_npc_roles` non-empty) are the one carve-out: they skip this roster and get the trader stock condition purge, which touches only free-floating low-condition wear-category stock. |
+| Unscriptable NPCs (`xcreature.is_unscriptable`) | Skipped at scheduler level for the trim pass. Covers story characters (Strider, Magpie, Sidorovich) via engine story_id, companions via `npcx_is_companion` info-portion, named NPCs (traders, medics, mechanics, guides, guards, bodyguards, leaders, quest-givers) via `xdata.unscriptable_npcs`, and members of story squads. These NPCs have scripted identities the rest of the game depends on; trimming their inventories risks breaking quest scripts. Service NPCs (`xsmart.get_npc_roles` non-empty) are rejected by their own gate before this one: their stock is trade stock managed by the trade flow, never trimmed. |
 | Untouchables (`xinventory.get_section_category(sec) == "untouchable"`) | Never released regardless of category. Covers quest items (`quest_item=1` or `kind=i_quest`), animation props (`anim_item=1`), and sections in `xr_corpse_detection.ltx [ignore_sections]`. Resolved once per section by xinventory and cached. |
 
 ### Performance (Inventory Guard)
@@ -406,10 +403,10 @@ No persistence. The cooldown table not saved; on game load every NPC is fresh an
 | ag_offline_guard.script | 316 | Offline Guard: offline density scan per switch_distance cell, per-cell offline cull |
 | ag_queue.script | 143 | Release-queue strategy: 4 priority tiers, round-robin/linear fairness fill (pure Lua) |
 | ag_smart_sanitizer.script | 113 | Smart Sanitizer: clamps corrupted already_spawned respawn counters |
-| ag_inventory_guard.script | 368 | Inventory Guard: online inventory scanner, public `trim_npc` + `purge_trader`, xslice scheduler with per-NPC cooldown |
+| ag_inventory_guard.script | 309 | Inventory Guard: online inventory scanner, public `trim_npc`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
 | ag_mcm.script | 239 | MCM defaults, UI definition, button handlers |
 | _ag_deps.script | 121 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
-| ag_test.script | 507 | Dormant console load/conformity harness for the offline guard, plus Inventory Guard and trader purge flow tests |
+| ag_test.script | 391 | Dormant console load/conformity harness for the offline guard, plus the Inventory Guard flow test |
 
 Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventory Guard per-category ceilings (DLTX-overridable).
 
@@ -436,9 +433,7 @@ Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventor
 | density_interval | 1 | Seconds between offline scan steps (1-10) |
 | sanitize_smarts | true | Periodic walk that clamps corrupted already_spawned counters |
 | sanitize_interval | 300 | Seconds between periodic sanitizer passes (60-1800) |
-| enabled_inventory | true | Inventory Guard scanner enable. When off, no scheduler, no trims, no purges. |
+| enabled_inventory | true | Inventory Guard scanner enable. When off, no scheduler and no trims. |
 | npcs_per_frame | 1 | xslice step: NPCs trimmed per frame inside a cycle (1-10) |
-| scan_cooldown_h | 12 | Per-NPC rescan cooldown in game-hours (1-72); paces traders too |
-| enabled_trader_purge | true | Trader stock condition purge enable. When off, service NPCs drop out of the scanner entirely. |
-| trader_condition_min | 0.75 | Trader stock below this condition fraction is released (0.05-0.95); weapon/outfit/helmet categories only |
+| scan_cooldown_h | 12 | Per-NPC rescan cooldown in game-hours (1-72) |
 | log_level | WARN | Logger verbosity (ERROR/WARN/INFO/DEBUG) |
