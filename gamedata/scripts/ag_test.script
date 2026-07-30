@@ -4,7 +4,8 @@
 --- Console:
 ---   run_string ag_test.run()   toggle the driver; it does everything on its own
 ---   run_string ag_test.ag_test_inventory_sanitization()   Inventory Guard flow test
----   run_string ag_test.ag_test_inventory_cap()   Inventory Guard walk-cap torture test
+---   run_string ag_test.ag_test_inventory_cap()   Inventory Guard walk-cap conformity test
+---   run_string ag_test.ag_test_torture()   full torture: spawn squads online+offline, flood items, all guards react, auto-cleanup
 ---
 --- On start it auto-picks a smart on a level away from the actor (so squads spawn offline
 --- and the offline guard actually engages), then every 10s spawns one squad there through
@@ -294,6 +295,31 @@ end
 
 -- MAX_SCAN_ITEMS mirrors the per-walk cap in ag_inventory_guard.script (local constant there).
 local INV_SCAN_CAP = 80
+-- Torture harness: eligible online stalkers to stuff + items each (past the cap), and squads to
+-- spawn per location (online near actor + offline on another level). Spawned-squad and injected-item
+-- ledgers let a run tear itself down.
+local TORTURE_TARGETS = 20
+local TORTURE_INJECT  = INV_SCAN_CAP * 2
+local TORTURE_SQUADS  = 12
+local _torture_squads = {}
+local _torture_items  = {}
+
+-- Collect up to `limit` eligible online stalkers (the scanner's own gate: stalker, alive, no
+-- service role, not unscriptable) for the multi-NPC torture harness.
+local function _pick_npcs(limit)
+    local actor = db.actor
+    if not actor then return {} end
+    local actor_id = actor:id()
+    local out = {}
+    for id, obj in xcreature.online_iter_with_id() do
+        if id ~= actor_id and alife_object(id) and IsStalker(obj) and obj:alive()
+            and next(xsmart.get_npc_roles(obj)) == nil and not xcreature.is_unscriptable(obj) then
+            out[#out + 1] = id
+            if #out >= limit then break end
+        end
+    end
+    return out
+end
 
 -- Online inventory item count (for the cap-boundary assertions).
 local function _item_count(npc_id)
@@ -476,6 +502,113 @@ function ag_test_inventory_cap()
         local cleaned = _cleanup(ids)
         _log_info("[TEARDOWN] released %d/%d injected ids (others already gone via trim)", cleaned, #ids)
         return true
+    end)
+end
+
+-- Pick the first smart on the actor's own level, so its spawns go online near the actor and the
+-- Online Guard + Inventory Guard engage.
+local function _pick_online_smart(graph, actor_level)
+    if not (SIMBOARD and SIMBOARD.smarts_by_names) then return nil end
+    for name, smart in pairs(SIMBOARD.smarts_by_names) do
+        local gvid = smart.m_game_vertex_id
+        if gvid and graph:valid_vertex_id(gvid) and graph:vertex(gvid):level_id() == actor_level then
+            return name, smart
+        end
+    end
+    return nil
+end
+
+-- Spawn `count` squads at a smart, ledgering their ids for teardown.
+local function _torture_spawn(smart, name, count)
+    local spawned = 0
+    for k = 1, count do
+        local squad = xsquad.create_squad(smart, SECTIONS[(k % #SECTIONS) + 1])
+        if squad then
+            _torture_squads[#_torture_squads + 1] = squad.id
+            spawned = spawned + 1
+        end
+    end
+    log.info("[TORTURE] spawned=%d at smart=%s", spawned, name)
+    return spawned
+end
+
+-- Flood every online eligible stalker (spawned or pre-existing) with items past the cap.
+local function _torture_stuff()
+    local ids = _pick_npcs(TORTURE_TARGETS)
+    local stuffed, items = 0, 0
+    for i = 1, #ids do
+        local npc = level.object_by_id(ids[i])
+        if npc then
+            local got = _inject(npc, "medkit", TORTURE_INJECT)
+            for j = 1, #got do _torture_items[#_torture_items + 1] = got[j] end
+            stuffed = stuffed + 1
+            items = items + #got
+        end
+    end
+    log.info("[TORTURE] stuffed=%d npcs items=%d", stuffed, items)
+end
+
+-- Log the sim load (total squads + bodies) so the spike is visible next to the guards' own
+-- [DENSITY] / [OFFLINE-CULL] / [VISIT] lines, which already break down online vs offline per cell.
+local function _torture_snapshot()
+    local squads, bodies = 0, 0
+    for squad_id in pairs(SIMBOARD.squads) do
+        local squad = alife_object(squad_id)
+        if squad then
+            squads = squads + 1
+            bodies = bodies + (squad:npc_count() or 0)
+        end
+    end
+    log.info("[TORTURE] load squads=%d bodies=%d spawned_ledger=%d", squads, bodies, #_torture_squads)
+end
+
+-- Despawn every squad we spawned that survived (the guards may have culled some) and release
+-- every item we injected that survived (the Inventory Guard may have trimmed some).
+local function _torture_teardown()
+    local spawned_total, items_total = #_torture_squads, #_torture_items
+    local removed = 0
+    for i = 1, spawned_total do
+        local squad = alife_object(_torture_squads[i])
+        if squad and xsquad.is_squad(squad) then
+            xsquad.remove_squad(squad)
+            removed = removed + 1
+        end
+    end
+    local released = 0
+    for i = 1, items_total do
+        if alife_object(_torture_items[i]) then alife_release_id(_torture_items[i]); released = released + 1 end
+    end
+    _torture_squads, _torture_items = {}, {}
+    log.info("[TORTURE] teardown spawned=%d removed=%d guard_culled=%d | items=%d released=%d guard_trimmed=%d",
+        spawned_total, removed, spawned_total - removed, items_total, released, items_total - released)
+    _tip(string_format("[TORTURE] done: %d/%d squads survived to teardown, %d/%d items survived (rest handled by guards)",
+        removed, spawned_total, released, items_total))
+end
+
+--- Full multi-system torture: spawn a burst of squads online (near actor) and offline (another
+--- level), flood every online stalker with items past the cap, and let every guard react at once
+--- (Online density, Offline density, Inventory trim). Logs the load spike to alifeguard.log next
+--- to the guards' own lines, then auto-tears-down ~15s later (despawns survivors, releases items).
+--- Set density_trigger / density_target low in MCM first to force the culls. One console command.
+--- @export console
+function ag_test_torture()
+    _log_info("[BEGIN] torture")
+    local sim, graph = alife(), game_graph()
+    if not (sim and graph) then _flow_tip("[FAIL] torture: alife not ready"); return end
+    local actor_level = xlevel.get_actor_level_id()
+    local on_name, on_smart = _pick_online_smart(graph, actor_level)
+    local off_name, off_smart = _pick_offline_smart(graph, actor_level)
+    if not (on_smart or off_smart) then _flow_tip("[FAIL] torture: no smarts found"); return end
+
+    local n_on = on_smart and _torture_spawn(on_smart, on_name, TORTURE_SQUADS) or 0
+    local n_off = off_smart and _torture_spawn(off_smart, off_name, TORTURE_SQUADS) or 0
+    _tip(string_format("[TORTURE] spawned online=%d offline=%d, flooding + guards reacting, teardown in 15s", n_on, n_off))
+
+    CreateTimeEvent(TIME_EVENT_ID, "torture_stuff", 3, function()
+        _torture_stuff(); _torture_snapshot(); return true
+    end)
+    CreateTimeEvent(TIME_EVENT_ID, "torture_teardown", 15, function()
+        _torture_snapshot(); _torture_teardown(); return true
     end)
 end
 
