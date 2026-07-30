@@ -4,6 +4,7 @@
 --- Console:
 ---   run_string ag_test.run()   toggle the driver; it does everything on its own
 ---   run_string ag_test.ag_test_inventory_sanitization()   Inventory Guard flow test
+---   run_string ag_test.ag_test_inventory_cap()   Inventory Guard walk-cap torture test
 ---
 --- On start it auto-picks a smart on a level away from the actor (so squads spawn offline
 --- and the offline guard actually engages), then every 10s spawns one squad there through
@@ -291,6 +292,16 @@ local function _find_mismatched_ammo(opts)
     return nil
 end
 
+-- MAX_SCAN_ITEMS mirrors the per-walk cap in ag_inventory_guard.script (local constant there).
+local INV_SCAN_CAP = 80
+
+-- Online inventory item count (for the cap-boundary assertions).
+local function _item_count(npc_id)
+    local count = 0
+    xinventory.iterate_inventory(npc_id, function(_, item) if item then count = count + 1 end end)
+    return count
+end
+
 --- Inventory sanitization: ag_inventory_guard.trim_npc end-to-end.
 --- Inject 20 medkits + 1 stack of mismatched ammo (200 rounds) into the
 --- nearest test-eligible NPC, run trim_npc, assert the per-category release
@@ -385,6 +396,85 @@ function ag_test_inventory_sanitization()
         local a_cleaned = _cleanup(ammo_ids)
         _log_info("[TEARDOWN] released %d/%d medkit ids, %d/%d ammo ids (others already gone via trim)",
             m_cleaned, #medkit_ids, a_cleaned, #ammo_ids)
+        return true
+    end)
+end
+
+-- Evaluate and report the inventory-cap assertions. Kept out of the deferred closure to hold
+-- the closure's cyclomatic complexity down.
+local function _report_inventory_cap(before, mid, after, r1, r2)
+    local TEST = "inventory_cap"
+    if not r1 or not r2 then
+        _log_info("[FAIL] %s: trim returned nil (policy not loaded?)", TEST)
+        _flow_tip("[FAIL] " .. TEST .. ": trim nil")
+        return
+    end
+    local over_cap  = before > INV_SCAN_CAP
+    local truncated = mid > INV_SCAN_CAP
+    local converged = after < mid
+    local bounded   = r1.dt_ms >= 0 and r2.dt_ms >= 0
+    local summary = string_format(
+        "before=%d -> mid=%d (rel1=%d dt1=%.3fms) -> after=%d (rel2=%d dt2=%.3fms) cap=%d",
+        before, mid, r1.released, r1.dt_ms, after, r2.released, r2.dt_ms, INV_SCAN_CAP)
+    _log_info("[SUMMARY] %s", summary)
+    if over_cap and truncated and converged and bounded then
+        _log_info("[PASS] %s | %s", TEST, summary)
+        _flow_tip(string_format("[PASS] %s\n%s", TEST, summary), 30000)
+    else
+        _log_info("[FAIL] %s | %s | over_cap=%s truncated=%s converged=%s bounded=%s",
+            TEST, summary, tostring(over_cap), tostring(truncated), tostring(converged), tostring(bounded))
+        _flow_tip(string_format("[FAIL] %s (see log)", TEST), 30000)
+    end
+end
+
+--- Inventory scan cap: ag_inventory_guard.trim_npc under a laden inventory.
+--- Injects 2x the per-walk cap of one over-max category into the nearest eligible NPC so the
+--- total exceeds MAX_SCAN_ITEMS, then trims twice. Asserts the first pass is truncated (the NPC
+--- is still over the cap after it, so no single trim walked the whole inventory), the second
+--- pass releases more (convergence as the tail shifts into the first-N window), and both walks
+--- completed with a reported dt. This is the frame-cost bound the cap exists to guarantee.
+--- @export console
+function ag_test_inventory_cap()
+    local TEST = "inventory_cap"
+    _log_info("[BEGIN] %s", TEST)
+
+    local npc = _pick_npc()
+    if not npc then
+        _log_info("[FAIL] %s: no eligible NPC near actor", TEST)
+        _flow_tip("[FAIL] " .. TEST .. ": no eligible NPC")
+        return
+    end
+    local npc_id = npc:id()
+    _log_info("[SETUP] npc=%d name=%s cap=%d", npc_id, npc:name() or "?", INV_SCAN_CAP)
+
+    local INJECT = INV_SCAN_CAP * 2
+    local ids = _inject(npc, "medkit", INJECT)
+    if #ids == 0 then
+        _log_info("[FAIL] %s: medkit inject produced no items", TEST)
+        _flow_tip("[FAIL] " .. TEST .. ": inject failed")
+        return
+    end
+    _log_info("[INJECT] medkit x%d (ids=%d)", INJECT, #ids)
+
+    -- alife->CInventory sync takes one frame. Defer the assertion by 1 second.
+    CreateTimeEvent(0, "ag_test_inventory_cap_phase2", 1, function()
+        local npc2 = level.object_by_id(npc_id)
+        if not npc2 then
+            _log_info("[FAIL] %s: npc offline before phase 2", TEST)
+            _flow_tip("[FAIL] " .. TEST .. ": npc offline")
+            _cleanup(ids)
+            return true
+        end
+
+        local before = _item_count(npc_id)
+        local r1 = ag_inventory_guard.trim_npc(npc2)
+        local mid = _item_count(npc_id)
+        local r2 = ag_inventory_guard.trim_npc(npc2)
+        local after = _item_count(npc_id)
+        _report_inventory_cap(before, mid, after, r1, r2)
+
+        local cleaned = _cleanup(ids)
+        _log_info("[TEARDOWN] released %d/%d injected ids (others already gone via trim)", cleaned, #ids)
         return true
     end)
 end
