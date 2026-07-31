@@ -5,6 +5,7 @@
 ---   run_string ag_test.run()   toggle the driver; it does everything on its own
 ---   run_string ag_test.ag_test_inventory_sanitization()   Inventory Guard flow test
 ---   run_string ag_test.ag_test_inventory_cap()   Inventory Guard walk-cap conformity test
+---   run_string ag_test.ag_test_surplus_parity()   xinventory.collect_surplus vs classify+iterate_surplus drop-in proof
 ---   run_string ag_test.ag_test_torture()   TOGGLE a continuous torture loop (spawns squads + floods/trims every few seconds); run again to stop + clean up
 ---
 --- On start it auto-picks a smart on a level away from the actor (so squads spawn offline
@@ -294,7 +295,7 @@ local function _find_mismatched_ammo(opts)
 end
 
 -- MAX_SCAN_ITEMS mirrors the per-walk cap in ag_inventory_guard.script (local constant there).
-local INV_SCAN_CAP = 80
+local INV_SCAN_CAP = 40
 -- Continuous torture loop. Each tick floods TORTURE_TARGETS online stalkers with TORTURE_FLOOD
 -- items and trims them, and spawns TORTURE_BATCH squads at the online + offline smart, up to
 -- TORTURE_CAP total. Spawned-squad and injected-item ledgers let the loop tear itself down.
@@ -506,6 +507,143 @@ function ag_test_inventory_cap()
 
         local cleaned = _cleanup(ids)
         _log_info("[TEARDOWN] released %d/%d injected ids (others already gone via trim)", cleaned, #ids)
+        return true
+    end)
+end
+
+-- Diff two ordered released streams (each entry { id, cat, sec, unit }); nil on match, else a reason.
+local function _stream_diff(ref_stream, new_stream)
+    if #ref_stream ~= #new_stream then
+        return string_format("stream length ref=%d new=%d", #ref_stream, #new_stream)
+    end
+    for i = 1, #ref_stream do
+        local a, b = ref_stream[i], new_stream[i]
+        if a.id ~= b.id or a.cat ~= b.cat or a.sec ~= b.sec or a.unit ~= b.unit then
+            return string_format("stream[%d] ref=%s/%s/%s/%s new=%s/%s/%s/%s", i,
+                tostring(a.id), tostring(a.cat), tostring(a.sec), tostring(a.unit),
+                tostring(b.id), tostring(b.cat), tostring(b.sec), tostring(b.unit))
+        end
+    end
+    return nil
+end
+
+-- Diff two post-release count maps over the union of their keys; nil on match, else a reason.
+local function _counts_diff(ref_counts, new_counts)
+    for k, v in pairs(ref_counts) do
+        if (new_counts[k] or 0) ~= v then
+            return string_format("counts[%s] ref=%d new=%d", tostring(k), v, new_counts[k] or 0)
+        end
+    end
+    for k, v in pairs(new_counts) do
+        if (ref_counts[k] or 0) ~= v then
+            return string_format("counts[%s] ref=%d new=%d", tostring(k), ref_counts[k] or 0, v)
+        end
+    end
+    return nil
+end
+
+-- Exact parity of two surplus captures, each { stream, counts, hit } (candidate also carries
+-- released). Delegates the stream and counts diffs; returns (ok, reason).
+local function _compare_surplus(ref, new)
+    if new.released ~= #new.stream then
+        return false, string_format("collect_surplus released=%d but its stream=%d", new.released, #new.stream)
+    end
+    local reason = _stream_diff(ref.stream, new.stream) or _counts_diff(ref.counts, new.counts)
+    if reason then return false, reason end
+    if (ref.hit or false) ~= (new.hit or false) then
+        return false, string_format("hit_cap ref=%s new=%s", tostring(ref.hit), tostring(new.hit))
+    end
+    return true, "identical"
+end
+
+--- Surplus-walk parity: xinventory.collect_surplus vs classify + iterate_surplus.
+--- Injects an over-max medkit pile (unit=1 partial release) and a multi-stack mismatched-ammo pile
+--- (unit>1 multi release) into the nearest eligible NPC, then runs BOTH walkers on the same
+--- unreleased inventory with a non-releasing recording callback and asserts they produce the
+--- identical released stream (item id, category, section, unit, in m_all order), the identical
+--- post-release per-key counts, and the identical hit_cap. The drop-in proof for the trim_npc
+--- migration to the single-walk form. Runs read-only (nothing released); injected items cleaned up.
+--- @export console
+function ag_test_surplus_parity()
+    local TEST = "surplus_parity"
+    _log_info("[BEGIN] %s", TEST)
+
+    local npc = _pick_npc()
+    if not npc then
+        _log_info("[FAIL] %s: no eligible NPC near actor", TEST)
+        _flow_tip("[FAIL] " .. TEST .. ": no eligible NPC")
+        return
+    end
+    local npc_id = npc:id()
+    local npc_name = npc:name() or "?"
+
+    local opts0 = xinventory.get_category_opts(npc)
+    local mismatched = _find_mismatched_ammo(opts0)
+    if not mismatched then
+        _log_info("[FAIL] %s: no mismatched ammo section found", TEST)
+        _flow_tip("[FAIL] " .. TEST .. ": no mismatched ammo section")
+        return
+    end
+
+    -- unit=1 partial-release pile + unit>1 multi-stack pile (mismatched ammo -> ammo_not_equipped, max 0)
+    local medkit_ids = _inject(npc, "medkit", 20)
+    local ammo_ids = _inject(npc, mismatched, 4, 60)
+    local inject_ids = {}
+    for _, id in ipairs(medkit_ids) do inject_ids[#inject_ids + 1] = id end
+    for _, id in ipairs(ammo_ids) do inject_ids[#inject_ids + 1] = id end
+    _log_info("[SETUP] npc=%d name=%s injected medkit=%d ammo=%s (4 stacks x60, ids=%d)",
+        npc_id, npc_name, #medkit_ids, mismatched, #ammo_ids)
+
+    -- alife->CInventory sync takes one frame. Defer the comparison by 1 second.
+    CreateTimeEvent(0, "ag_test_surplus_parity_phase2", 1, function()
+        local npc2 = level.object_by_id(npc_id)
+        if not npc2 then
+            _log_info("[FAIL] %s: npc offline before phase 2", TEST)
+            _flow_tip("[FAIL] " .. TEST .. ": npc offline")
+            _cleanup(inject_ids)
+            return true
+        end
+
+        local opts = xinventory.get_category_opts(npc2)
+        local policy = xinventory.load_policy("alifeguard\\ag_inventory_policy.ltx", { "ag_inventory_policy" })
+        local rules = policy.ag_inventory_policy.rules
+
+        -- Reference: classify then iterate_surplus, recording only (on_surplus releases nothing).
+        local ref_stream = {}
+        local ref_counts, ref_hit = xinventory.classify(npc2, opts, rules, INV_SCAN_CAP)
+        xinventory.iterate_surplus(npc2, opts, {
+            rules = rules, counts = ref_counts, max_items = INV_SCAN_CAP,
+            on_surplus = function(item, cat, sec, unit)
+                ref_stream[#ref_stream + 1] = { id = item:id(), cat = cat, sec = sec, unit = unit }
+                return false
+            end,
+        })
+
+        -- Candidate: collect_surplus, recording only, on the same untouched inventory.
+        local new_stream = {}
+        local new_released, new_counts, new_hit = xinventory.collect_surplus(npc2, opts, {
+            rules = rules, max_items = INV_SCAN_CAP,
+            on_surplus = function(item, cat, sec, unit)
+                new_stream[#new_stream + 1] = { id = item:id(), cat = cat, sec = sec, unit = unit }
+                return false
+            end,
+        })
+
+        local ok, reason = _compare_surplus(
+            { stream = ref_stream, counts = ref_counts, hit = ref_hit },
+            { stream = new_stream, counts = new_counts, hit = new_hit, released = new_released })
+        local summary = string_format("npc=%d %s | ref_stream=%d new_stream=%d hit ref=%s new=%s",
+            npc_id, npc_name, #ref_stream, #new_stream, tostring(ref_hit), tostring(new_hit))
+        _log_info("[SUMMARY] %s", summary)
+        if ok then
+            _log_info("[PASS] %s | %s", TEST, summary)
+            _flow_tip(string_format("[PASS] %s\n%s", TEST, summary), 30000)
+        else
+            _log_info("[FAIL] %s | %s | %s", TEST, summary, reason)
+            _flow_tip(string_format("[FAIL] %s\n%s", TEST, reason), 30000)
+        end
+
+        _cleanup(inject_ids)
         return true
     end)
 end

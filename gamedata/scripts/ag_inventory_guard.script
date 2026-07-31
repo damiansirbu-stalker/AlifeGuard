@@ -4,7 +4,7 @@
 ---
 --- Policy lives in `configs/alifeguard/ag_inventory_policy.ltx` (DLTX-overridable);
 --- loaded once at on_game_start via xinventory.load_policy, applied per-NPC via
---- xinventory.classify + xinventory.iterate_surplus.
+--- xinventory.collect_surplus (a single count + release walk).
 ---
 --- Why scanner, not death-time hook:
 ---   1. Long-lived NPCs keep looting and never die. Death-time only catches NPCs that
@@ -21,9 +21,11 @@
 ---   3. Bursty performance. N deaths in a firefight = N trims in the same frame as the
 ---      corpse spawn. xslice spreads the cost across frames.
 ---
---- Per-NPC walk cost is bounded by MAX_SCAN_ITEMS (classify + iterate_surplus each cap there),
+--- Per-NPC walk cost is bounded by MAX_SCAN_ITEMS (collect_surplus caps its single walk there),
 --- so a single trim never breaches the ~2ms frame ceiling even on a pathological inventory; a
---- fat hoarder past the cap is trimmed incrementally over cooldown passes as releases shrink it.
+--- fat hoarder past the cap is trimmed incrementally over later passes as releases shrink it and
+--- the tail shifts into the window, and _visit withholds the cooldown while a trim still sheds
+--- surplus so the hoarder converges over the next cycles rather than waiting the full cooldown.
 ---
 --- Public API:
 ---   - trim_npc(npc, opts)      apply inventory policy to one NPC; opts.dry_run reports
@@ -49,12 +51,14 @@ local SCAN_QUEUE = "ag_inventory_guard_scan"
 local DEFAULT_NPCS_PER_FRAME = 1
 local UPDATE_INTERVAL_SEC = 30
 
--- Max inventory items scanned per NPC per walk. A single-frame cost ceiling (~2ms at the
--- measured ~12us/item; trim_npc runs classify + iterate_surplus, each capped here). A stalker
--- past this is a fat corpse-hoarder: surplus beyond the cap is trimmed on the next cooldown pass
--- as releases shrink the inventory and the tail shifts into the window. Derived from the 2ms
--- perf ceiling (code-standards Performance budget); retune if the per-item cost is remeasured.
-local MAX_SCAN_ITEMS = 80
+-- Max inventory items scanned per NPC per trim. A single-frame cost ceiling: trim_npc runs one
+-- collect_surplus walk capped here, so the worst frame is bounded regardless of inventory size. A
+-- stalker past this is a fat corpse-hoarder; surplus beyond the cap is trimmed on a later pass as
+-- releases shrink the inventory and the tail shifts into the window (and _visit withholds the
+-- cooldown while a trim still sheds surplus, so a hoarder converges over the next cycles instead of
+-- waiting the full cooldown). Derived from the 2ms perf ceiling (code-standards Performance budget)
+-- against the measured single-walk per-item cost; retune from ag_test.ag_test_torture dt.
+local MAX_SCAN_ITEMS = 40
 
 local CALLBACK = {
     ACTOR_ON_FIRST_UPDATE = "actor_on_first_update",
@@ -113,7 +117,7 @@ end
 --- its batch but callers (probes, MCM buttons, other modules) may call it directly. The
 --- cooldown table is the scheduler's concern: trim_npc never touches it.
 --- @safety SAFE - returns nil on nil npc / nil policy; iterate tolerates nil items
---- @cost O(min(items, MAX_SCAN_ITEMS)) | xinventory.classify + iterate_surplus (2 walks, each capped at MAX_SCAN_ITEMS) + 0-N xinventory.release_item per surplus
+--- @cost O(min(items, MAX_SCAN_ITEMS)) | one xinventory.collect_surplus walk (capped at MAX_SCAN_ITEMS) + 0-N xinventory.release_item per surplus
 --- @param npc game_object Online stalker
 --- @param opts table|nil { dry_run = false }
 --- @return table|nil { released, released_by_category = {[cat]=n}, dt_ms }
@@ -126,7 +130,6 @@ function trim_npc(npc, opts)
 
     local npc_id = npc:id()
     local cat_opts = xinventory.get_category_opts(npc)
-    local counts, hit_cap = xinventory.classify(npc, cat_opts, INVENTORY_POLICY.rules, MAX_SCAN_ITEMS)
 
     local result = {
         released = 0,
@@ -134,9 +137,8 @@ function trim_npc(npc, opts)
         dt_ms = 0,
     }
 
-    result.released = xinventory.iterate_surplus(npc, cat_opts, {
+    local released, _counts, hit_cap = xinventory.collect_surplus(npc, cat_opts, {
         rules = INVENTORY_POLICY.rules,
-        counts = counts,
         max_items = MAX_SCAN_ITEMS,
         on_surplus = function(item, cat, sec, _unit)
             if not dry_run then xinventory.release_item(item) end
@@ -144,6 +146,7 @@ function trim_npc(npc, opts)
             if _dbg then log.debug("[RELEASE] npc=%d section=%s category=%s", npc_id, sec, cat) end
         end,
     })
+    result.released = released
 
     timer:stop()
     result.dt_ms = timer:get_ms()
@@ -154,21 +157,25 @@ end
 
 -- ==================== SCHEDULER ====================
 
--- Single-NPC eligibility predicate: admit plain lootable stalkers, reject everyone else. A
--- service NPC (xsmart.get_npc_roles non-empty: traders/mechanics/medics/barmen by section, hub
--- traders by clsid, dynamically spawned ones included) is skipped -- its stock is managed by the
--- trade flow, never trimmed. is_unscriptable then rejects companions (npcx_is_companion), story /
--- named, and the xdata curated trader roster. Hub traders (script_trader clsid) also fail the
--- IsStalker admit outright, so they never reach trim_npc regardless of role detection timing.
+-- Single-NPC eligibility predicate: admit plain lootable stalkers, reject everyone else. The
+-- pure-Lua actor and cooldown checks run FIRST so a recently-trimmed NPC short-circuits before any
+-- bridge call below -- above all get_npc_roles, which pays an npc:section() alloc even on a cache
+-- hit. With a 12h cooldown and a 30s cycle most of the online population is on cooldown, so this
+-- keeps the per-cycle scan cheap. A service NPC (xsmart.get_npc_roles non-empty: traders/mechanics/
+-- medics/barmen by section, hub traders by clsid, dynamically spawned ones included) is skipped --
+-- its stock is managed by the trade flow, never trimmed. is_unscriptable then rejects companions
+-- (npcx_is_companion), story / named, and the xdata curated trader roster. Hub traders
+-- (script_trader clsid) also fail the IsStalker admit outright, so they never reach trim_npc
+-- regardless of role detection timing.
 -- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
 local function _is_eligible(obj, id, actor_id, now, cooldown_sec)
     if id == actor_id then return nil, "actor" end
+    local last = _last_scan_game_sec[id] or 0
+    if now - last < cooldown_sec then return nil, "cooldown" end
     if not IsStalker(obj) then return nil, "nonstalker" end
     if not obj:alive() then return nil, "dead" end
     if next(xsmart.get_npc_roles(obj)) ~= nil then return nil, "service_npc" end
     if xcreature.is_unscriptable(obj) then return nil, "unscriptable" end
-    local last = _last_scan_game_sec[id] or 0
-    if now - last < cooldown_sec then return nil, "cooldown" end
     return id, last
 end
 
@@ -236,7 +243,13 @@ local function _visit(npc_id)
     end
 
     local result = trim_npc(npc)
-    _last_scan_game_sec[npc_id] = xtime.game_sec()
+    -- Stamp the cooldown only when nothing was released. A trim that shed surplus may have more --
+    -- beyond the walk cap, or shifting into the window as the inventory shrinks -- so leave the NPC
+    -- eligible to re-trim next cycle instead of benching it for the full cooldown. A clean NPC
+    -- (released 0), including a large-but-compliant one over the cap, stamps and benches normally.
+    if not result or result.released == 0 then
+        _last_scan_game_sec[npc_id] = xtime.game_sec()
+    end
     _cycle_visited = _cycle_visited + 1
     if result then _cycle_released = _cycle_released + result.released end
     return true
