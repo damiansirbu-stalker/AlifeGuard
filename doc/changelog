@@ -1,14 +1,16 @@
 next
-  Summary: online limit default, hoard clearing, trader purge removed, trim performance
+  Summary: online limit default, kept gear, trader purge removed, hoard clearing, trim performance
 
   Online Guard
-    - Changed the online population limit default from 80 to 120 NPCs. Custom settings are unaffected.
+    - Raised the default online population limit from 80 to 120 NPCs. Custom settings are unaffected.
 
   Inventory Guard
-    - Removed the trader stock condition purge. Trader, mechanic, medic, and barman stock is now left to the trade flow that already bounds it,
-      so the inventory guard no longer touches any trader.
-    - Reduced the per-NPC inventory trim cost so a heavily looted NPC no longer causes a brief stutter when the guard reaches it.
-    - Fixed large NPC hoards not being fully cleared. A heavily looted NPC now rescans each cycle until its surplus is gone, instead of shedding only part of it and then waiting a full cooldown.
+    - Fixed the trim taking gear an NPC should keep. Binoculars count as a weapon and night-vision as a device, so the one-spare caps released them,
+      and armour plates fell outside every kept category. Each now keeps one.
+    - Improved inventory trim performance. The scan does a single inventory pass instead of two, capped at 40 items,
+      so even a heavily looted NPC stays within the frame budget.
+    - Removed the trader stock purge. Trader, mechanic, medic, and barman stock is left to the trade flow that already bounds it, so the guard no longer scans a trader at all.
+    - Fixed a heavily looted NPC clearing only part of its surplus, then waiting a full cooldown. It now rescans each cycle until clean.
 
 1.3.1
   Summary: Inventory Guard, trader stock purge, sanitizer setting, offline culling fix
