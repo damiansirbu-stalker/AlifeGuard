@@ -249,6 +249,10 @@ Full design record with engine citations: `stalker-dev/doc/todo/todo-alifeguard-
 
 Total: ~9-10 luabind per entity (production), ~1-6 per squad. Sub-millisecond for 100-200 entities.
 
+### Why the all-objects walk, not a creature-only iterator
+
+Iterating only creatures is tempting: stalkers are free from `db.OnlineStalkers`, so only monsters would need tracking. It was tried (n12) and reverted. Monsters have no engine-maintained list, so it needs a script-maintained online-monster set, and that set has no reliable removal: neither `monster_on_net_destroy` nor `server_entity_on_unregister` fires on the guard's own script cull, so it accumulates ids of already-deleted monsters without bound (`skipped` reached 117 under load with the monsters confirmed deleted). The saving is one sub-2ms frame every 10-30s, already inside budget. A stateless walk holds no state between cycles and cannot leak, which is worth more than that.
+
 ### Release (frames 1-N)
 
 2 luabind per frame (alife_object verify + alife_release call). ~0.05ms per release. 30 excess entities = 30 frames = 0.5s at 60fps.
