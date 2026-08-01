@@ -1,7 +1,9 @@
 next
-  Summary: online limit default, kept gear, trader purge removed, hoard clearing, trim performance
+  Summary: quest-target protection, online limit default, kept gear, trader purge removed, hoard clearing, trim performance
 
   Online Guard
+    - Fixed the guards culling an active quest target, which failed the quest as soon as the cleanup ran.
+      A quest's current objective (the NPC, mutant, or squad marked on your map) is now protected wherever the task tracks it, alongside the existing task-giver and bounty/hostage protection.
     - Raised the default online population limit from 80 to 120 NPCs. Custom settings are unaffected.
 
   Inventory Guard

@@ -61,7 +61,7 @@ Collection groups entities by squad. Each squad record tracks:
 | Field | Source | Purpose |
 |---|---|---|
 | commander_id | `squad:commander_id()` | Lowest member ID in engine's `m_members` (associative_vector) |
-| protected | `xsquad.is_protected()` | Squad-level protection (story, trader, task giver, companion, bounty/hostage) |
+| protected | `xsquad.is_protected()` | Squad-level protection (story, trader, task giver, quest target, companion, bounty/hostage) |
 | scripted | `xsquad.is_scripted()` | Has scripted_target, action_condlist, or random_targets |
 | category | `squad.player_id` | Faction or mutant type (0 luabind, Lua field) |
 | removable | collected | Non-commander, non-protected members eligible for release |
@@ -87,7 +87,7 @@ Single call per squad. Checks (in order):
 
 1. **Permanent** (cached, session lifetime): story_id, trader, named NPC commander, empty squad
 2. **Active role** (dynamic, if `check_tasks` enabled): task_giver, companion
-3. **Task target** (dynamic, if `check_tasks` enabled): task_squads hash + member bounty/hostage
+3. **Task target** (dynamic, if `check_tasks` enabled): task_squads hash + current_target objective id (squad or any member) + member bounty/hostage
 
 Protected results cached with TTL (120s, positive-only). Uncached squads always get live check. False negatives impossible. False positives harmless (squad stays online slightly longer, clears on TTL expiry). Cache cleared on MCM config change.
 

@@ -48,9 +48,9 @@ Frame-spread release:
   entities = 30 frames to clear. No spikes, no freezes.
 
 Protection:
-  Story squads, traders, named NPCs, companions, task givers, bounty and hostage targets
-  are never removed. Squad-level checks with positive-only TTL cache. Per-member fallback
-  catches named NPCs who are not squad commanders.
+  Story squads, traders, named NPCs, companions, task givers, active quest targets, and bounty and
+  hostage targets are never removed. Squad-level checks with positive-only TTL cache. Per-member
+  fallback catches named NPCs who are not squad commanders.
 
 Offline Guard:
   The online guard only sees entities near you. A hub on another level can hold dozens of

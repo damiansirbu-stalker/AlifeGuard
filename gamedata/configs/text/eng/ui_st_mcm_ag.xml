@@ -67,7 +67,7 @@
         <text>Protect task NPCs</text>
     </string>
     <string id="ui_mcm_ag_online_guard_check_tasks_desc">
-        <text>Task NPCs (task givers, bounty and hostage targets) are protected while their task is active. Story characters, traders, named NPCs, and companions are always protected, whether this is on or off.</text>
+        <text>Task NPCs (task givers, active quest targets, bounty and hostage targets) are protected while their task is active. Story characters, traders, named NPCs, and companions are always protected, whether this is on or off.</text>
     </string>
     <string id="ui_mcm_ag_online_guard_prioritize_distant">
         <text>Remove farthest first</text>
@@ -134,7 +134,7 @@
         <text>Protect task NPCs</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_check_tasks_desc">
-        <text>Task NPCs (task givers, bounty and hostage targets) are protected while their task is active. Story characters, traders, named NPCs, and companions are always protected, whether this is on or off.</text>
+        <text>Task NPCs (task givers, active quest targets, bounty and hostage targets) are protected while their task is active. Story characters, traders, named NPCs, and companions are always protected, whether this is on or off.</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_interval">
         <text>Scan tick</text>
