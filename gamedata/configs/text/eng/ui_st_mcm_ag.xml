@@ -69,6 +69,12 @@
     <string id="ui_mcm_ag_online_guard_check_tasks_desc">
         <text>Task NPCs (task givers, active quest targets, bounty and hostage targets) are protected while their task is active. Story characters, traders, named NPCs, and companions are always protected, whether this is on or off.</text>
     </string>
+    <string id="ui_mcm_ag_online_guard_protect_scripted">
+        <text>Protect scripted NPCs</text>
+    </string>
+    <string id="ui_mcm_ag_online_guard_protect_scripted_desc">
+        <text>Squads a script is steering (an AlifePlus outpost service pinned to its post, a chase target, a mod-spawned guard) are never culled by either guard. On by default so scripted content is not deleted under cap pressure; turn off only for the most aggressive culling.</text>
+    </string>
     <string id="ui_mcm_ag_online_guard_prioritize_distant">
         <text>Remove farthest first</text>
     </string>

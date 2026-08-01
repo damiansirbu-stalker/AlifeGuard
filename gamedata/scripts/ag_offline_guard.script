@@ -28,6 +28,7 @@ local cfg = {
     density_target = 80,
     density_check_tasks = true,
     density_interval = 1,
+    protect_scripted = true,
     log_level = "WARN",
 }
 
@@ -44,10 +45,9 @@ local _tid = 0
 local _scan_stats = { gone = 0, not_squad = 0, online = 0, empty = 0, bad_gvid = 0, actor_level = 0, binned = 0 }
 local _cull_stats = { gone = 0, online = 0, lone = 0, protected = 0, named = 0 }
 
--- ==================== CONFIG ====================
 
 local function _update_protection_opts()
-    _protection_opts.exclude_scripted = false
+    _protection_opts.exclude_scripted = cfg.protect_scripted
     _protection_opts.exclude_permanent = true
     _protection_opts.exclude_active_role = cfg.density_check_tasks
     _protection_opts.exclude_task_target = cfg.density_check_tasks
@@ -62,6 +62,7 @@ local function load_config()
     cfg.density_target = get("density_target")
     cfg.density_check_tasks = get("density_check_tasks")
     cfg.density_interval = get("density_interval")
+    cfg.protect_scripted = get("protect_scripted")
     cfg.log_level = get("log_level")
 
     -- A target above the trigger would fire on cells that yield no removals; clamp so the
@@ -77,7 +78,6 @@ local function load_config()
         cfg.density_interval, tostring(cfg.density_check_tasks), cfg.log_level)
 end
 
--- ==================== SCAN ====================
 
 local function _reset_pass()
     local sim = alife()
@@ -138,7 +138,6 @@ local function _log_density()
         stats.online, stats.empty, stats.bad_gvid, stats.actor_level, _pass_ms)
 end
 
--- ==================== CULL QUEUE ====================
 
 -- Skipping the commander keeps npc_count > 0, so remove_npc never reaches its
 -- squad-deletion branch and already_spawned stays untouched (no respawn feedback).
@@ -154,7 +153,6 @@ local function _cull_squad(squad_id)
     return squad
 end
 
--- ==================== RELEASE ====================
 
 -- Detach-before-destroy, in order: per-member named/story protection via
 -- xcreature.is_unscriptable_se (offline-safe), then clear the smart's per-NPC bookkeeping by
@@ -275,7 +273,6 @@ local function _try_cull()
     end
 end
 
--- ==================== TICK ====================
 
 local function _finish_pass()
     if _ids then
@@ -309,7 +306,6 @@ local function _density_tick()
     _pass_ms = _pass_ms + prof:get_ms()
 end
 
--- ==================== LIFECYCLE ====================
 
 function on_option_change()
     load_config()

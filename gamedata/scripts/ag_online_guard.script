@@ -23,6 +23,7 @@ local cfg = {
     buffer = 10,
     check_interval = 30,
     check_tasks = true,
+    protect_scripted = true,
     prioritize_distant = true,
     squad_culling = true,
     round_robin = true,
@@ -34,10 +35,9 @@ local cfg = {
 local _protection_opts = {}
 local _prot_cache = {}
 
--- ==================== CONFIG ====================
 
 local function _update_protection_opts()
-    _protection_opts.exclude_scripted = false
+    _protection_opts.exclude_scripted = cfg.protect_scripted
     _protection_opts.exclude_permanent = true
     _protection_opts.exclude_active_role = cfg.check_tasks
     _protection_opts.exclude_task_target = cfg.check_tasks
@@ -55,6 +55,7 @@ local function load_config()
     cfg.buffer = get("buffer")
     cfg.check_interval = get("check_interval")
     cfg.check_tasks = get("check_tasks")
+    cfg.protect_scripted = get("protect_scripted")
     cfg.prioritize_distant = get("prioritize_distant")
     cfg.squad_culling = get("squad_culling")
     cfg.round_robin = get("round_robin")
@@ -73,7 +74,6 @@ local function load_config()
         tostring(cfg.prioritize_distant), tostring(cfg.pda), cfg.log_level)
 end
 
--- ==================== PDA NOTIFICATIONS ====================
 
 local function send_pda(msg)
     local actor = db and db.actor
@@ -95,7 +95,6 @@ local function notify_cleanup(removed, _stalkers, _mutants)
     if cfg.pda_sound then xsound.play(CLEANUP_SOUND) end
 end
 
--- ==================== PROTECTION ====================
 
 local function _is_squad_protected(squad)
     local squad_id = squad.id
@@ -118,7 +117,6 @@ local function _is_squad_protected(squad)
     return false
 end
 
--- ==================== ENTITY RELEASE ====================
 
 local function safe_release(entity_id, expected_section)
     if not entity_id then return false end
@@ -142,7 +140,6 @@ local function _count_release(ent)
     return 0, 1, "mutant"
 end
 
--- ==================== COLLECTION ====================
 
 local function _make_entry(id, dist_sq, obj_is_stalker, obj)
     return { id = id, dist_sq = dist_sq, is_stalker = obj_is_stalker, section = obj:section() }
@@ -243,7 +240,6 @@ local function _collect_online()
     return ctx.stats, ctx._squads, ctx.orphans, ctx.tid
 end
 
--- ==================== RELEASE QUEUE ====================
 
 -- Order the collected records via ag_queue (pure strategy), timing and logging the build here
 -- where the logger and _dbg live. cfg flags pass in as opts per the dependency-injection rule.
@@ -265,7 +261,6 @@ local function _build_release_queue(_squads, orphans, target, tid)
     return queue
 end
 
--- ==================== DESPAWN ====================
 
 local function _despawn_from_queue(queue, current_count, target, tid)
     if #queue == 0 then
@@ -314,7 +309,6 @@ local function _despawn_from_queue(queue, current_count, target, tid)
     })
 end
 
--- ==================== MAIN UPDATE ====================
 
 local function actor_on_update()
     if not cfg.enabled then return end
@@ -339,7 +333,6 @@ local function actor_on_update()
     end
 end
 
--- ==================== LEVEL CHANGE ====================
 
 local function on_actor_first_update()
     level_load_time = clock()
@@ -349,7 +342,6 @@ function on_option_change()
     load_config()
 end
 
--- ==================== LIFECYCLE ====================
 
 function on_game_start()
     load_config()

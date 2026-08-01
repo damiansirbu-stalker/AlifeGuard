@@ -49,8 +49,10 @@ Frame-spread release:
 
 Protection:
   Story squads, traders, named NPCs, companions, task givers, active quest targets, and bounty and
-  hostage targets are never removed. Squad-level checks with positive-only TTL cache. Per-member
-  fallback catches named NPCs who are not squad commanders.
+  hostage targets are never removed. Squads another script is steering (scripted_target: outpost
+  services, chase targets, mod-spawned guards) are protected by default through the Protect scripted
+  NPCs option, in both guards. Turn it off for the most aggressive culling. Squad-level checks with
+  positive-only TTL cache. Per-member fallback catches named NPCs who are not squad commanders.
 
 Offline Guard:
   The online guard only sees entities near you. A hub on another level can hold dozens of
@@ -117,14 +119,14 @@ Performance:
 Mod compatibility:
   Most population mods conflict with A-Life mods. AlifeGuard is designed to coexist with
   AlifePlus, Warfare, ZCP, GAMMA, Guards Spawner, and any mod that uses scripted_target.
-  Scripted squads are preserved as long as possible. Commanders remain, so squad assignments
+  Scripted squads are protected by default through the Protect scripted NPCs option. Commanders remain, so squad assignments
   continue. Spawn counters stay consistent. Warfare population tracking stays accurate.
   AlifePlus cause/consequence chains complete because target squads persist.
   Other mods direct the world. AlifeGuard keeps it performant.
 
 MCM:
   Online Guard: population limits, hysteresis buffer, check interval, protection rules
-  (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.
+  (task NPCs, protect scripted, farthest-first, per-squad culling, round-robin), PDA notifications.
   Offline Guard: toggle, cull trigger, cull target, task protection, scan tick.
   Smart Sanitizer: toggle, interval.
   Inventory Guard: toggle, NPCs per frame, rescan cooldown.

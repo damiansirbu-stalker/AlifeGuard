@@ -88,10 +88,11 @@ Single call per squad. Checks (in order):
 1. **Permanent** (cached, session lifetime): story_id, trader, named NPC commander, empty squad
 2. **Active role** (dynamic, if `check_tasks` enabled): task_giver, companion
 3. **Task target** (dynamic, if `check_tasks` enabled): task_squads hash + current_target objective id (squad or any member) + member bounty/hostage
+4. **Scripted** (if `protect_scripted` enabled, default on): scripted_target, action_condlist, or random_targets. Protects any squad a script is steering (outpost services, chase targets, mod-spawned guards), in both the online and offline guards.
 
 Protected results cached with TTL (120s, positive-only). Uncached squads always get live check. False negatives impossible. False positives harmless (squad stays online slightly longer, clears on TTL expiry). Cache cleared on MCM config change.
 
-`is_scripted` is NOT a protection check. Scripted squads are cullable but deprioritized (tier 2/4 instead of 1/3).
+`is_scripted` is a protection check only when `protect_scripted` is on (the default): a scripted squad is then never culled by either guard. Turn it off and scripted squads are cullable again, deprioritized to tier 2/4 (see Priority Tiers) so unscripted squads go first.
 
 ### Per-member: xcreature.is_unscriptable
 
@@ -110,7 +111,7 @@ Entities are sorted into 4 tiers. Each tier is fully exhausted before the next i
 | 3 | Commanders from unscripted squads | Kills the squad, opens respawn slot |
 | 4 | Commanders from scripted squads | Last resort: kills a mod-controlled squad |
 
-Most cycles never leave tier 1. Heavy load reaches tier 2. Tiers 3-4 are edge cases (more lone-commander squads online than max).
+Most cycles never leave tier 1. Heavy load reaches tier 2. Tiers 3-4 are edge cases (more lone-commander squads online than max). With `protect_scripted` on (the default) scripted squads are protected and never reach tiers 2 or 4, so those tiers apply only when it is off.
 
 ---
 

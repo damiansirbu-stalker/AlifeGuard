@@ -1,7 +1,9 @@
 next
-  Summary: quest-target protection, online limit default, kept gear, trader purge removed, hoard clearing, trim performance
+  Summary: scripted NPC protection, quest-target protection, online limit default, kept gear, trader purge removed, hoard clearing, trim performance
 
   Online Guard
+    - Added a Protect scripted NPCs option, on by default. A squad another script is steering (an outpost service holding its post, a chase target, a mod-spawned guard) is no longer removed by either guard,
+      so an outpost trader survives population pressure. Turn it off for the most aggressive culling, which then deletes script-managed squads.
     - Fixed the guards culling an active quest target, which failed the quest as soon as the cleanup ran.
       A quest's current objective (the NPC, mutant, or squad marked on your map) is now protected wherever the task tracks it, alongside the existing task-giver and bounty/hostage protection.
     - Raised the default online population limit from 80 to 120 NPCs. Custom settings are unaffected.
