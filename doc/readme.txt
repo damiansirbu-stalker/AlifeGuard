@@ -115,8 +115,10 @@ Inventory Guard:
   If updating both mods, configure it here; the AlifeBalance tab is gone.
 
 Performance:
+  Performance comes first, ahead of any feature; when a feature cannot fit the budget it is reworked, replaced, or removed with an X-Ray engine modification rather than allowed to slow the game.
   Single-pass collection (native C++ iterator). Cached protection lookups. Sub-millisecond
   scan for 200 entities. 0.05ms per release. Zero debug overhead when log level < DEBUG.
+  Measured on the engine built from the latest source with no multithreading and no optimizations, so the timings are worst-case; the optimized multithreaded build you run is always faster.
 
 Mod compatibility:
   Most population mods conflict with A-Life mods. AlifeGuard is designed to coexist with

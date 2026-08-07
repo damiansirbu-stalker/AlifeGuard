@@ -13,6 +13,8 @@ Part of a three-mod alife family: **AlifePlus** extends A-Life with new behavior
 ## Invariants
 
 - **No steady-state per-frame work.** Ongoing work runs on a throttled tick (a fixed interval) or on a discrete engine event (hit, shot, spawn, option change); it never runs continuously every frame. A per-frame engine callback (`npc_on_update`) is used only as a carrier that throttles before doing anything, and we never place our code on a path the engine runs every frame (a visibility or fire functor). Frame-spreading a bounded one-off batch (xslice, 1 item per frame) to avoid a single-frame spike is the one allowed use of the frame; it completes and stops. Full rule and rationale: `doc/standards/code-standards.md` "No Per-Frame Work".
+- **Performance first.** Performance is the top priority and outranks features. A feature that cannot meet the budget is reworked, replaced, dropped, or removed with an X-Ray engine modification — never kept at the cost of the budget. Only correctness and "never break base gameplay" rank above it. See `doc/standards/code-standards.md` "Performance is the priority".
+- **Use the engine, don't work around it.** Every capability comes from the engine and the Anomaly layer first, always through xlibs; our own code enters only where stock behavior falls short, escalating nudge / correct then, as a last resort, changing the layer itself (an engine modification or a full-file override). Never reimplement in script what the engine already does. See `doc/standards/code-standards.md` "Use the engine, don't work around it".
 
 ---
 
