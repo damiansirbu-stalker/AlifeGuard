@@ -36,8 +36,8 @@
 --- scanner, no cross-module event flow, so no xtrace correlation id needed.
 
 local table_sort, os_clock, next, tostring = table.sort, os.clock, next, tostring
-local xlog, xprofiler, xslice, xcreature, xtime, xinventory, xsmart = xlog, xprofiler, xslice, xcreature, xtime, xinventory, xsmart
-local level, IsStalker, RegisterScriptCallback, alife_object = level, IsStalker, RegisterScriptCallback, alife_object
+local xlog, xprofiler, xslice, xcreature, xtime, xinventory, xsmart, xobject = xlog, xprofiler, xslice, xcreature, xtime, xinventory, xsmart, xobject
+local IsStalker, RegisterScriptCallback = IsStalker, RegisterScriptCallback
 
 -- LTX policy loaded at on_game_start via xinventory.load_policy. Shape:
 --   { entries = ordered_list, rules = { [category] = {min, max} }, specials = {} }
@@ -198,7 +198,7 @@ local function _pick_eligible(cooldown_sec)
     local eligible = {}
 
     for id, obj in xcreature.online_iter_with_id() do
-        local se = alife_object(id)
+        local se = xobject.se(id)
         if not se then goto continue end
         stats.total = stats.total + 1
         local got_id, last_or_reason = _is_eligible(obj, id, actor_id, now, cooldown_sec)
@@ -232,7 +232,7 @@ local function _on_cycle_done()
 end
 
 local function _visit(npc_id)
-    local npc = level.object_by_id(npc_id)
+    local npc = xobject.go(npc_id)
     if not npc then
         if _dbg then log.debug("[SKIP] reason=offline npc=%d", npc_id) end
         return true

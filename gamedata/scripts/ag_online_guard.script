@@ -3,8 +3,8 @@
 local math_sqrt, math_random, tostring = math.sqrt, math.random, tostring
 local clock = os.clock
 local is_stalker, is_monster = IsStalker, IsMonster
-local alife_object, alife_release, alife, clsid, RegisterScriptCallback = alife_object, alife_release, alife, clsid, RegisterScriptCallback
-local xlog, xtrace, xsquad, xslice, xprofiler, xcreature, xsound = xlog, xtrace, xsquad, xslice, xprofiler, xcreature, xsound
+local alife_release, alife, clsid, RegisterScriptCallback = alife_release, alife, clsid, RegisterScriptCallback
+local xlog, xtrace, xsquad, xslice, xprofiler, xcreature, xsound, xobject = xlog, xtrace, xsquad, xslice, xprofiler, xcreature, xsound, xobject
 
 local log = xlog.get_logger("AG.ONLINE", { outfile = "alifeguard.log" })
 local _dbg = false
@@ -120,12 +120,12 @@ end
 
 local function safe_release(entity_id, expected_section)
     if not entity_id then return false end
-    local se = alife_object(entity_id)
+    local se = xobject.se(entity_id)
     if not se then return false end
     if expected_section and se:section_name() ~= expected_section then return false end
     local gid = se.group_id
     if gid and gid ~= INVALID_GROUP then
-        local sq = alife_object(gid)
+        local sq = xobject.se(gid)
         if sq and sq:clsid() ~= clsid.online_offline_group_s then
             alife():release(se, true)
             return true
@@ -167,7 +167,7 @@ end
 -- Process single online entity into _squads or orphans
 -- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
 local function _process_entity(obj, id, ctx)
-    local se_obj = alife_object(id)
+    local se_obj = xobject.se(id)
     if not se_obj then ctx.stats.skipped = ctx.stats.skipped + 1; return end
     if id == ctx.actor_id then return end
 
@@ -189,7 +189,7 @@ local function _process_entity(obj, id, ctx)
     if is_orphan and cfg.check_tasks and xsquad.get_active_task_targets()[id] then ctx.stats.protected = ctx.stats.protected + 1; return end
     if is_orphan then ctx.orphans[#ctx.orphans + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj); return end
 
-    local squad = alife_object(group_id)
+    local squad = xobject.se(group_id)
     if not squad then ctx.orphans[#ctx.orphans + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj); return end
 
     local rec = ctx._squads[group_id]

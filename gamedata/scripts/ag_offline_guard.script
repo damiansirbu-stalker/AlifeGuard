@@ -3,9 +3,9 @@
 local pairs, tostring = pairs, tostring
 local clock = os.clock
 local is_stalker = IsStalker
-local alife_object, alife_release, alife, clsid, game_graph = alife_object, alife_release, alife, clsid, game_graph
+local alife_release, alife, clsid, game_graph = alife_release, alife, clsid, game_graph
 local RegisterScriptCallback = RegisterScriptCallback
-local xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature = xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature
+local xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature, xobject = xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature, xobject
 
 local log = xlog.get_logger("AG.OFFLINE", { outfile = "alifeguard.log" })
 local _dbg = false
@@ -97,7 +97,7 @@ end
 -- squad.position IS the bodies' position (alife_online_offline_group.cpp:73-87).
 local function _bin_squad(squad_id, graph, actor_level)
     local stats = _scan_stats
-    local squad = alife_object(squad_id)
+    local squad = xobject.se(squad_id)
     if not squad then stats.gone = stats.gone + 1; return end
     if squad:clsid() ~= clsid.online_offline_group_s then stats.not_squad = stats.not_squad + 1; return end
     if squad.online then stats.online = stats.online + 1; return end
@@ -143,7 +143,7 @@ end
 -- squad-deletion branch and already_spawned stays untouched (no respawn feedback).
 local function _cull_squad(squad_id)
     local stats = _cull_stats
-    local squad = alife_object(squad_id)
+    local squad = xobject.se(squad_id)
     if not squad then stats.gone = stats.gone + 1; return nil end
     if squad.online then stats.online = stats.online + 1; return nil end
     if squad:npc_count() <= 1 then stats.lone = stats.lone + 1; return nil end
@@ -165,13 +165,13 @@ end
 -- @return boolean released, boolean member_is_stalker
 local function _release_offline_member(member_id, commander_id)
     if member_id == commander_id then return false end
-    local se = alife_object(member_id)
+    local se = xobject.se(member_id)
     if not se then return false end
     if se.online then return false end
     if xcreature.is_unscriptable_se(se) then _cull_stats.named = _cull_stats.named + 1; return false end
     local smart_id = se:smart_terrain_id()
     if smart_id and smart_id ~= INVALID_SMART then
-        local smart = alife_object(smart_id)
+        local smart = xobject.se(smart_id)
         if smart and smart.unregister_npc then smart:unregister_npc(se) end
     end
     local member_is_stalker = is_stalker(nil, se:clsid())
