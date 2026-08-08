@@ -3,7 +3,7 @@
 local pairs, tostring = pairs, tostring
 local clock = os.clock
 local is_stalker = IsStalker
-local alife_release, alife, clsid, game_graph = alife_release, alife, clsid, game_graph
+local alife, clsid, game_graph = alife, clsid, game_graph
 local RegisterScriptCallback = RegisterScriptCallback
 local xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature, xobject = xlog, xtrace, xsquad, xslice, xlevel, xprofiler, xcreature, xobject
 
@@ -175,7 +175,7 @@ local function _release_offline_member(member_id, commander_id)
         if smart and smart.unregister_npc then smart:unregister_npc(se) end
     end
     local member_is_stalker = is_stalker(nil, se:clsid())
-    alife_release(se)
+    xobject.release(se)
     return true, member_is_stalker
 end
 
