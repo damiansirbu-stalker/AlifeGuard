@@ -1,6 +1,6 @@
 # AlifeGuard Architecture
 
-Population control for STALKER Anomaly. Keeps online entity count under a configurable threshold by releasing NPCs back to offline simulation, and bounds NPC item inventories against the engine's alife-ID cap. Squad-aware: thins squad members before touching commanders, spreads removals evenly across factions and mutant types via round-robin, uses hysteresis to prevent oscillation. Releases are frame-spread (1 per frame via xslice) to bound `safe_release_manager`'s per-frame work and keep cleanup smooth.
+A-Life performance and stability for STALKER Anomaly. Keeps online entity count under a configurable threshold by releasing NPCs back to offline simulation, and bounds NPC item inventories against the engine's alife-ID cap. Squad-aware: thins squad members before touching commanders, spreads removals evenly across factions and mutant types via round-robin, uses hysteresis to prevent oscillation. Releases are frame-spread (1 per frame via xslice) to bound `safe_release_manager`'s per-frame work and keep cleanup smooth.
 
 Built on xlibs (xsquad, xcreature, xslice, xprofiler, xtable, xlog, xinventory, xsmart, xtime).
 

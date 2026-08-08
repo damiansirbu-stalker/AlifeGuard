@@ -1,4 +1,4 @@
-AlifeGuard: A-Life population governor for STALKER Anomaly, by Damian
+AlifeGuard: A-Life performance and stability for STALKER Anomaly, by Damian
 Version: next (xlibs 1.8.3, demonized 20250908)
 GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog

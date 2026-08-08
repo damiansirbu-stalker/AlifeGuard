@@ -1,4 +1,4 @@
-# AlifeGuard: Population Control for STALKER Anomaly
+# AlifeGuard: A-Life performance and stability for STALKER Anomaly
 
 AlifeGuard keeps STALKER Anomaly's alife state clean and performant. The Online Guard caps online entity count by despawning excess NPCs farthest-first, the Offline Guard thins overcrowded regions on other levels before you arrive, the Inventory Guard bounds NPC inventory hoarding so anti-loot addons are no longer needed, and the Smart Sanitizer repairs the respawn counters that corrupt saves. Squad-aware protection keeps story characters, companions, task givers, and quest targets untouched, so smart terrains repopulate naturally.
 
