@@ -1,24 +1,32 @@
 # AlifeGuard: A-Life performance and stability for STALKER Anomaly
 
-AlifeGuard keeps STALKER Anomaly's alife state clean and performant. The Online Guard caps online entity count by despawning excess NPCs farthest-first, the Offline Guard thins overcrowded regions on other levels before you arrive, the Inventory Guard bounds NPC inventory hoarding so anti-loot addons are no longer needed, and the Smart Sanitizer repairs the respawn counters that corrupt saves. Squad-aware protection keeps story characters, companions, task givers, and quest targets untouched, so smart terrains repopulate naturally.
+A population limiter and alife state repair layer, for performance and save health.
+It caps online entities, thins overcrowded regions before you arrive, bounds NPC inventory hoarding, and repairs the respawn counters that corrupt saves. Story characters, companions and quest targets are excluded.
 
 [ModDB](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001) | [Nexus](https://www.nexusmods.com/stalkeranomaly/mods/104) | [Releases](https://github.com/damiansirbu-stalker/AlifeGuard/releases) | [Bugs, suggestions](https://github.com/damiansirbu-stalker/AlifeGuard/issues)
 
 Requires: Anomaly 1.5.3, modded exes (themrdemonized or AOEngine), [xlibs](https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001), MCM. Exact versions in [readme.txt](doc/readme.txt).
 
-Alife Collection:
+## Alife Collection
+
+- [AlifeAmbience](https://github.com/damiansirbu-stalker/AlifeAmbience)
 - [AlifeBalance](https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance)
+- [AlifeCompanions](https://github.com/damiansirbu-stalker/AlifeCompanions)
 - [AlifeDiegetic](https://www.moddb.com/mods/stalker-anomaly/addons/diegetic-audio-control-100)
 - [AlifeGuard](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001)
 - [AlifePlus](https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01)
 - [AlifeSpooks](https://github.com/damiansirbu-stalker/AlifeSpooks)
 - [AlifeTactics](https://www.moddb.com/mods/stalker-anomaly/addons/alifetactics)
+- [FurnitureFuel](https://github.com/damiansirbu-stalker/FurnitureFuel)
+- [JitProfiler](https://github.com/damiansirbu-stalker/JitProfiler)
+- [TestZone](https://github.com/damiansirbu-stalker/TestZone)
+- [xlibs](https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 
 ## Documentation
 
-- [readme.txt](doc/readme.txt) -- full description, features, performance
-- [changelog](https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog) -- version history
-- [architecture.md](doc/architecture.md) -- technical reference: protection layers, performance, comparison vs GAMMA despawner
+- [readme.txt](doc/readme.txt) - full description, features, performance
+- [changelog](doc/changelog) - version history
+- [architecture.md](doc/architecture.md) - protection layers, performance, engine integration
 
 ## License
 
