@@ -1,6 +1,6 @@
 --- ag_mcm: MCM configuration for AlifeGuard population control
 
--- ==================== DEFAULTS ====================
+-- DEFAULTS
 
 defaults = {
     -- Online Guard
@@ -36,7 +36,7 @@ defaults = {
     log_level = "WARN",
 }
 
--- ==================== CONFIG ====================
+-- CONFIG
 
 local RegisterScriptCallback = RegisterScriptCallback
 
@@ -62,7 +62,7 @@ end
 
 cfg, get_config, load_config = xmcm.create_config("ag", defaults, path_builder)
 
--- ==================== BUTTON HANDLERS ====================
+-- BUTTON HANDLERS
 
 -- functor_ui receives the UI_MCM instance as trailing arg (ui_mcm.script:1435).
 -- functor would receive nothing. MCM 1.7.2fix leaves the file-local GUI nil on fresh opens
@@ -105,13 +105,13 @@ function btn_reset_all(gui)
     _apply_defaults(gui, game.translate_string("st_ag_reset_all_done"))
 end
 
--- ==================== MCM DEFINITION ====================
+-- MCM DEFINITION
 
 function on_mcm_load()
     return {
         id = "ag",
         gr = {
-            -- ============ ONLINE GUARD TAB ============
+            -- ONLINE GUARD TAB
             {
                 id = "online_guard",
                 sh = true,
@@ -148,7 +148,7 @@ function on_mcm_load()
                     { id = "platform", type = "desc", text = "ui_mcm_xmcm_footer",
                         ui_hook_functor = { _ag_deps.platform_functor() }, clr = {255, 212, 201, 168} },                },
             },
-            -- ============ OFFLINE GUARD TAB ============
+            -- OFFLINE GUARD TAB
             {
                 id = "offline_guard",
                 sh = true,
@@ -166,7 +166,7 @@ function on_mcm_load()
                     { id = "density_interval", type = "track", val = 2, min = 1, max = 10, step = 1, def = 1 },
                 },
             },
-            -- ============ SMART SANITIZER TAB ============
+            -- SMART SANITIZER TAB
             {
                 id = "smart_sanitizer",
                 sh = true,
@@ -181,7 +181,7 @@ function on_mcm_load()
                     { id = "sanitize_interval", type = "track", val = 2, min = 60, max = 1800, step = 60, def = 300 },
                 },
             },
-            -- ============ INVENTORY GUARD TAB ============
+            -- INVENTORY GUARD TAB
             {
                 id = "inventory_guard",
                 sh = true,
@@ -195,7 +195,7 @@ function on_mcm_load()
                     { id = "scan_cooldown_h", type = "track", val = 2, min = 1, max = 72, step = 1, def = 12 },
                 },
             },
-            -- ============ DEVELOPMENT TAB ============
+            -- DEVELOPMENT TAB
             {
                 id = "development",
                 sh = true,

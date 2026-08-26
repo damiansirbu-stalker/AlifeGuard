@@ -15,7 +15,7 @@ local cfg = {
     log_level = "WARN",
 }
 
--- ==================== CONFIG ====================
+-- CONFIG
 
 local function load_config()
     local get = ag_mcm and ag_mcm.get_config
@@ -32,7 +32,7 @@ local function load_config()
         tostring(cfg.sanitize_smarts), cfg.sanitize_interval, cfg.log_level)
 end
 
--- ==================== SANITIZE ====================
+-- SANITIZE
 
 -- Clamp smart.already_spawned[k] corruption (value not a table, num not a number, num < 0).
 -- Source: sim_squad_scripted.script:1028 over-decrement racing with external despawners.
@@ -79,7 +79,7 @@ local function _sanitize_smart_terrains()
     return scanned, fixed
 end
 
--- ==================== LIFECYCLE ====================
+-- LIFECYCLE
 
 -- Independent of the Online Guard's enabled toggle: state hygiene runs whenever the Smart
 -- Sanitizer itself is on, so a disabled population guard never leaves save-CTD counters unclamped.

@@ -80,7 +80,7 @@ local _cycle_released = 0
 local _cycle_timer
 local _last_update = 0
 
--- ==================== POLICY LOAD ====================
+-- POLICY LOAD
 
 -- Load policy at on_game_start. Defensive: missing file / section yields empty rules so
 -- trim_npc no-ops cleanly.
@@ -89,7 +89,7 @@ local function _load_policy()
     INVENTORY_POLICY = { entries = block.entries, rules = block.rules }
 end
 
--- ==================== CONFIG ====================
+-- CONFIG
 
 local function _cfg()
     return ag_mcm and ag_mcm.cfg or nil
@@ -111,7 +111,7 @@ local function _cfg_cooldown_sec()
     return hours * 3600
 end
 
--- ==================== PER-NPC TRIM (PUBLIC) ====================
+-- PER-NPC TRIM (PUBLIC)
 
 --- Apply inventory policy to one NPC. Public; the scheduler calls this for each NPC in
 --- its batch but callers (probes, MCM buttons, other modules) may call it directly. The
@@ -155,7 +155,7 @@ function trim_npc(npc, opts)
     return result
 end
 
--- ==================== SCHEDULER ====================
+-- SCHEDULER
 
 -- Single-NPC eligibility predicate: admit plain lootable stalkers, reject everyone else. The
 -- pure-Lua actor and cooldown checks run FIRST so a recently-trimmed NPC short-circuits before any
@@ -295,7 +295,7 @@ local function _on_actor_update()
     _start_cycle()
 end
 
--- ==================== INSTALL ====================
+-- INSTALL
 
 local function _sync_log_level()
     local mcm = _cfg()

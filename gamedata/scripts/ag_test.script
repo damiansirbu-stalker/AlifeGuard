@@ -72,7 +72,7 @@ local function _spawn_one(smart, name)
     log.info("[DRIVER] spawned=%d squad=%d sec=%s smart=%s", _spawned, squad.id, section, name)
 end
 
--- ==================== CONFORMITY SNAPSHOT ====================
+-- CONFORMITY SNAPSHOT
 
 local function _bin_offline(squad_id, graph, actor_level, cell_size, counts)
     local squad = alife_object(squad_id)
@@ -145,7 +145,7 @@ local function _log_audit(smart, name)
         name, info_total, info_stale, arr_total, arr_stale)
 end
 
--- ==================== DRIVER ====================
+-- DRIVER
 
 local function _driver_tick()
     ResetTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, TICK_SEC)
@@ -184,7 +184,7 @@ function run()
     _tip(string_format("ag_test: running, feeding %s every %ds (set density_trigger/target low to force a cull)", name, TICK_SEC))
 end
 
--- ==================== FLOW TESTS ====================
+-- FLOW TESTS
 -- Self-contained @export console functions named ag_test_<flow>(). Each owns its own
 -- setup / inject / action / assert / teardown so repeated runs are idempotent. Tests call
 -- the SUT (e.g. trim_npc) directly so timing is deterministic. Output goes to a
