@@ -21,6 +21,11 @@
 ---                                               stale must be 0 after a cull
 --- Toggle run() again to stop. Capped at 200 spawned squads.
 
+local ipairs, type, next = ipairs, type, next
+local math_max, math_min, math_huge = math.max, math.min, math.huge
+local xcreature, xinventory, xsmart = xcreature, xinventory, xsmart
+local IsStalker, level, alife_release_id = IsStalker, level, alife_release_id
+
 local pairs, math_floor, string_format, tostring = pairs, math.floor, string.format, tostring
 local alife_object, alife, game_graph = alife_object, alife, game_graph
 local get_story_id = get_object_story_id
@@ -191,11 +196,6 @@ end
 -- per-session log file appdata/logs/test_alifeguard_<YYYY-MM-DD>_<HH-MM-SS>.log; xlog with
 -- explicit flush per line so the file appears immediately. PASS / FAIL also surfaces as a
 -- yellow news_manager tip.
-
-local ipairs, type, next = ipairs, type, next
-local math_max, math_min, math_huge = math.max, math.min, math.huge
-local xcreature, xinventory, xsmart = xcreature, xinventory, xsmart
-local IsStalker, level, alife_release_id = IsStalker, level, alife_release_id
 
 local MOD = "alifeguard"
 
