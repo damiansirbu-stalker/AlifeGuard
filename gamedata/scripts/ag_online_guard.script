@@ -46,7 +46,7 @@ end
 local function load_config()
     -- Read via ag_mcm.get_config(key), the phase-safe getter (reads through ui_mcm.get with
     -- defaults fallback). Reading the ag_mcm.cfg table directly here would be an order-dependent
-    -- cross-module read (code-standards.md "on_game_start = declare").
+    -- cross-module read (stalker-code.md "on_game_start = declare").
     local get = ag_mcm and ag_mcm.get_config
     if not get then return end
 
