@@ -167,26 +167,27 @@ end
 -- Process single online entity into _squads or orphans
 -- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
 local function _process_entity(obj, id, ctx)
+    local stats = ctx.stats
     local se_obj = xobject.se(id)
-    if not se_obj then ctx.stats.skipped = ctx.stats.skipped + 1; return end
+    if not se_obj then stats.skipped = stats.skipped + 1; return end
     if id == ctx.actor_id then return end
 
     local obj_is_stalker = _classify(obj)
-    if obj_is_stalker == nil then ctx.stats.skipped = ctx.stats.skipped + 1; return end
+    if obj_is_stalker == nil then stats.skipped = stats.skipped + 1; return end
     if not obj:alive() then return end
 
-    if obj_is_stalker then ctx.stats.stalkers = ctx.stats.stalkers + 1
-    else ctx.stats.mutants = ctx.stats.mutants + 1 end
-    ctx.stats.total = ctx.stats.total + 1
+    if obj_is_stalker then stats.stalkers = stats.stalkers + 1
+    else stats.mutants = stats.mutants + 1 end
+    stats.total = stats.total + 1
 
     local obj_pos = obj:position()
     local dist_sq = obj_pos and ctx.actor_pos:distance_to_sqr(obj_pos) or 0
     local group_id = se_obj.group_id
     local is_orphan = not group_id or group_id == INVALID_GROUP
 
-    if is_orphan and xcreature.is_unscriptable(obj) then ctx.stats.protected = ctx.stats.protected + 1; return end
-    if is_orphan and xcreature.is_task_giver(obj) then ctx.stats.protected = ctx.stats.protected + 1; return end
-    if is_orphan and cfg.check_tasks and xsquad.get_active_task_targets()[id] then ctx.stats.protected = ctx.stats.protected + 1; return end
+    if is_orphan and xcreature.is_unscriptable(obj) then stats.protected = stats.protected + 1; return end
+    if is_orphan and xcreature.is_task_giver(obj) then stats.protected = stats.protected + 1; return end
+    if is_orphan and cfg.check_tasks and xsquad.get_active_task_targets()[id] then stats.protected = stats.protected + 1; return end
     if is_orphan then ctx.orphans[#ctx.orphans + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj); return end
 
     local squad = xobject.se(group_id)
@@ -198,13 +199,13 @@ local function _process_entity(obj, id, ctx)
         ctx._squads[group_id] = rec
     end
     if dist_sq > rec.max_dist_sq then rec.max_dist_sq = dist_sq end
-    if rec.protected then ctx.stats.protected = ctx.stats.protected + 1; return end
+    if rec.protected then stats.protected = stats.protected + 1; return end
 
     if cfg.squad_culling and id == rec.commander_id then
         rec.commander_entry = _make_entry(id, dist_sq, obj_is_stalker, obj)
         return
     end
-    if xcreature.is_unscriptable(obj) then ctx.stats.protected = ctx.stats.protected + 1; return end
+    if xcreature.is_unscriptable(obj) then stats.protected = stats.protected + 1; return end
 
     rec.removable[#rec.removable + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj)
 end
