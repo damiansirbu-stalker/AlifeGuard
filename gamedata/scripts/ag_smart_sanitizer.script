@@ -38,7 +38,7 @@ end
 -- Source: sim_squad_scripted.script:1028 over-decrement racing with external despawners.
 -- Effect: prevents save CTD (smart_terrain.script:955-966 u8 write) and infinite spawn
 -- (smart_terrain.script:1696 max>num decision). Pure Lua field writes; 0 luabind.
-local function _sanitize_smart(smart)
+local function _execute_smart_sanitize(smart)
     if not smart or not smart.already_spawned then return 0 end
     local fixed = 0
     local name
@@ -63,7 +63,7 @@ local function _sanitize_smart(smart)
     return fixed
 end
 
-local function _sanitize_smart_terrains()
+local function _execute_sanitize()
     if not SIMBOARD or not SIMBOARD.smarts then
         log.debug("[SANITIZE] SIMBOARD not ready")
         return 0, 0
@@ -72,7 +72,7 @@ local function _sanitize_smart_terrains()
     local scanned, fixed = 0, 0
     for _, rec in pairs(SIMBOARD.smarts) do
         scanned = scanned + 1
-        fixed = fixed + _sanitize_smart(rec.smrt)
+        fixed = fixed + _execute_smart_sanitize(rec.smrt)
     end
     timer:stop()
     log.info("[SANITIZE] scanned=%d fixed=%d [%.2fms]", scanned, fixed, timer:get_ms())
@@ -89,7 +89,7 @@ local function actor_on_update()
     local tg = clock()
     if tg - last_sanitize_time < cfg.sanitize_interval then return end
     last_sanitize_time = tg
-    _sanitize_smart_terrains()
+    _execute_sanitize()
 end
 
 -- Reinit fires after STATE_Read restores already_spawned but before the alife pump
@@ -97,7 +97,7 @@ end
 -- corrupted counters during the 65534-objects-per-update burst on load.
 local function actor_on_reinit()
     if not cfg.sanitize_smarts then return end
-    _sanitize_smart_terrains()
+    _execute_sanitize()
 end
 
 function on_option_change()

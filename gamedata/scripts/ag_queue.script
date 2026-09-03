@@ -3,19 +3,19 @@
 local pairs, ipairs = pairs, ipairs
 
 -- Add entity to a category bucket within a tier
-local function _add_to_tier(tier, category, entry)
+local function _add_tier_entry(tier, category, entry)
     local cat = tier[category]
     if not cat then cat = {}; tier[category] = cat end
     cat[#cat + 1] = entry
 end
 
 -- Resolve member tier for a squad record (1 unscripted, 2 scripted; 1 for all when squad culling off)
-local function _member_tier(rec, squad_culling)
+local function _get_member_tier(rec, squad_culling)
     return squad_culling and (rec.scripted and 2 or 1) or 1
 end
 
 -- Resolve commander tier for a squad record (3 unscripted, 4 scripted; 1 for all when squad culling off)
-local function _commander_tier(rec, squad_culling)
+local function _get_commander_tier(rec, squad_culling)
     return squad_culling and (rec.scripted and 4 or 3) or 1
 end
 
@@ -24,15 +24,15 @@ end
 -- Tier 2: non-commander from scripted squads
 -- Tier 3: commander from unscripted squads
 -- Tier 4: commander from scripted squads (last resort)
-local function _categorize_squads(squads, orphans, tiers, squad_culling)
+local function _build_tiers(squads, orphans, tiers, squad_culling)
     for _, rec in pairs(squads) do
         if rec.protected then goto next_squad end
-        local mt = _member_tier(rec, squad_culling)
+        local mt = _get_member_tier(rec, squad_culling)
         for _, ent in ipairs(rec.removable) do
-            _add_to_tier(tiers[mt], rec.category, ent)
+            _add_tier_entry(tiers[mt], rec.category, ent)
         end
         if rec.commander_entry then
-            _add_to_tier(tiers[_commander_tier(rec, squad_culling)], rec.category, rec.commander_entry)
+            _add_tier_entry(tiers[_get_commander_tier(rec, squad_culling)], rec.category, rec.commander_entry)
         end
         ::next_squad::
     end
@@ -58,7 +58,7 @@ local function _sort_categories(tiers, prioritize_distant)
 end
 
 -- Take one entity from a source if available
-local function _take_from_source(src, queue)
+local function _pop_source(src, queue)
     if src.idx > #src.items then return false end
     queue[#queue + 1] = src.items[src.idx]
     src.idx = src.idx + 1
@@ -66,29 +66,29 @@ local function _take_from_source(src, queue)
 end
 
 -- One round of round-robin: take 1 from each source, return true if any taken
-local function _round_robin_step(sources, queue, target)
+local function _collect_round(sources, queue, target)
     local any = false
     for i = 1, #sources do
         if #queue >= target then return any end
-        if _take_from_source(sources[i], queue) then any = true end
+        if _pop_source(sources[i], queue) then any = true end
     end
     return any
 end
 
 -- Round-robin: take 1 entity from each category per round until target reached
-local function _round_robin_fill(tier, queue, target)
+local function _collect_round_robin(tier, queue, target)
     local sources = {}
     for _, entries in pairs(tier) do
         sources[#sources + 1] = { items = entries, idx = 1 }
     end
     if #sources == 0 then return end
     while #queue < target do
-        if not _round_robin_step(sources, queue, target) then return end
+        if not _collect_round(sources, queue, target) then return end
     end
 end
 
 -- Linear fill: merge all categories in tier into one flat sorted/shuffled list
-local function _linear_fill(tier, queue, target, prioritize_distant)
+local function _collect_linear(tier, queue, target, prioritize_distant)
     local merged = {}
     for _, entries in pairs(tier) do
         for _, ent in ipairs(entries) do
@@ -118,14 +118,14 @@ end
 function build(squads, orphans, target, opts)
     if target <= 0 then return {}, {} end
     local tiers = { {}, {}, {}, {} }
-    _categorize_squads(squads, orphans, tiers, opts.squad_culling)
+    _build_tiers(squads, orphans, tiers, opts.squad_culling)
 
     local fill_fn
     if opts.round_robin then
         _sort_categories(tiers, opts.prioritize_distant)
-        fill_fn = _round_robin_fill
+        fill_fn = _collect_round_robin
     else
-        fill_fn = _linear_fill
+        fill_fn = _collect_linear
     end
 
     local queue = {}

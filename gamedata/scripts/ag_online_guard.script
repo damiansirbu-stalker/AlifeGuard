@@ -75,7 +75,7 @@ local function load_config()
 end
 
 
-local function send_pda(msg)
+local function show_pda(msg)
     local actor = db and db.actor
     if not actor then return end
     news_manager.send_tip(actor, msg, nil, nil, 5000)
@@ -91,7 +91,7 @@ local CLEANUP_SOUND = "ambient\\radar_1"
 
 local function notify_cleanup(removed, _stalkers, _mutants)
     if not cfg.pda or removed == 0 then return end
-    send_pda(game.translate_string(cleanup_messages[math_random(#cleanup_messages)]))
+    show_pda(game.translate_string(cleanup_messages[math_random(#cleanup_messages)]))
     if cfg.pda_sound then xsound.play(CLEANUP_SOUND) end
 end
 
@@ -118,7 +118,7 @@ local function _is_squad_protected(squad)
 end
 
 
-local function safe_release(entity_id, expected_section)
+local function release_entity(entity_id, expected_section)
     if not entity_id then return false end
     local se = xobject.se(entity_id)
     if not se then return false end
@@ -135,17 +135,17 @@ local function safe_release(entity_id, expected_section)
     return true
 end
 
-local function _count_release(ent)
+local function _get_release_count(ent)
     if ent.is_stalker then return 1, 0, "stalker" end
     return 0, 1, "mutant"
 end
 
 
-local function _make_entry(id, dist_sq, obj_is_stalker, obj)
+local function _build_entry(id, dist_sq, obj_is_stalker, obj)
     return { id = id, dist_sq = dist_sq, is_stalker = obj_is_stalker, section = obj:section() }
 end
 
-local function _new_squad_record(squad)
+local function _build_squad_record(squad)
     return {
         commander_id = squad:commander_id(),
         protected = _is_squad_protected(squad),
@@ -158,7 +158,7 @@ local function _new_squad_record(squad)
 end
 
 -- Classify entity: true=stalker, false=mutant, nil=skip
-local function _classify(obj)
+local function _get_class(obj)
     if is_stalker(obj) then return true end
     if is_monster(obj) then return false end
     return nil
@@ -172,7 +172,7 @@ local function _process_entity(obj, id, ctx)
     if not se_obj then stats.skipped = stats.skipped + 1; return end
     if id == ctx.actor_id then return end
 
-    local obj_is_stalker = _classify(obj)
+    local obj_is_stalker = _get_class(obj)
     if obj_is_stalker == nil then stats.skipped = stats.skipped + 1; return end
     if not obj:alive() then return end
 
@@ -188,26 +188,26 @@ local function _process_entity(obj, id, ctx)
     if is_orphan and xcreature.is_unscriptable(obj) then stats.protected = stats.protected + 1; return end
     if is_orphan and xcreature.is_task_giver(obj) then stats.protected = stats.protected + 1; return end
     if is_orphan and cfg.check_tasks and xsquad.get_active_task_targets()[id] then stats.protected = stats.protected + 1; return end
-    if is_orphan then ctx.orphans[#ctx.orphans + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj); return end
+    if is_orphan then ctx.orphans[#ctx.orphans + 1] = _build_entry(id, dist_sq, obj_is_stalker, obj); return end
 
     local squad = xobject.se(group_id)
-    if not squad then ctx.orphans[#ctx.orphans + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj); return end
+    if not squad then ctx.orphans[#ctx.orphans + 1] = _build_entry(id, dist_sq, obj_is_stalker, obj); return end
 
     local rec = ctx._squads[group_id]
     if not rec then
-        rec = _new_squad_record(squad)
+        rec = _build_squad_record(squad)
         ctx._squads[group_id] = rec
     end
     if dist_sq > rec.max_dist_sq then rec.max_dist_sq = dist_sq end
     if rec.protected then stats.protected = stats.protected + 1; return end
 
     if cfg.squad_culling and id == rec.commander_id then
-        rec.commander_entry = _make_entry(id, dist_sq, obj_is_stalker, obj)
+        rec.commander_entry = _build_entry(id, dist_sq, obj_is_stalker, obj)
         return
     end
     if xcreature.is_unscriptable(obj) then stats.protected = stats.protected + 1; return end
 
-    rec.removable[#rec.removable + 1] = _make_entry(id, dist_sq, obj_is_stalker, obj)
+    rec.removable[#rec.removable + 1] = _build_entry(id, dist_sq, obj_is_stalker, obj)
 end
 
 local function _collect_online()
@@ -263,7 +263,7 @@ local function _build_release_queue(_squads, orphans, target, tid)
 end
 
 
-local function _despawn_from_queue(queue, current_count, target, tid)
+local function _release_queue(queue, current_count, target, tid)
     if #queue == 0 then
         log.debug("[DESPAWN] [tid=%d] no removable entities", tid)
         return
@@ -283,7 +283,7 @@ local function _despawn_from_queue(queue, current_count, target, tid)
             if removed >= to_remove then return false end
 
             local release_timer = xprofiler.new_if(_dbg):start()
-            local ok = safe_release(ent.id, ent.section)
+            local ok = release_entity(ent.id, ent.section)
             release_timer:stop()
             local ms = release_timer:get_ms()
 
@@ -294,7 +294,7 @@ local function _despawn_from_queue(queue, current_count, target, tid)
             end
 
             removed = removed + 1
-            local st, mt, label = _count_release(ent)
+            local st, mt, label = _get_release_count(ent)
             removed_stalkers = removed_stalkers + st
             removed_mutants = removed_mutants + mt
             if _dbg then log.debug("[RELEASE] [tid=%d] %s id=%d sec=%s dist=%.0fm [%.2fms frame:%d]",
@@ -327,7 +327,7 @@ local function actor_on_update()
 
     if stats.total > cfg.max then
         local queue = _build_release_queue(_squads, orphans, stats.total - target, tid)
-        _despawn_from_queue(queue, stats.total, target, tid)
+        _release_queue(queue, stats.total, target, tid)
     else
         log.debug("[CYCLE] [tid=%d] OK %d/%d stalkers=%d mutants=%d protected=%d",
             tid, stats.total, cfg.max, stats.stalkers, stats.mutants, stats.protected)
