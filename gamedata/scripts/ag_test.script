@@ -338,7 +338,7 @@ end
 --- Inject 20 medkits + 1 stack of mismatched ammo (200 rounds) into the
 --- nearest test-eligible NPC, run trim_npc, assert the per-category release
 --- counts match the ceilings in ag_inventory_policy.ltx.
---- @export console
+--- @novalidate(code.unused_export, reason:"console command")
 function ag_test_inventory_sanitization()
     local TEST = "inventory_sanitization"
     _log_info("[BEGIN] %s", TEST)
@@ -465,7 +465,7 @@ end
 --- is still over the cap after it, so no single trim walked the whole inventory), the second
 --- pass releases more (convergence as the tail shifts into the first-N window), and both walks
 --- completed with a reported dt. This is the frame-cost bound the cap exists to guarantee.
---- @export console
+--- @novalidate(code.unused_export, reason:"console command")
 function ag_test_inventory_cap()
     local TEST = "inventory_cap"
     _log_info("[BEGIN] %s", TEST)
@@ -563,7 +563,7 @@ end
 --- identical released stream (item id, category, section, unit, in m_all order), the identical
 --- post-release per-key counts, and the identical hit_cap. The drop-in proof for the trim_npc
 --- migration to the single-walk form. Runs read-only (nothing released); injected items cleaned up.
---- @export console
+--- @novalidate(code.unused_export, reason:"console command")
 function ag_test_surplus_parity()
     local TEST = "surplus_parity"
     _log_info("[BEGIN] %s", TEST)
@@ -767,7 +767,7 @@ end
 --- tears down -- despawns surviving spawned squads, releases surviving injected items, and the
 --- teardown line shows how many the guards culled/trimmed on their own. Set density_trigger /
 --- density_target low in MCM first so the culls fire.
---- @export console
+--- @novalidate(code.unused_export, reason:"console command")
 function ag_test_torture()
     if _torture_active then
         _torture_active = false
