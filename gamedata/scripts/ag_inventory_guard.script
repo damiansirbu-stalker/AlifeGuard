@@ -194,11 +194,11 @@ local function _select_eligible(cooldown_sec)
     end
 
     local actor_id = db.actor:id()
-    local now = xtime.game_sec()
+    local now = xtime.get_game_sec()
     local eligible = {}
 
     for id, obj in xcreature.online_iter_with_id() do
-        local se = xobject.se(id)
+        local se = xobject.get_se(id)
         if not se then goto continue end
         stats.total = stats.total + 1
         local got_id, last_or_reason = _is_eligible(obj, id, actor_id, now, cooldown_sec)
@@ -232,7 +232,7 @@ local function _on_cycle_done()
 end
 
 local function _run_npc(npc_id)
-    local npc = xobject.go(npc_id)
+    local npc = xobject.get_go(npc_id)
     if not npc then
         if _dbg then log.debug("[SKIP] reason=offline npc=%d", npc_id) end
         return true
@@ -248,7 +248,7 @@ local function _run_npc(npc_id)
     -- eligible to re-trim next cycle instead of benching it for the full cooldown. A clean NPC
     -- (released 0), including a large-but-compliant one over the cap, stamps and benches normally.
     if not result or result.released == 0 then
-        _last_scan_game_sec[npc_id] = xtime.game_sec()
+        _last_scan_game_sec[npc_id] = xtime.get_game_sec()
     end
     _cycle_visited = _cycle_visited + 1
     if result then _cycle_released = _cycle_released + result.released end

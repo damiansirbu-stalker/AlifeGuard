@@ -120,12 +120,12 @@ end
 
 local function release_entity(entity_id, expected_section)
     if not entity_id then return false end
-    local se = xobject.se(entity_id)
+    local se = xobject.get_se(entity_id)
     if not se then return false end
     if expected_section and se:section_name() ~= expected_section then return false end
     local gid = se.group_id
     if gid and gid ~= INVALID_GROUP then
-        local sq = xobject.se(gid)
+        local sq = xobject.get_se(gid)
         if sq and sq:clsid() ~= clsid.online_offline_group_s then
             alife():release(se, true)
             return true
@@ -168,7 +168,7 @@ end
 -- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
 local function _process_entity(obj, id, ctx)
     local stats = ctx.stats
-    local se_obj = xobject.se(id)
+    local se_obj = xobject.get_se(id)
     if not se_obj then stats.skipped = stats.skipped + 1; return end
     if id == ctx.actor_id then return end
 
@@ -190,7 +190,7 @@ local function _process_entity(obj, id, ctx)
     if is_orphan and cfg.check_tasks and xsquad.get_active_task_targets()[id] then stats.protected = stats.protected + 1; return end
     if is_orphan then ctx.orphans[#ctx.orphans + 1] = _build_entry(id, dist_sq, obj_is_stalker, obj); return end
 
-    local squad = xobject.se(group_id)
+    local squad = xobject.get_se(group_id)
     if not squad then ctx.orphans[#ctx.orphans + 1] = _build_entry(id, dist_sq, obj_is_stalker, obj); return end
 
     local rec = ctx._squads[group_id]

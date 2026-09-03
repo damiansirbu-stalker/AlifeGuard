@@ -97,7 +97,7 @@ end
 -- squad.position IS the bodies' position (alife_online_offline_group.cpp:73-87).
 local function _collect_squad(squad_id, graph, actor_level)
     local stats = _scan_stats
-    local squad = xobject.se(squad_id)
+    local squad = xobject.get_se(squad_id)
     if not squad then stats.gone = stats.gone + 1; return end
     if squad:clsid() ~= clsid.online_offline_group_s then stats.not_squad = stats.not_squad + 1; return end
     if squad.online then stats.online = stats.online + 1; return end
@@ -112,7 +112,7 @@ local function _collect_squad(squad_id, graph, actor_level)
     stats.binned = stats.binned + 1
     -- Cell partitioning via xlevel.cell_key: the shared grid convention, so the crowd
     -- gates reading the same-shaped cells elsewhere compare like for like.
-    local key = xlevel.cell_key(level_id, pos, _cell_size)
+    local key = xlevel.build_cell_key(level_id, pos, _cell_size)
     if not key then stats.bad_gvid = stats.bad_gvid + 1; return end
     local cell = _cells[key]
     if not cell then
@@ -143,7 +143,7 @@ end
 -- squad-deletion branch and already_spawned stays untouched (no respawn feedback).
 local function _find_cullable_squad(squad_id)
     local stats = _cull_stats
-    local squad = xobject.se(squad_id)
+    local squad = xobject.get_se(squad_id)
     if not squad then stats.gone = stats.gone + 1; return nil end
     if squad.online then stats.online = stats.online + 1; return nil end
     if squad:npc_count() <= 1 then stats.lone = stats.lone + 1; return nil end
@@ -165,13 +165,13 @@ end
 -- @return boolean released, boolean member_is_stalker
 local function _release_offline_member(member_id, commander_id)
     if member_id == commander_id then return false end
-    local se = xobject.se(member_id)
+    local se = xobject.get_se(member_id)
     if not se then return false end
     if se.online then return false end
     if xcreature.is_unscriptable_se(se) then _cull_stats.named = _cull_stats.named + 1; return false end
     local smart_id = se:smart_terrain_id()
     if smart_id and smart_id ~= INVALID_SMART then
-        local smart = xobject.se(smart_id)
+        local smart = xobject.get_se(smart_id)
         if smart and smart.unregister_npc then smart:unregister_npc(se) end
     end
     local member_is_stalker = is_stalker(nil, se:clsid())
