@@ -192,7 +192,7 @@ end
 -- FLOW TESTS
 -- Self-contained @export console functions named ag_test_<flow>(). Each owns its own
 -- setup / inject / action / assert / teardown so repeated runs are idempotent. Tests call
--- the SUT (e.g. trim_npc) directly so timing is deterministic. Output goes to a
+-- the SUT (e.g. apply_policy) directly so timing is deterministic. Output goes to a
 -- per-session log file appdata/logs/test_alifeguard_<YYYY-MM-DD>_<HH-MM-SS>.log; xlog with
 -- explicit flush per line so the file appears immediately. PASS / FAIL also surfaces as a
 -- yellow news_manager tip.
@@ -334,9 +334,9 @@ local function _item_count(npc_id)
     return count
 end
 
---- Inventory sanitization: ag_inventory_guard.trim_npc end-to-end.
+--- Inventory sanitization: ag_inventory_guard.apply_policy end-to-end.
 --- Inject 20 medkits + 1 stack of mismatched ammo (200 rounds) into the
---- nearest test-eligible NPC, run trim_npc, assert the per-category release
+--- nearest test-eligible NPC, run apply_policy, assert the per-category release
 --- counts match the ceilings in ag_inventory_policy.ltx.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_inventory_sanitization()
@@ -388,8 +388,8 @@ function ag_test_inventory_sanitization()
         local mid_ammo = mid.ammo_not_equipped or 0
         _log_info("[SNAPSHOT mid] medkit=%d ammo_not_equipped=%d", mid_medkit, mid_ammo)
 
-        local result = ag_inventory_guard.trim_npc(npc2)
-        _log_info("[ACTION] trim_npc released=%d dt=%.2fms", result.released, result.dt_ms)
+        local result = ag_inventory_guard.apply_policy(npc2)
+        _log_info("[ACTION] apply_policy released=%d dt=%.2fms", result.released, result.dt_ms)
         for cat, count in pairs(result.released_by_category) do
             _log_info("[ACTION]   released %s = %d", cat, count)
         end
@@ -459,7 +459,7 @@ local function _report_inventory_cap(before, mid, after, r1, r2)
     end
 end
 
---- Inventory scan cap: ag_inventory_guard.trim_npc under a laden inventory.
+--- Inventory scan cap: ag_inventory_guard.apply_policy under a laden inventory.
 --- Injects 2x the per-walk cap of one over-max category into the nearest eligible NPC so the
 --- total exceeds MAX_SCAN_ITEMS, then trims twice. Asserts the first pass is truncated (the NPC
 --- is still over the cap after it, so no single trim walked the whole inventory), the second
@@ -499,9 +499,9 @@ function ag_test_inventory_cap()
         end
 
         local before = _item_count(npc_id)
-        local r1 = ag_inventory_guard.trim_npc(npc2)
+        local r1 = ag_inventory_guard.apply_policy(npc2)
         local mid = _item_count(npc_id)
-        local r2 = ag_inventory_guard.trim_npc(npc2)
+        local r2 = ag_inventory_guard.apply_policy(npc2)
         local after = _item_count(npc_id)
         _report_inventory_cap(before, mid, after, r1, r2)
 
@@ -561,7 +561,7 @@ end
 --- (unit>1 multi release) into the nearest eligible NPC, then runs BOTH walkers on the same
 --- unreleased inventory with a non-releasing recording callback and asserts they produce the
 --- identical released stream (item id, category, section, unit, in m_all order), the identical
---- post-release per-key counts, and the identical hit_cap. The drop-in proof for the trim_npc
+--- post-release per-key counts, and the identical hit_cap. The drop-in proof for the apply_policy
 --- migration to the single-walk form. Runs read-only (nothing released); injected items cleaned up.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_surplus_parity()
@@ -683,7 +683,7 @@ local function _torture_flood_one(npc_id)
     local got = _inject(npc, "medkit", TORTURE_FLOOD)
     for j = 1, #got do _torture_items[#_torture_items + 1] = got[j] end
     local before = _item_count(npc_id)
-    local res = ag_inventory_guard.trim_npc(npc)
+    local res = ag_inventory_guard.apply_policy(npc)
     if not res then return 0, false end
     return res.dt_ms, before > INV_SCAN_CAP
 end

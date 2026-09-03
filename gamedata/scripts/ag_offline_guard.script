@@ -95,7 +95,7 @@ end
 -- Bin one offline squad into its density cell by the squad's own position. Offline, the
 -- group is the scheduled entity: brain().update() moves it and members mirror it, so
 -- squad.position IS the bodies' position (alife_online_offline_group.cpp:73-87).
-local function _bin_squad(squad_id, graph, actor_level)
+local function _collect_squad(squad_id, graph, actor_level)
     local stats = _scan_stats
     local squad = xobject.se(squad_id)
     if not squad then stats.gone = stats.gone + 1; return end
@@ -141,7 +141,7 @@ end
 
 -- Skipping the commander keeps npc_count > 0, so remove_npc never reaches its
 -- squad-deletion branch and already_spawned stays untouched (no respawn feedback).
-local function _cull_squad(squad_id)
+local function _find_cullable_squad(squad_id)
     local stats = _cull_stats
     local squad = xobject.se(squad_id)
     if not squad then stats.gone = stats.gone + 1; return nil end
@@ -187,10 +187,10 @@ end
 -- squad_members() holds (xrserver_objects_alife_monsters_script3.cpp squad_members binding).
 -- Releasing inside the live iterator is undefined behavior. Same reason Warfare snapshots
 -- (sim_offline_combat.script:727).
-local function _cull_one_squad(item, acc)
+local function _execute_squad_cull(item, acc)
     local budget = item.budget
     if budget.n <= 0 then return end
-    local squad = _cull_squad(item.squad_id)
+    local squad = _find_cullable_squad(item.squad_id)
     if not squad then return end
     acc.squads = acc.squads + 1
     local commander_id = squad:commander_id()
@@ -210,7 +210,7 @@ local function _cull_one_squad(item, acc)
     end
 end
 
-local function _drain_work(work, tid)
+local function _run_work(work, tid)
     local acc = { released = 0, stalkers = 0, mutants = 0, squads = 0 }
     local frames = 0
     local start_time = clock()
@@ -220,7 +220,7 @@ local function _drain_work(work, tid)
             frames = frames + 1
             local frame_timer = xprofiler.new_if(_dbg)
             frame_timer:start()
-            _cull_one_squad(item, acc)
+            _execute_squad_cull(item, acc)
             frame_timer:stop()
             if _dbg then log.debug("[RELEASE] [tid=%d] squad=%d released=%d [%.2fms frame:%d]",
                 tid, item.squad_id, acc.released, frame_timer:get_ms(), frames) end
@@ -236,7 +236,7 @@ local function _drain_work(work, tid)
     })
 end
 
-local function _append_cell_work(cell, work)
+local function _add_cell_work(cell, work)
     local budget = { n = cell.count - cfg.density_target }
     local squads = cell.squads
     for index = 1, #squads do
@@ -262,19 +262,19 @@ local function _try_cull()
     for _, cell in pairs(_cells) do
         if cell.count > trigger and cell.level ~= actor_level and cell.count > #cell.squads then
             cells_over = cells_over + 1
-            _append_cell_work(cell, work)
+            _add_cell_work(cell, work)
         end
     end
     build_timer:stop()
     if #work > 0 then
         log.debug("[QUEUE] [tid=%d] cells=%d work=%d trigger=%d target=%d [%.2fms]",
             _tid, cells_over, #work, trigger, cfg.density_target, build_timer:get_ms())
-        _drain_work(work, _tid)
+        _run_work(work, _tid)
     end
 end
 
 
-local function _finish_pass()
+local function _run_pass_end()
     if _ids then
         _log_density()
         _try_cull()
@@ -282,12 +282,12 @@ local function _finish_pass()
     _reset_pass()
 end
 
-local function _density_tick()
+local function _update_density()
     ResetTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, cfg.density_interval)
     if not cfg.density_enabled then return end
     if not (db and db.actor) then return end
     if not _ids or _cursor >= #_ids or _cell_size <= 0 then
-        _finish_pass()
+        _run_pass_end()
         return
     end
     local graph = game_graph()
@@ -299,7 +299,7 @@ local function _density_tick()
     local last = _cursor + SWEEP_BATCH
     if last > #_ids then last = #_ids end
     for index = _cursor + 1, last do
-        _bin_squad(_ids[index], graph, actor_level)
+        _collect_squad(_ids[index], graph, actor_level)
     end
     _cursor = last
     prof:stop()
@@ -314,5 +314,5 @@ end
 function on_game_start()
     load_config()
     RegisterScriptCallback("on_option_change", on_option_change)
-    CreateTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, cfg.density_interval, _density_tick)
+    CreateTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, cfg.density_interval, _update_density)
 end

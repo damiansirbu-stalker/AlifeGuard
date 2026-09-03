@@ -15,7 +15,7 @@
 ---      xcreature.is_unscriptable. Service NPCs (traders, mechanics, medics, barmen),
 ---      including dynamically spawned ones, are detected via xsmart.get_npc_roles and
 ---      skipped -- their stock is managed by the trade flow, not the guard. Neither
----      reaches trim_npc.)
+---      reaches apply_policy.)
 ---   2. Save bloat. Every looted item is a server object persisted in the save. Continuous
 ---      trim bounds live state; death-time only releases when (and if) the NPC dies.
 ---   3. Bursty performance. N deaths in a firefight = N trims in the same frame as the
@@ -24,11 +24,11 @@
 --- Per-NPC walk cost is bounded by MAX_SCAN_ITEMS (collect_surplus caps its single walk there),
 --- so a single trim never breaches the ~2ms frame ceiling even on a pathological inventory; a
 --- fat hoarder past the cap is trimmed incrementally over later passes as releases shrink it and
---- the tail shifts into the window, and _visit withholds the cooldown while a trim still sheds
+--- the tail shifts into the window, and _run_npc withholds the cooldown while a trim still sheds
 --- surplus so the hoarder converges over the next cycles rather than waiting the full cooldown.
 ---
 --- Public API:
----   - trim_npc(npc, opts)      apply inventory policy to one NPC; opts.dry_run reports
+---   - apply_policy(npc, opts)      apply inventory policy to one NPC; opts.dry_run reports
 ---                              without releasing
 ---
 --- Logging: every log.debug call gated by cached _dbg flag; xprofiler.new_if(_dbg)
@@ -51,10 +51,10 @@ local SCAN_QUEUE = "ag_inventory_guard_scan"
 local DEFAULT_NPCS_PER_FRAME = 1
 local UPDATE_INTERVAL_SEC = 30
 
--- Max inventory items scanned per NPC per trim. A single-frame cost ceiling: trim_npc runs one
+-- Max inventory items scanned per NPC per trim. A single-frame cost ceiling: apply_policy runs one
 -- collect_surplus walk capped here, so the worst frame is bounded regardless of inventory size. A
 -- stalker past this is a fat corpse-hoarder; surplus beyond the cap is trimmed on a later pass as
--- releases shrink the inventory and the tail shifts into the window (and _visit withholds the
+-- releases shrink the inventory and the tail shifts into the window (and _run_npc withholds the
 -- cooldown while a trim still sheds surplus, so a hoarder converges over the next cycles instead of
 -- waiting the full cooldown). Derived from the 2ms perf ceiling (code-standards Performance budget)
 -- against the measured single-walk per-item cost; retune from ag_test.ag_test_torture dt.
@@ -83,7 +83,7 @@ local _last_update = 0
 -- POLICY LOAD
 
 -- Load policy at on_game_start. Defensive: missing file / section yields empty rules so
--- trim_npc no-ops cleanly.
+-- apply_policy no-ops cleanly.
 local function _load_policy()
     local block = xinventory.load_policy(POLICY_PATH, { POLICY_SECTION })[POLICY_SECTION]
     INVENTORY_POLICY = { entries = block.entries, rules = block.rules }
@@ -91,22 +91,22 @@ end
 
 -- CONFIG
 
-local function _cfg()
+local function _get_cfg()
     return ag_mcm and ag_mcm.cfg or nil
 end
 
-local function _enabled()
-    local mcm = _cfg()
+local function _is_enabled()
+    local mcm = _get_cfg()
     return mcm and mcm.enabled_inventory ~= false
 end
 
-local function _cfg_step()
-    local mcm = _cfg()
+local function _get_step()
+    local mcm = _get_cfg()
     return (mcm and mcm.npcs_per_frame) or DEFAULT_NPCS_PER_FRAME
 end
 
-local function _cfg_cooldown_sec()
-    local mcm = _cfg()
+local function _get_cooldown_sec()
+    local mcm = _get_cfg()
     local hours = mcm and mcm.scan_cooldown_h or 12
     return hours * 3600
 end
@@ -115,13 +115,13 @@ end
 
 --- Apply inventory policy to one NPC. Public; the scheduler calls this for each NPC in
 --- its batch but callers (probes, MCM buttons, other modules) may call it directly. The
---- cooldown table is the scheduler's concern: trim_npc never touches it.
+--- cooldown table is the scheduler's concern: apply_policy never touches it.
 --- @safety SAFE - returns nil on nil npc / nil policy; iterate tolerates nil items
 --- @cost O(min(items, MAX_SCAN_ITEMS)) | one xinventory.collect_surplus walk (capped at MAX_SCAN_ITEMS) + 0-N xinventory.release_item per surplus
 --- @param npc game_object Online stalker
 --- @param opts table|nil { dry_run = false }
 --- @return table|nil { released, released_by_category = {[cat]=n}, dt_ms }
-function trim_npc(npc, opts)
+function apply_policy(npc, opts)
     if not npc or not INVENTORY_POLICY then return nil end
     opts = opts or {}
     local dry_run = opts.dry_run == true
@@ -165,7 +165,7 @@ end
 -- medics/barmen by section, hub traders by clsid, dynamically spawned ones included) is skipped --
 -- its stock is managed by the trade flow, never trimmed. is_unscriptable then rejects companions
 -- (npcx_is_companion), story / named, and the xdata curated trader roster. Hub traders
--- (script_trader clsid) also fail the IsStalker admit outright, so they never reach trim_npc
+-- (script_trader clsid) also fail the IsStalker admit outright, so they never reach apply_policy
 -- regardless of role detection timing.
 -- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
 local function _is_eligible(obj, id, actor_id, now, cooldown_sec)
@@ -182,7 +182,7 @@ end
 -- Walk online stalkers, pick every NPC whose last_scan is older than cooldown,
 -- oldest-scanned first. xslice paces the actual trim at npcs_per_frame.
 -- @cost O(N online + K log K) where K = eligible count; sort dominated by table.sort
-local function _pick_eligible(cooldown_sec)
+local function _select_eligible(cooldown_sec)
     local timer = xprofiler.new_if(_dbg):start()
     local stats = {
         total = 0, eligible = 0, dt_ms = 0,
@@ -231,7 +231,7 @@ local function _on_cycle_done()
     _cycle_timer = nil
 end
 
-local function _visit(npc_id)
+local function _run_npc(npc_id)
     local npc = xobject.go(npc_id)
     if not npc then
         if _dbg then log.debug("[SKIP] reason=offline npc=%d", npc_id) end
@@ -242,7 +242,7 @@ local function _visit(npc_id)
         return true
     end
 
-    local result = trim_npc(npc)
+    local result = apply_policy(npc)
     -- Stamp the cooldown only when nothing was released. A trim that shed surplus may have more --
     -- beyond the walk cap, or shifting into the window as the inventory shrinks -- so leave the NPC
     -- eligible to re-trim next cycle instead of benching it for the full cooldown. A clean NPC
@@ -256,10 +256,10 @@ local function _visit(npc_id)
 end
 
 local function _start_cycle()
-    if not _enabled() then return end
+    if not _is_enabled() then return end
     if xslice.is_active(SCAN_QUEUE) then return end
 
-    local picks, ps = _pick_eligible(_cfg_cooldown_sec())
+    local picks, ps = _select_eligible(_get_cooldown_sec())
 
     if _dbg then
         log.debug("[PICK] online=%d eligible=%d picked=%d (skip: actor=%d nonstalker=%d dead=%d unscriptable=%d service_npc=%d cooldown=%d) dt=%.2fms",
@@ -276,18 +276,18 @@ local function _start_cycle()
 
     if _dbg then
         log.debug("[SCAN] cycle=%d open batch=%d step=%d cooldown=%dh",
-            _cycle_id, #picks, _cfg_step(), _cfg_cooldown_sec() / 3600)
+            _cycle_id, #picks, _get_step(), _get_cooldown_sec() / 3600)
     end
 
     xslice.start(SCAN_QUEUE, picks, {
-        step = _cfg_step(),
-        func = _visit,
+        step = _get_step(),
+        func = _run_npc,
         on_done = _on_cycle_done,
     })
 end
 
 local function _on_actor_update()
-    if not _enabled() then return end
+    if not _is_enabled() then return end
     if xslice.is_active(SCAN_QUEUE) then return end
     local now = os_clock()
     if now - _last_update < UPDATE_INTERVAL_SEC then return end
@@ -297,8 +297,8 @@ end
 
 -- INSTALL
 
-local function _sync_log_level()
-    local mcm = _cfg()
+local function _update_log_level()
+    local mcm = _get_cfg()
     if not mcm then return end
     log.set_level(mcm.log_level or "WARN")
     _dbg = log.get_level() >= 5
@@ -315,8 +315,8 @@ function on_game_start()
     _last_scan_game_sec = {}
     _load_policy()
     log.info("[INSTALL] ag_inventory_guard scanner armed")
-    RegisterScriptCallback(CALLBACK.ACTOR_ON_FIRST_UPDATE, _sync_log_level)
-    RegisterScriptCallback(CALLBACK.ON_OPTION_CHANGE, _sync_log_level)
+    RegisterScriptCallback(CALLBACK.ACTOR_ON_FIRST_UPDATE, _update_log_level)
+    RegisterScriptCallback(CALLBACK.ON_OPTION_CHANGE, _update_log_level)
     RegisterScriptCallback(CALLBACK.ACTOR_ON_UPDATE, _on_actor_update)
     RegisterScriptCallback(CALLBACK.NPC_ON_NET_DESTROY, _on_npc_net_destroy)
 end
