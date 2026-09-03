@@ -106,7 +106,7 @@ end
 
 local function _count_named(squad, commander_id)
     local named = 0
-    for member_id in xsquad.iter_member_ids(squad) do
+    for member_id in xsquad.iterate_member_ids(squad) do
         local se = member_id ~= commander_id and alife_object(member_id)
         if se and (get_story_id(member_id) or xdata.unscriptable_npcs[se:section_name()]) then named = named + 1 end
     end

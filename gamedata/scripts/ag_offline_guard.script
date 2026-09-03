@@ -195,7 +195,7 @@ local function _execute_squad_cull(item, acc)
     acc.squads = acc.squads + 1
     local commander_id = squad:commander_id()
     local member_ids = {}
-    for member_id in xsquad.iter_member_ids(squad) do
+    for member_id in xsquad.iterate_member_ids(squad) do
         member_ids[#member_ids + 1] = member_id
     end
     for index = 1, #member_ids do
