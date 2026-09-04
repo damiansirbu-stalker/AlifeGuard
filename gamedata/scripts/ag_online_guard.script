@@ -165,7 +165,7 @@ local function _get_class(obj)
 end
 
 -- Process single online entity into _squads or orphans
--- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
+-- @param id from xcreature.iterate_online() — avoids obj:id() call on destroyed game objects
 local function _process_entity(obj, id, ctx)
     local stats = ctx.stats
     local se_obj = xobject.get_se(id)
@@ -229,7 +229,7 @@ local function _collect_online()
     local iter_timer = xprofiler.new_if(_dbg)
     iter_timer:start()
 
-    for id, obj in xcreature.online_iter_with_id() do
+    for id, obj in xcreature.iterate_online() do
         _process_entity(obj, id, ctx)
     end
 

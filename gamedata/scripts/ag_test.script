@@ -225,7 +225,7 @@ local function _pick_npc()
     local actor_pos = actor:position()
     local actor_id = actor:id()
     local best, best_dist = nil, math_huge
-    for id, obj in xcreature.online_iter_with_id() do
+    for id, obj in xcreature.iterate_online() do
         if id ~= actor_id and alife_object(id) and IsStalker(obj) and obj:alive()
             and not xcreature.is_unscriptable(obj) then
             local dist = obj:position():distance_to_sqr(actor_pos)
@@ -317,7 +317,7 @@ local function _pick_npcs(limit)
     if not actor then return {} end
     local actor_id = actor:id()
     local out = {}
-    for id, obj in xcreature.online_iter_with_id() do
+    for id, obj in xcreature.iterate_online() do
         if id ~= actor_id and alife_object(id) and IsStalker(obj) and obj:alive()
             and next(xsmart.get_npc_roles(obj)) == nil and not xcreature.is_unscriptable(obj) then
             out[#out + 1] = id

@@ -167,7 +167,7 @@ end
 -- (npcx_is_companion), story / named, and the xdata curated trader roster. Hub traders
 -- (script_trader clsid) also fail the IsStalker admit outright, so they never reach apply_policy
 -- regardless of role detection timing.
--- @param id from xcreature.online_iter_with_id() — avoids obj:id() call on destroyed game objects
+-- @param id from xcreature.iterate_online() — avoids obj:id() call on destroyed game objects
 local function _is_eligible(obj, id, actor_id, now, cooldown_sec)
     if id == actor_id then return nil, "actor" end
     local last = _last_scan_game_sec[id] or 0
@@ -197,7 +197,7 @@ local function _select_eligible(cooldown_sec)
     local now = xtime.get_game_sec()
     local eligible = {}
 
-    for id, obj in xcreature.online_iter_with_id() do
+    for id, obj in xcreature.iterate_online() do
         local se = xobject.get_se(id)
         if not se then goto continue end
         stats.total = stats.total + 1
