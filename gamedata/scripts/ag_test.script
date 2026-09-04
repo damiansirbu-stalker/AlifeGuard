@@ -354,7 +354,7 @@ function ag_test_inventory_sanitization()
     _log_info("[SETUP] npc=%d name=%s", npc_id, npc_name)
 
     local opts = xinventory.get_category_opts(npc)
-    local before = xinventory.classify(npc, opts)
+    local before = xinventory.collect_policy_counts(npc, opts)
     _log_info("[SNAPSHOT before] medkit=%d ammo_not_equipped=%d",
         before.medkit or 0, before.ammo_not_equipped or 0)
 
@@ -383,7 +383,7 @@ function ag_test_inventory_sanitization()
         end
 
         local opts2 = xinventory.get_category_opts(npc2)
-        local mid = xinventory.classify(npc2, opts2)
+        local mid = xinventory.collect_policy_counts(npc2, opts2)
         local mid_medkit = mid.medkit or 0
         local mid_ammo = mid.ammo_not_equipped or 0
         _log_info("[SNAPSHOT mid] medkit=%d ammo_not_equipped=%d", mid_medkit, mid_ammo)
@@ -610,7 +610,7 @@ function ag_test_surplus_parity()
 
         -- Reference: classify then iterate_surplus, recording only (on_surplus releases nothing).
         local ref_stream = {}
-        local ref_counts, ref_hit = xinventory.classify(npc2, opts, rules, INV_SCAN_CAP)
+        local ref_counts, ref_hit = xinventory.collect_policy_counts(npc2, opts, rules, INV_SCAN_CAP)
         xinventory.iterate_surplus(npc2, opts, {
             rules = rules, counts = ref_counts, max_items = INV_SCAN_CAP,
             on_surplus = function(item, cat, sec, unit)
