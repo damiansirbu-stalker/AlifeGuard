@@ -92,7 +92,7 @@ function apply_policy(npc, opts)
         dt_ms = 0,
     }
 
-    local released, _counts, hit_cap = xinventory.collect_surplus(npc, cat_opts, {
+    local released, _, hit_cap = xinventory.collect_surplus(npc, cat_opts, {
         rules = INVENTORY_POLICY.rules,
         max_items = MAX_SCAN_ITEMS,
         on_surplus = function(item, cat, sec, _unit)
