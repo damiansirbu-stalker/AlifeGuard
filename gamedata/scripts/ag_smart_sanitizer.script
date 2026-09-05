@@ -34,7 +34,7 @@ end
 
 -- SANITIZE
 
--- Clamp already_spawned[k] corruption: non-table value, non-number num, num < 0 (architecture.md "Smart Sanitizer")
+-- Clamp already_spawned[k] corruption: non-table value, non-number num, num < 0 (architecture.md "Smart Sanitizer").
 local function _execute_smart_sanitize(smart)
     if not smart or not smart.already_spawned then return 0 end
     local fixed = 0

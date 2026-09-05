@@ -2,24 +2,24 @@
 
 local pairs, ipairs = pairs, ipairs
 
--- Add entity to a category bucket within a tier
+-- Add entity to a category bucket within a tier.
 local function _add_tier_entry(tier, category, entry)
     local cat = tier[category]
     if not cat then cat = {}; tier[category] = cat end
     cat[#cat + 1] = entry
 end
 
--- Resolve member tier for a squad record (1 unscripted, 2 scripted; 1 for all when squad culling off)
+-- Resolve member tier for a squad record (1 unscripted, 2 scripted; 1 for all when squad culling off).
 local function _get_member_tier(rec, squad_culling)
     return squad_culling and (rec.scripted and 2 or 1) or 1
 end
 
--- Resolve commander tier for a squad record (3 unscripted, 4 scripted; 1 for all when squad culling off)
+-- Resolve commander tier for a squad record (3 unscripted, 4 scripted; 1 for all when squad culling off).
 local function _get_commander_tier(rec, squad_culling)
     return squad_culling and (rec.scripted and 4 or 3) or 1
 end
 
--- Sort squad members into 4 priority tiers by scripted status (see architecture.md "Priority Tiers")
+-- Sort squad members into 4 priority tiers by scripted status (see architecture.md "Priority Tiers").
 local function _build_tiers(squads, orphans, tiers, squad_culling)
     for _, rec in pairs(squads) do
         if rec.protected then goto next_squad end
@@ -37,7 +37,7 @@ local function _build_tiers(squads, orphans, tiers, squad_culling)
     end
 end
 
--- Sort or shuffle entries within a single tier's categories
+-- Sort or shuffle entries within a single tier's categories.
 local function _sort_tier(tier, sort_fn)
     for cat, entries in pairs(tier) do
         if #entries > 1 then
@@ -53,7 +53,7 @@ local function _sort_categories(tiers, prioritize_distant)
     end
 end
 
--- Take one entity from a source if available
+-- Take one entity from a source if available.
 local function _pop_source(src, queue)
     if src.idx > #src.items then return false end
     queue[#queue + 1] = src.items[src.idx]
@@ -61,7 +61,7 @@ local function _pop_source(src, queue)
     return true
 end
 
--- One round of round-robin: take 1 from each source, return true if any taken
+-- One round of round-robin: take 1 from each source, return true if any taken.
 local function _collect_round(sources, queue, target)
     local any = false
     for i = 1, #sources do
@@ -71,7 +71,7 @@ local function _collect_round(sources, queue, target)
     return any
 end
 
--- Round-robin: take 1 entity from each category per round until target reached
+-- Round-robin: take 1 entity from each category per round until target reached.
 local function _collect_round_robin(tier, queue, target)
     local sources = {}
     for _, entries in pairs(tier) do
@@ -83,7 +83,7 @@ local function _collect_round_robin(tier, queue, target)
     end
 end
 
--- Linear fill: merge all categories in tier into one flat sorted/shuffled list
+-- Linear fill: merge all categories in tier into one flat sorted/shuffled list.
 local function _collect_linear(tier, queue, target, prioritize_distant)
     local merged = {}
     for _, entries in pairs(tier) do

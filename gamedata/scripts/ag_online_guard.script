@@ -153,14 +153,14 @@ local function _build_squad_record(squad)
     }
 end
 
--- Classify entity: true=stalker, false=mutant, nil=skip
+-- Classify entity: true=stalker, false=mutant, nil=skip.
 local function _get_class(obj)
     if is_stalker(obj) then return true end
     if is_monster(obj) then return false end
     return nil
 end
 
--- Route one classified online entity into ctx._squads or ctx.orphans
+-- Route one classified online entity into ctx._squads or ctx.orphans.
 -- @param id from xcreature.iterate_online() — avoids obj:id() call on destroyed game objects
 local function _collect_entity(obj, id, ctx)
     local stats = ctx.stats
