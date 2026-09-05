@@ -164,9 +164,9 @@ local function _get_class(obj)
     return nil
 end
 
--- Process single online entity into _squads or orphans
+-- Route one classified online entity into ctx._squads or ctx.orphans
 -- @param id from xcreature.iterate_online() — avoids obj:id() call on destroyed game objects
-local function _process_entity(obj, id, ctx)
+local function _collect_entity(obj, id, ctx)
     local stats = ctx.stats
     local se_obj = xobject.get_se(id)
     if not se_obj then stats.skipped = stats.skipped + 1; return end
@@ -230,7 +230,7 @@ local function _collect_online()
     iter_timer:start()
 
     for id, obj in xcreature.iterate_online() do
-        _process_entity(obj, id, ctx)
+        _collect_entity(obj, id, ctx)
     end
 
     iter_timer:stop()

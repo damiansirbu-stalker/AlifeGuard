@@ -28,7 +28,7 @@ actor_on_update (every frame)
   |
   v
 FRAME 0: _collect_online
-  |-- xcreature.online_iter_with_id() -> _process_entity per obj
+  |-- xcreature.online_iter_with_id() -> _collect_entity per obj
   |     classify (stalker/mutant/skip)
   |     distance_to_sqr from actor
   |     resolve squad via alife_object(id) -> se_obj.group_id -> alife_object(group_id)
