@@ -78,8 +78,8 @@ end
 
 -- LIFECYCLE
 
--- Independent of the Online Guard's enabled toggle: state hygiene runs whenever the Smart
--- Sanitizer itself is on, so a disabled population guard never leaves save-CTD counters unclamped.
+-- Independent of the Online Guard's enabled toggle: state hygiene runs whenever the Smart Sanitizer itself is on.
+-- A disabled population guard never leaves save-CTD counters unclamped.
 local function actor_on_update()
     if not cfg.sanitize_smarts then return end
     if not db or not db.actor then return end

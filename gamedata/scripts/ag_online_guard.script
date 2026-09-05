@@ -238,8 +238,8 @@ local function _collect_online()
 end
 
 
--- Order the collected records via ag_queue (pure strategy), timing and logging the build here
--- where the logger and _dbg live. cfg flags pass in as opts per the dependency-injection rule.
+-- Order the collected records via ag_queue (pure strategy); time and log the build here where the logger and _dbg live.
+-- cfg flags pass in as opts per the dependency-injection rule.
 local function _build_release_queue(_squads, orphans, target, tid)
     if target <= 0 then return {} end
     local queue_timer = xprofiler.new_if(_dbg):start()

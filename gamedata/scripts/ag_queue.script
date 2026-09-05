@@ -103,8 +103,8 @@ local function _collect_linear(tier, queue, target, prioritize_distant)
     end
 end
 
---- Order cull candidates into a release queue by priority tier and fairness policy. Pure Lua,
---- no engine calls. Tiers and fill policy: architecture.md "Priority Tiers" / "Round-Robin Fairness".
+--- Order cull candidates into a release queue by priority tier and fairness policy; pure Lua, no engine calls.
+--- Tiers and fill policy: architecture.md "Priority Tiers" / "Round-Robin Fairness".
 --- @param squads table group_id -> record { protected, scripted, category, removable, commander_entry }
 --- @param orphans table array of entries { id, dist_sq, is_stalker, section }
 --- @param target number number of entities to select

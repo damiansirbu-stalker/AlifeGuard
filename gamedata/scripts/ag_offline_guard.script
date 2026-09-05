@@ -128,8 +128,8 @@ local function _log_density()
 end
 
 
--- Skipping the commander keeps npc_count > 0, so remove_npc never reaches its
--- squad-deletion branch and already_spawned stays untouched (no respawn feedback).
+-- Skipping the commander keeps npc_count > 0, so remove_npc never reaches its squad-deletion branch.
+-- already_spawned then stays untouched, no respawn feedback.
 local function _find_cullable_squad(squad_id)
     local stats = _cull_stats
     local squad = xobject.get_se(squad_id)
@@ -142,8 +142,8 @@ local function _find_cullable_squad(squad_id)
 end
 
 
--- Detach-before-destroy one offline squad member: named/story skip (is_unscriptable_se), clear the
--- smart's per-NPC bookkeeping, then alife_release. Order and engine rationale: architecture.md "Release path (offline)".
+-- Detach-before-destroy one offline squad member: named/story skip, clear the smart bookkeeping, then alife_release.
+-- Order and engine rationale: architecture.md "Release path (offline)".
 -- @return boolean released, boolean member_is_stalker
 local function _release_offline_member(member_id, commander_id)
     if member_id == commander_id then return false end

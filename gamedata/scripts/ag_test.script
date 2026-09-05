@@ -35,8 +35,8 @@ local function _tip(msg)
     if db and db.actor then news_manager.send_tip(db.actor, msg, nil, nil, 6000) end
 end
 
--- Pick a smart on a level other than the actor's, so spawns land offline and the guard
--- processes them. Returns name + server object, or nil if the world has one level only.
+-- Pick a smart on a level other than the actor's, so spawns land offline and the guard processes them.
+-- Returns name + server object, or nil if the world has one level only.
 local function _pick_offline_smart(graph, actor_level)
     if not (SIMBOARD and SIMBOARD.smarts_by_names) then return nil end
     for name, smart in pairs(SIMBOARD.smarts_by_names) do
@@ -284,8 +284,7 @@ local _torture_off     = nil
 local _torture_squads  = {}
 local _torture_items   = {}
 
--- Collect up to `limit` eligible online stalkers (the scanner's own gate: stalker, alive, no
--- service role, not unscriptable) for the multi-NPC torture harness.
+-- Collect up to `limit` eligible online stalkers (stalker, alive, no service role, not unscriptable) for the torture harness.
 local function _pick_npcs(limit)
     local actor = db.actor
     if not actor then return {} end
@@ -308,8 +307,8 @@ local function _item_count(npc_id)
     return count
 end
 
---- Inventory sanitization end-to-end: inject 20 medkits + 1 mismatched-ammo stack into the nearest
---- eligible NPC, run apply_policy, assert per-category releases match ag_inventory_policy.ltx ceilings.
+--- Inventory sanitization end-to-end: inject 20 medkits + 1 mismatched-ammo stack into the nearest eligible NPC.
+--- Run apply_policy, assert per-category releases match ag_inventory_policy.ltx ceilings.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_inventory_sanitization()
     local TEST = "inventory_sanitization"
@@ -403,8 +402,8 @@ function ag_test_inventory_sanitization()
     end)
 end
 
--- Evaluate and report the inventory-cap assertions. Kept out of the deferred closure to hold
--- the closure's cyclomatic complexity down.
+-- Evaluate and report the inventory-cap assertions.
+-- Kept out of the deferred closure to hold its cyclomatic complexity down.
 local function _report_inventory_cap(before, mid, after, r1, r2)
     local TEST = "inventory_cap"
     if not r1 or not r2 then
@@ -430,8 +429,8 @@ local function _report_inventory_cap(before, mid, after, r1, r2)
     end
 end
 
---- Inventory scan cap: inject 2x the walk cap into the nearest eligible NPC, trim twice, assert the
---- first pass truncates and the second releases more (convergence). The frame-cost bound the cap guarantees.
+--- Inventory scan cap: inject 2x the walk cap, trim twice, assert the first pass truncates and the second releases more.
+--- Convergence proof for the frame-cost bound the cap guarantees.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_inventory_cap()
     local TEST = "inventory_cap"
@@ -508,8 +507,8 @@ local function _counts_diff(ref_counts, new_counts)
     return nil
 end
 
--- Exact parity of two surplus captures, each { stream, counts, hit } (candidate also carries
--- released). Delegates the stream and counts diffs; returns (ok, reason).
+-- Exact parity of two surplus captures, each { stream, counts, hit } (candidate also carries released).
+-- Delegates the stream and counts diffs; returns (ok, reason).
 local function _compare_surplus(ref, new)
     if new.released ~= #new.stream then
         return false, string_format("collect_surplus released=%d but its stream=%d", new.released, #new.stream)
@@ -522,8 +521,8 @@ local function _compare_surplus(ref, new)
     return true, "identical"
 end
 
---- Surplus-walk parity: assert xinventory.collect_surplus produces the identical released stream,
---- counts, and hit_cap as classify + iterate_surplus on the same inventory. Read-only proof.
+--- Surplus-walk parity: assert xinventory.collect_surplus matches classify + iterate_surplus on the same inventory.
+--- Read-only proof of the identical released stream, counts, and hit_cap.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_surplus_parity()
     local TEST = "surplus_parity"
@@ -605,8 +604,7 @@ function ag_test_surplus_parity()
     end)
 end
 
--- Pick the first smart on the actor's own level, so its spawns go online near the actor and the
--- Online Guard + Inventory Guard engage.
+-- Pick the first smart on the actor's own level, so its spawns go online near the actor and the guards engage.
 local function _pick_online_smart(graph, actor_level)
     if not (SIMBOARD and SIMBOARD.smarts_by_names) then return nil end
     for name, smart in pairs(SIMBOARD.smarts_by_names) do
@@ -645,8 +643,7 @@ local function _torture_flood_one(npc_id)
     return res.dt_ms, before > INV_SCAN_CAP
 end
 
--- One tick of inventory pressure: flood + trim every online eligible stalker, sampling the worst
--- trim cost and how many hit the walk cap.
+-- One tick of inventory pressure: flood + trim every online eligible stalker, sampling the worst trim cost and cap hits.
 local function _torture_flood()
     local ids = _pick_npcs(TORTURE_TARGETS)
     local max_dt, capped = 0, 0
@@ -667,8 +664,8 @@ local function _torture_spawn_batch()
     if off_smart then _torture_spawn(off_smart, _torture_off, TORTURE_BATCH) end
 end
 
--- Log the sim load (total squads + bodies) so the spike is visible next to the guards' own
--- [DENSITY] / [OFFLINE-CULL] / [VISIT] lines, which already break down online vs offline per cell.
+-- Log the sim load (total squads + bodies) so the spike is visible next to the guards' own log lines.
+-- Those [DENSITY] / [OFFLINE-CULL] / [VISIT] lines already break down online vs offline per cell.
 local function _torture_snapshot()
     local squads, bodies = 0, 0
     for squad_id in pairs(SIMBOARD.squads) do
@@ -681,8 +678,8 @@ local function _torture_snapshot()
     log.info("[TORTURE] load squads=%d bodies=%d spawned_ledger=%d", squads, bodies, #_torture_squads)
 end
 
--- Despawn every squad we spawned that survived (the guards may have culled some) and release
--- every item we injected that survived (the Inventory Guard may have trimmed some).
+-- Despawn every squad we spawned that survived (the guards may have culled some).
+-- Release every item we injected that survived (the Inventory Guard may have trimmed some).
 local function _torture_teardown()
     local spawned_total, items_total = #_torture_squads, #_torture_items
     local removed = 0
@@ -717,8 +714,8 @@ local function _torture_tick()
     return false
 end
 
---- Continuous multi-system torture LOOP (toggle): each tick spawns squads online + offline and
---- floods/trims every online stalker, so all guards run under sustained load. Run again to tear down.
+--- Continuous multi-system torture LOOP (toggle): each tick spawns squads and floods/trims stalkers under sustained load.
+--- Run again to tear down.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_torture()
     if _torture_active then

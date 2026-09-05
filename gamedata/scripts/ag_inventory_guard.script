@@ -39,8 +39,7 @@ local _last_update = 0
 
 -- POLICY LOAD
 
--- Load policy at on_game_start. Defensive: missing file / section yields empty rules so
--- apply_policy no-ops cleanly.
+-- Load policy at on_game_start; missing file or section yields empty rules so apply_policy no-ops cleanly.
 local function _load_policy()
     local block = xinventory.load_policy(POLICY_PATH, { POLICY_SECTION })[POLICY_SECTION]
     INVENTORY_POLICY = { entries = block.entries, rules = block.rules }
@@ -70,8 +69,8 @@ end
 
 -- PER-NPC TRIM (PUBLIC)
 
---- Apply inventory policy to one NPC. Public; callers (scheduler, probes, MCM buttons) may
---- call it directly. The cooldown table is the scheduler's concern; this never touches it.
+--- Apply inventory policy to one NPC; callers (scheduler, probes, MCM buttons) may call it directly.
+--- The cooldown table is the scheduler's concern; this never touches it.
 --- @safety SAFE - returns nil on nil npc / nil policy; iterate tolerates nil items
 --- @cost O(min(items, MAX_SCAN_ITEMS)) | one xinventory.collect_surplus walk (capped at MAX_SCAN_ITEMS) + 0-N xinventory.release_item per surplus
 --- @param npc game_object Online stalker
@@ -113,8 +112,8 @@ end
 
 -- SCHEDULER
 
--- Admit plain lootable stalkers, reject everyone else. Pure-Lua actor/cooldown checks run first to
--- short-circuit before any bridge call; service NPCs and unscriptable NPCs are rejected (architecture.md "Traders skipped").
+-- Admit plain lootable stalkers, reject everyone else; pure-Lua actor/cooldown checks run first to short-circuit before any bridge call.
+-- Service NPCs and unscriptable NPCs are rejected (architecture.md "Traders skipped").
 -- @param id from xcreature.iterate_online() — avoids obj:id() call on destroyed game objects
 local function _is_eligible(obj, id, actor_id, now, cooldown_sec)
     if id == actor_id then return nil, "actor" end
@@ -127,8 +126,8 @@ local function _is_eligible(obj, id, actor_id, now, cooldown_sec)
     return id, last
 end
 
--- Walk online stalkers, pick every NPC whose last_scan is older than cooldown,
--- oldest-scanned first. xslice paces the actual trim at npcs_per_frame.
+-- Walk online stalkers, pick every NPC whose last_scan is older than cooldown, oldest-scanned first.
+-- xslice paces the actual trim at npcs_per_frame.
 -- @cost O(N online + K log K) where K = eligible count; sort dominated by table.sort
 local function _select_eligible(cooldown_sec)
     local timer = xprofiler.new_if(_dbg):start()
