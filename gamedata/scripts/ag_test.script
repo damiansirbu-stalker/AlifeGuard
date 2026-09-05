@@ -17,6 +17,14 @@ local FEED_MAX = 200
 local TIME_EVENT_ID = "ag_test"
 local TIME_EVENT_ACTION = "driver"
 local SECTIONS = { "stalker_sim_squad_novice", "bandit_sim_squad_novice", "simulation_dog" }
+local MOD = "alifeguard"
+-- MAX_SCAN_ITEMS mirrors the per-walk cap in ag_inventory_guard.script (local constant there).
+local INV_SCAN_CAP = 40
+local TORTURE_TARGETS  = 20
+local TORTURE_FLOOD    = 40
+local TORTURE_BATCH    = 4
+local TORTURE_CAP      = 160
+local TORTURE_TICK_SEC = 5
 
 local _active = false
 local _target_name = nil
@@ -29,6 +37,12 @@ local _protection_opts = {
     exclude_active_role = true,
     exclude_task_target = true,
 }
+
+local _torture_active  = false
+local _torture_on      = nil
+local _torture_off     = nil
+local _torture_squads  = {}
+local _torture_items   = {}
 
 local function _tip(msg)
     log.info("%s", msg)
@@ -176,8 +190,6 @@ end
 -- explicit flush per line so the file appears immediately. PASS / FAIL also surfaces as a
 -- yellow news_manager tip.
 
-local MOD = "alifeguard"
-
 -- session-cached logger for flow tests; one file per game session, appears immediately on disk
 local _flow_log
 local function _get_flow_log()
@@ -270,19 +282,6 @@ local function _find_mismatched_ammo(opts)
     end
     return nil
 end
-
--- MAX_SCAN_ITEMS mirrors the per-walk cap in ag_inventory_guard.script (local constant there).
-local INV_SCAN_CAP = 40
-local TORTURE_TARGETS  = 20
-local TORTURE_FLOOD    = 40
-local TORTURE_BATCH    = 4
-local TORTURE_CAP      = 160
-local TORTURE_TICK_SEC = 5
-local _torture_active  = false
-local _torture_on      = nil
-local _torture_off     = nil
-local _torture_squads  = {}
-local _torture_items   = {}
 
 -- Collect up to `limit` eligible online stalkers (stalker, alive, no service role, not unscriptable) for the torture harness.
 local function _pick_npcs(limit)

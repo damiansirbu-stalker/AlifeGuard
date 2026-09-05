@@ -16,6 +16,7 @@ local LEVEL_LOAD_GRACE_PERIOD = 30
 local PROTECTION_TTL = 120
 local INVALID_GROUP = 65535
 local DESPAWN_JOB = "ag_despawn"
+local CLEANUP_SOUND = "ambient\\radar_1"
 
 local cfg = {
     enabled = true,
@@ -83,8 +84,6 @@ local cleanup_messages = {
     "st_ag_cleanup_2",
     "st_ag_cleanup_3",
 }
-
-local CLEANUP_SOUND = "ambient\\radar_1"
 
 local function notify_cleanup(removed, _stalkers, _mutants)
     if not cfg.pda or removed == 0 then return end
