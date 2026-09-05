@@ -64,15 +64,10 @@ cfg, get_config, load_config = xmcm.create_config("ag", defaults, build_path)
 
 -- BUTTON HANDLERS
 
--- functor_ui receives the UI_MCM instance as trailing arg (ui_mcm.script:1435).
--- functor would receive nothing. MCM 1.7.2fix leaves the file-local GUI nil on fresh opens
--- (only Open_to sets it, and Reset_last_opt skips Open_to when last_path is nil), so
--- ui_mcm.get_gui() returns nil. functor_ui sidesteps that bug.
--- MCM keeps file-local opt_temp (pending widget edits) at ui_mcm.script:175. Any widget
--- the user touched before clicking the profile button is still there, and On_Accept at
--- ui_mcm.script:2393 writes opt_temp AFTER our config writes, partially un-applying the
--- profile. On_Discard flushes opt_temp and closes the dialog; same path the Cancel button
--- takes.
+-- Write every default back through MCM config, then close the dialog safely.
+-- @src ui_mcm.script:1435: functor_ui passes the UI_MCM instance (plain functor gets nothing), needed as get_gui() is nil on fresh opens (MCM 1.7.2fix).
+-- @src ui_mcm.script:949: close via On_Cancel not On_Discard; On_Discard's scroll_opt:Clear frees btn_reset_all mid-click and SEH-fires on some exes.
+-- @src ui_mcm.script:175,2393: On_Accept writes opt_temp after our writes, so widget edits touched before reset re-apply.
 local function _apply_defaults(gui, msg)
     local config = axr_main.config
     for k, v in pairs(defaults) do
@@ -84,14 +79,6 @@ local function _apply_defaults(gui, msg)
         if gui.owner and gui.owner.SetMsg then
             gui.owner:SetMsg(msg, 5)
         end
-        -- Close via On_Cancel, not On_Discard. On_Discard calls Reset_opt -> scroll_opt:Clear
-        -- at ui_mcm.script:949, which destroys the btn_reset_all button while its click
-        -- handler is still on the stack; C++ dispatcher returns into the freed control and
-        -- SEH-fires on some exe builds (e.g. modified vanilla 1.5.3). On_Cancel only calls
-        -- HideDialog + Unregister_UI -- scroll_opt children stay alive long enough for the
-        -- handler to unwind. Trade-off: opt_temp is not cleared (vanilla Cancel-without-prompt
-        -- parity). If the user touched widgets before clicking reset, those edits remain
-        -- pending and will be re-applied on the next On_Accept.
         if gui.On_Cancel then
             gui:On_Cancel()
         end
@@ -111,7 +98,6 @@ function on_mcm_load()
     return {
         id = "ag",
         gr = {
-            -- ONLINE GUARD TAB
             {
                 id = "online_guard",
                 sh = true,
@@ -120,7 +106,6 @@ function on_mcm_load()
                         text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
                     { id = "desc", type = "desc", text = "ui_mcm_ag_online_guard_info" },
 
-                    -- Entity Limits
                     { id = "div_online", type = "line" },
                     { id = "hdr_online", type = "desc", text = "ui_mcm_ag_hdr_online", clr = {255, 200, 200, 200} },
                     { id = "enabled", type = "check", val = 1, def = true },
@@ -128,7 +113,6 @@ function on_mcm_load()
                     { id = "buffer", type = "track", val = 2, min = 0, max = 50, step = 5, def = 10 },
                     { id = "check_interval", type = "track", val = 2, min = 10, max = 120, step = 10, def = 30 },
 
-                    -- Protection rules
                     { id = "div_protection", type = "line" },
                     { id = "hdr_protection", type = "desc", text = "ui_mcm_ag_hdr_protection", clr = {255, 200, 200, 200} },
                     { id = "check_tasks", type = "check", val = 1, def = true },
@@ -137,18 +121,15 @@ function on_mcm_load()
                     { id = "squad_culling", type = "check", val = 1, def = true },
                     { id = "round_robin", type = "check", val = 1, def = true },
 
-                    -- Notifications
                     { id = "div_pda", type = "line" },
                     { id = "hdr_notifications", type = "desc", text = "ui_mcm_ag_hdr_notifications", clr = {255, 200, 200, 200} },
                     { id = "pda", type = "check", val = 1, def = true },
                     { id = "pda_sound", type = "check", val = 1, def = true },
 
-                    -- Platform footer (self-contained builder in _ag_deps, not xlibs)
                     { id = "div_footer", type = "line" },
                     { id = "platform", type = "desc", text = "ui_mcm_xmcm_footer",
                         ui_hook_functor = { _ag_deps.platform_functor() }, clr = {255, 212, 201, 168} },                },
             },
-            -- OFFLINE GUARD TAB
             {
                 id = "offline_guard",
                 sh = true,
@@ -166,7 +147,6 @@ function on_mcm_load()
                     { id = "density_interval", type = "track", val = 2, min = 1, max = 10, step = 1, def = 1 },
                 },
             },
-            -- SMART SANITIZER TAB
             {
                 id = "smart_sanitizer",
                 sh = true,
@@ -181,7 +161,6 @@ function on_mcm_load()
                     { id = "sanitize_interval", type = "track", val = 2, min = 60, max = 1800, step = 60, def = 300 },
                 },
             },
-            -- INVENTORY GUARD TAB
             {
                 id = "inventory_guard",
                 sh = true,
@@ -195,7 +174,6 @@ function on_mcm_load()
                     { id = "scan_cooldown_h", type = "track", val = 2, min = 1, max = 72, step = 1, def = 12 },
                 },
             },
-            -- DEVELOPMENT TAB
             {
                 id = "development",
                 sh = true,
@@ -204,7 +182,6 @@ function on_mcm_load()
                         text = "ui_mcm_ag_title", size = {512, 50}, spacing = 20 },
                     { id = "desc", type = "desc", text = "ui_mcm_ag_development_desc" },
 
-                    -- Logging
                     { id = "div_logging", type = "line" },
                     { id = "hdr_logging", type = "desc", text = "ui_mcm_ag_hdr_logging", clr = {255, 200, 200, 200} },
                     { id = "log_level", type = "list", val = 0, def = "WARN",
@@ -216,7 +193,6 @@ function on_mcm_load()
                         },
                     },
 
-                    -- Reset
                     { id = "div_reset", type = "line" },
                     { id = "warn_reset", type = "desc", text = "ui_mcm_ag_development_reset_warning", clr = {255, 240, 200, 80} },
                     { id = "btn_reset_all", type = "button", functor_ui = { btn_reset_all } },

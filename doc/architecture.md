@@ -85,7 +85,7 @@ Two layers. Squad-level first, per-member fallback for named NPCs.
 
 ### Squad-level: xsquad.is_protected
 
-Single call per squad. Checks (in order):
+`xsquad.is_companion` is checked first and always protects, ungated by `check_tasks`: a recruited companion is never culled by either guard. Then a single `is_protected` call per squad, checks (in order):
 
 1. **Permanent** (cached, session lifetime): story_id, trader, named NPC commander, empty squad
 2. **Active role** (dynamic, if `check_tasks` enabled): task_giver, companion
@@ -210,7 +210,7 @@ Per squad: skip online, skip empty, skip the actor's level; bin `squad:npc_count
 
 ### Cull
 
-At pass end, cells with `count > density_trigger` on non-actor levels are thinned by `count - density_target` members. The synchronous step is only a pure-Lua work list: each over-trigger cell contributes a shared budget table (`count - target`) and one `{squad_id, budget}` item per squad, with zero luabind. All squad resolution, protection, and release is deferred into the shared xslice `"ag_despawn"` job, one squad per frame, so no single frame examines more than one squad and the build stays flat regardless of cull size.
+At pass end, cells with `count > density_trigger` on non-actor levels are thinned by `count - density_target` members. A third gate `count > #squads` requires at least one removable non-commander body: the drain keeps every commander, so a cell already at its one-per-squad floor can never drop under trigger, and without this gate it re-flags every pass and drains to release nothing (offline hysteresis). The synchronous step is only a pure-Lua work list: each over-trigger cell contributes a shared budget table (`count - target`) and one `{squad_id, budget}` item per squad, with zero luabind. All squad resolution, protection, and release is deferred into the shared xslice `"ag_despawn"` job, one squad per frame, so no single frame examines more than one squad and the build stays flat regardless of cull size.
 
 Per squad in its frame: resolve fresh, skip if gone/online/lone/protected (`xsquad.is_protected`), then release its non-commander members down to the cell budget. Commanders are never queued. Per-member protection uses `xcreature.is_unscriptable_se`, the offline-safe variant of the online path's `is_unscriptable` (story-id registry, `xdata.unscriptable_npcs` section hash, squad story-id — everything the online check reads except the game-object-only companion flag). Task-giver and bounty/hostage protection is squad-level via `is_protected`, gated by the offline guard's own `density_check_tasks`.
 
@@ -338,7 +338,7 @@ Service NPCs (traders, mechanics, medics, barmen — detected by section, commun
 
 ### Frame-cost cap
 
-`trim_npc` bounds each walk to `MAX_SCAN_ITEMS` (80): `classify` and `iterate_surplus` each forward the cap to `xinventory.iterate_inventory`, which stops the engine walk after that many items and reports the truncation as its second return value. This holds a single trim under the ~2ms frame ceiling (`code-standards` Performance budget) even on a pathological inventory. A stalker past the cap is a fat corpse-hoarder; the surplus beyond the window is trimmed on the next cooldown pass as releases shrink the inventory and the tail shifts into the first-`MAX_SCAN_ITEMS` slots (`m_all` iteration order is stable across the two walks, so `classify` and `iterate_surplus` cover the identical items). Truncation is logged as `capped=true` on the `[VISIT]` line when DEBUG is on. Capping only ever under-releases; it never touches a legitimate item.
+`trim_npc` bounds each walk to `MAX_SCAN_ITEMS` (80): `classify` and `iterate_surplus` each forward the cap to `xinventory.iterate_inventory`, which stops the engine walk after that many items and reports the truncation as its second return value. This holds a single trim under the ~2ms frame ceiling (`code-standards` Performance budget) even on a pathological inventory. `_run_npc` stamps the cooldown only when a trim released nothing: a trim that shed surplus leaves the NPC eligible to re-trim next cycle (a hoarder converges over the next cycles instead of waiting the full cooldown), while a clean NPC stamps and benches normally. A stalker past the cap is a fat corpse-hoarder; the surplus beyond the window is trimmed on the next cooldown pass as releases shrink the inventory and the tail shifts into the first-`MAX_SCAN_ITEMS` slots (`m_all` iteration order is stable across the two walks, so `classify` and `iterate_surplus` cover the identical items). Truncation is logged as `capped=true` on the `[VISIT]` line when DEBUG is on. Capping only ever under-releases; it never touches a legitimate item.
 
 ### Policy
 

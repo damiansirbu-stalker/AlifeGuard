@@ -50,8 +50,7 @@ function platform_status()
     return line .. " (fully compatible)", "full"
 end
 
--- MCM ui_hook_functor for the footer row: writes platform_status into the desc widget, colored by
--- verdict. Colors build lazily (GetARGB is absent under the static validator).
+-- Colors build lazily: GetARGB is nil under the static validator.
 local _footer_clr = nil
 function platform_functor()
     return function(_anchor, handlers)
@@ -69,9 +68,6 @@ function platform_functor()
 end
 
 function on_game_start()
-    -- No not-installed assert: with xlibs absent, ag_offline_guard.script:10 / ag_online_guard.script:9
-    -- nil-index on xlog.get_logger during axr_main's body-load pass (axr_main.script:319-328),
-    -- before any on_game_start runs. Only the outdated-xlibs case survives to be reported here.
     assert(xlibs and xlibs.is_compatible,
         "\n\n! [" .. MOD_NAME .. "] xlibs is outdated (no compatibility API).\n"..
         "! Update xlibs and restart the game.\n"..
@@ -106,8 +102,6 @@ function on_game_start()
         )
     end
 
-    -- The boot platform line and the MCM footer come from the same builder, so they never drift.
-    -- printf lands it in xray_*.log (the log reporters attach); xlog mirrors it to <mod>.log.
     local platform_line = (platform_status())
     printf("~ [%s] %s", MOD_NAME, platform_line)
     xlog.get_logger(MOD_NAME, { outfile = MOD_NAME:lower() .. ".log" })

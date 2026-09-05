@@ -19,11 +19,7 @@ local function _get_commander_tier(rec, squad_culling)
     return squad_culling and (rec.scripted and 4 or 3) or 1
 end
 
--- Sort squad members into 4 priority tiers by scripted status
--- Tier 1: non-commander from unscripted squads + orphans (first to go)
--- Tier 2: non-commander from scripted squads
--- Tier 3: commander from unscripted squads
--- Tier 4: commander from scripted squads (last resort)
+-- Sort squad members into 4 priority tiers by scripted status (see architecture.md "Priority Tiers")
 local function _build_tiers(squads, orphans, tiers, squad_culling)
     for _, rec in pairs(squads) do
         if rec.protected then goto next_squad end
@@ -107,9 +103,8 @@ local function _collect_linear(tier, queue, target, prioritize_distant)
     end
 end
 
---- Order cull candidates into a release queue by priority tier and fairness policy
---- 4 tiers (members before commanders, unscripted before scripted); within each tier either
---- round-robin across factions or a flat distance/random fill. Pure Lua, no engine calls.
+--- Order cull candidates into a release queue by priority tier and fairness policy. Pure Lua,
+--- no engine calls. Tiers and fill policy: architecture.md "Priority Tiers" / "Round-Robin Fairness".
 --- @param squads table group_id -> record { protected, scripted, category, removable, commander_entry }
 --- @param orphans table array of entries { id, dist_sq, is_stalker, section }
 --- @param target number number of entities to select

@@ -34,10 +34,7 @@ end
 
 -- SANITIZE
 
--- Clamp smart.already_spawned[k] corruption (value not a table, num not a number, num < 0).
--- Source: sim_squad_scripted.script:1028 over-decrement racing with external despawners.
--- Effect: prevents save CTD (smart_terrain.script:955-966 u8 write) and infinite spawn
--- (smart_terrain.script:1696 max>num decision). Pure Lua field writes; 0 luabind.
+-- Clamp already_spawned[k] corruption: non-table value, non-number num, num < 0 (architecture.md "Smart Sanitizer")
 local function _execute_smart_sanitize(smart)
     if not smart or not smart.already_spawned then return 0 end
     local fixed = 0
@@ -92,9 +89,7 @@ local function actor_on_update()
     _execute_sanitize()
 end
 
--- Reinit fires after STATE_Read restores already_spawned but before the alife pump
--- (bind_stalker.script:198-200). Sanitizing here prevents try_respawn from reading
--- corrupted counters during the 65534-objects-per-update burst on load.
+-- Fires after STATE_Read, before the alife load burst (bind_stalker.script:200); clamps before try_respawn reads.
 local function actor_on_reinit()
     if not cfg.sanitize_smarts then return end
     _execute_sanitize()

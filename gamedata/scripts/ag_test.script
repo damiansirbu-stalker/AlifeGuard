@@ -1,25 +1,4 @@
---- ag_test: console load/conformity driver for the offline guard, plus flow-integration
---- tests. Dormant until toggled.
----
---- Console:
----   run_string ag_test.run()   toggle the driver; it does everything on its own
----   run_string ag_test.ag_test_inventory_sanitization()   Inventory Guard flow test
----   run_string ag_test.ag_test_inventory_cap()   Inventory Guard walk-cap conformity test
----   run_string ag_test.ag_test_surplus_parity()   xinventory.collect_surplus vs classify+iterate_surplus drop-in proof
----   run_string ag_test.ag_test_torture()   TOGGLE a continuous torture loop (spawns squads + floods/trims every few seconds); run again to stop + clean up
----
---- On start it auto-picks a smart on a level away from the actor (so squads spawn offline
---- and the offline guard actually engages), then every 10s spawns one squad there through
---- SIMBOARD:create_squad and logs a conformity snapshot to alifeguard.log:
----   [DRIVER] spawned=N                          load climbing
----   [CONFORM] cell=L:X:Z count=C                independent per-cell offline count; must
----                                               match the guard's own [DENSITY] pass line
----   [CONFORM] hub=<smart> bodies=B cmd=K protected=P scripted=S named=M
----                                               watch bodies rise then drop to ~max after
----                                               [OFFLINE-CULL]; cmd/protected/named never fall
----   [CONFORM] audit=<smart> npc_info=I(stale J) arriving=A(stale K)
----                                               stale must be 0 after a cull
---- Toggle run() again to stop. Capped at 200 spawned squads.
+--- ag_test: dormant console harness driving the guards under load (run() / ag_test_torture() toggles, ag_test_inventory_* flow tests)
 
 local ipairs, type, next = ipairs, type, next
 local math_max, math_min, math_huge = math.max, math.min, math.huge
@@ -235,9 +214,7 @@ local function _pick_npc()
     return best
 end
 
--- alife_create_item returns:
---   single cse userdata for non-ammo
---   array of cse for ammo when t.ammo exceeds box_size (engine splits)
+-- Extract server ids from a create_item result: userdata for one cse, array when the engine splits ammo.
 local function _extract_ids(se)
     if not se then return {} end
     local se_type = type(se)
@@ -296,9 +273,6 @@ end
 
 -- MAX_SCAN_ITEMS mirrors the per-walk cap in ag_inventory_guard.script (local constant there).
 local INV_SCAN_CAP = 40
--- Continuous torture loop. Each tick floods TORTURE_TARGETS online stalkers with TORTURE_FLOOD
--- items and trims them, and spawns TORTURE_BATCH squads at the online + offline smart, up to
--- TORTURE_CAP total. Spawned-squad and injected-item ledgers let the loop tear itself down.
 local TORTURE_TARGETS  = 20
 local TORTURE_FLOOD    = 40
 local TORTURE_BATCH    = 4
@@ -334,10 +308,8 @@ local function _item_count(npc_id)
     return count
 end
 
---- Inventory sanitization: ag_inventory_guard.apply_policy end-to-end.
---- Inject 20 medkits + 1 stack of mismatched ammo (200 rounds) into the
---- nearest test-eligible NPC, run apply_policy, assert the per-category release
---- counts match the ceilings in ag_inventory_policy.ltx.
+--- Inventory sanitization end-to-end: inject 20 medkits + 1 mismatched-ammo stack into the nearest
+--- eligible NPC, run apply_policy, assert per-category releases match ag_inventory_policy.ltx ceilings.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_inventory_sanitization()
     local TEST = "inventory_sanitization"
@@ -372,7 +344,6 @@ function ag_test_inventory_sanitization()
     _log_info("[INJECT] medkit ids=%d (requested %d), %s ids=%d (requested 1 stack of %d rounds)",
         #medkit_ids, INJECT_MEDKIT, mismatched, #ammo_ids, INJECT_AMMO)
 
-    -- alife->CInventory sync takes one frame. Defer the assertion by 1 second.
     CreateTimeEvent(0, "ag_test_inv_sanit_phase2", 1, function()
         local npc2 = level.object_by_id(npc_id)
         if not npc2 then
@@ -459,12 +430,8 @@ local function _report_inventory_cap(before, mid, after, r1, r2)
     end
 end
 
---- Inventory scan cap: ag_inventory_guard.apply_policy under a laden inventory.
---- Injects 2x the per-walk cap of one over-max category into the nearest eligible NPC so the
---- total exceeds MAX_SCAN_ITEMS, then trims twice. Asserts the first pass is truncated (the NPC
---- is still over the cap after it, so no single trim walked the whole inventory), the second
---- pass releases more (convergence as the tail shifts into the first-N window), and both walks
---- completed with a reported dt. This is the frame-cost bound the cap exists to guarantee.
+--- Inventory scan cap: inject 2x the walk cap into the nearest eligible NPC, trim twice, assert the
+--- first pass truncates and the second releases more (convergence). The frame-cost bound the cap guarantees.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_inventory_cap()
     local TEST = "inventory_cap"
@@ -488,7 +455,6 @@ function ag_test_inventory_cap()
     end
     _log_info("[INJECT] medkit x%d (ids=%d)", INJECT, #ids)
 
-    -- alife->CInventory sync takes one frame. Defer the assertion by 1 second.
     CreateTimeEvent(0, "ag_test_inventory_cap_phase2", 1, function()
         local npc2 = level.object_by_id(npc_id)
         if not npc2 then
@@ -556,13 +522,8 @@ local function _compare_surplus(ref, new)
     return true, "identical"
 end
 
---- Surplus-walk parity: xinventory.collect_surplus vs classify + iterate_surplus.
---- Injects an over-max medkit pile (unit=1 partial release) and a multi-stack mismatched-ammo pile
---- (unit>1 multi release) into the nearest eligible NPC, then runs BOTH walkers on the same
---- unreleased inventory with a non-releasing recording callback and asserts they produce the
---- identical released stream (item id, category, section, unit, in m_all order), the identical
---- post-release per-key counts, and the identical hit_cap. The drop-in proof for the apply_policy
---- migration to the single-walk form. Runs read-only (nothing released); injected items cleaned up.
+--- Surplus-walk parity: assert xinventory.collect_surplus produces the identical released stream,
+--- counts, and hit_cap as classify + iterate_surplus on the same inventory. Read-only proof.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_surplus_parity()
     local TEST = "surplus_parity"
@@ -585,7 +546,6 @@ function ag_test_surplus_parity()
         return
     end
 
-    -- unit=1 partial-release pile + unit>1 multi-stack pile (mismatched ammo -> ammo_not_equipped, max 0)
     local medkit_ids = _inject(npc, "medkit", 20)
     local ammo_ids = _inject(npc, mismatched, 4, 60)
     local inject_ids = {}
@@ -594,7 +554,6 @@ function ag_test_surplus_parity()
     _log_info("[SETUP] npc=%d name=%s injected medkit=%d ammo=%s (4 stacks x60, ids=%d)",
         npc_id, npc_name, #medkit_ids, mismatched, #ammo_ids)
 
-    -- alife->CInventory sync takes one frame. Defer the comparison by 1 second.
     CreateTimeEvent(0, "ag_test_surplus_parity_phase2", 1, function()
         local npc2 = level.object_by_id(npc_id)
         if not npc2 then
@@ -608,7 +567,6 @@ function ag_test_surplus_parity()
         local policy = xinventory.load_policy("alifeguard\\ag_inventory_policy.ltx", { "ag_inventory_policy" })
         local rules = policy.ag_inventory_policy.rules
 
-        -- Reference: classify then iterate_surplus, recording only (on_surplus releases nothing).
         local ref_stream = {}
         local ref_counts, ref_hit = xinventory.collect_policy_counts(npc2, opts, rules, INV_SCAN_CAP)
         xinventory.iterate_surplus(npc2, opts, {
@@ -619,7 +577,6 @@ function ag_test_surplus_parity()
             end,
         })
 
-        -- Candidate: collect_surplus, recording only, on the same untouched inventory.
         local new_stream = {}
         local new_released, new_counts, new_hit = xinventory.collect_surplus(npc2, opts, {
             rules = rules, max_items = INV_SCAN_CAP,
@@ -760,13 +717,8 @@ local function _torture_tick()
     return false
 end
 
---- Continuous multi-system torture LOOP (toggle). On: every TORTURE_TICK_SEC it spawns another
---- batch of squads (online near actor + offline on another level) up to a cap, and floods + trims
---- every online stalker, so Online density, Offline density, and Inventory trim run under sustained
---- load. Each tick logs to alifeguard.log next to the guards' own lines. Off (run again): stops and
---- tears down -- despawns surviving spawned squads, releases surviving injected items, and the
---- teardown line shows how many the guards culled/trimmed on their own. Set density_trigger /
---- density_target low in MCM first so the culls fire.
+--- Continuous multi-system torture LOOP (toggle): each tick spawns squads online + offline and
+--- floods/trims every online stalker, so all guards run under sustained load. Run again to tear down.
 --- @novalidate(code.unused_export, reason:"console command")
 function ag_test_torture()
     if _torture_active then

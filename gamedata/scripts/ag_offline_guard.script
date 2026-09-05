@@ -18,10 +18,6 @@ local DESPAWN_JOB = "ag_despawn"
 local TIME_EVENT_ID = "ag_offline_guard"
 local TIME_EVENT_ACTION = "density_sweep"
 
--- Fully decoupled from the online guard: own trigger/target/task-protection, own keys.
--- trigger = cell body count that flags a cell as overcrowded; target = count to thin it to.
--- Both absolute (not derived from the online max), so offline can cull as hard as wanted,
--- including below the online cap (target as low as 0 = strip to lone commanders).
 local cfg = {
     density_enabled = true,
     density_trigger = 120,
@@ -34,8 +30,6 @@ local cfg = {
 
 local _protection_opts = {}
 
--- Pass state: id snapshot + cursor (ap_core_callbacks._squad_tick shape), cells keyed by
--- level:cell_x:cell_z at switch_distance granularity.
 local _ids = nil
 local _cursor = 0
 local _cell_size = 0
@@ -65,8 +59,6 @@ local function load_config()
     cfg.protect_scripted = get("protect_scripted")
     cfg.log_level = get("log_level")
 
-    -- A target above the trigger would fire on cells that yield no removals; clamp so the
-    -- lever is always meaningful (thin at least to the trigger).
     if cfg.density_target > cfg.density_trigger then cfg.density_target = cfg.density_trigger end
 
     log.set_level(cfg.log_level)
@@ -92,9 +84,8 @@ local function _reset_pass()
     return count
 end
 
--- Bin one offline squad into its density cell by the squad's own position. Offline, the
--- group is the scheduled entity: brain().update() moves it and members mirror it, so
--- squad.position IS the bodies' position (alife_online_offline_group.cpp:73-87).
+-- Bin one offline squad into its density cell by the squad's own position.
+-- @src alife_online_offline_group.cpp:73-87: offline, squad.position IS the bodies' position.
 local function _collect_squad(squad_id, graph, actor_level)
     local stats = _scan_stats
     local squad = xobject.get_se(squad_id)
@@ -110,8 +101,6 @@ local function _collect_squad(squad_id, graph, actor_level)
     local pos = squad.position
     if not pos then stats.bad_gvid = stats.bad_gvid + 1; return end
     stats.binned = stats.binned + 1
-    -- Cell partitioning via xlevel.build_cell_key: the shared grid convention, so the crowd
-    -- gates reading the same-shaped cells elsewhere compare like for like.
     local key = xlevel.build_cell_key(level_id, pos, _cell_size)
     if not key then stats.bad_gvid = stats.bad_gvid + 1; return end
     local cell = _cells[key]
@@ -147,21 +136,14 @@ local function _find_cullable_squad(squad_id)
     if not squad then stats.gone = stats.gone + 1; return nil end
     if squad.online then stats.online = stats.online + 1; return nil end
     if squad:npc_count() <= 1 then stats.lone = stats.lone + 1; return nil end
-    -- Companions are always protected, ungated by density_check_tasks (never culled offline either).
     if xsquad.is_companion(squad) then stats.protected = stats.protected + 1; return nil end
     if xsquad.is_protected(squad, _protection_opts) then stats.protected = stats.protected + 1; return nil end
     return squad
 end
 
 
--- Detach-before-destroy, in order: per-member named/story protection via
--- xcreature.is_unscriptable_se (offline-safe), then clear the smart's per-NPC bookkeeping by
--- the correct key (vanilla remove_npc passes the squad, leaving npc_info[npc_id] holding a
--- dead server-object reference), then alife_release -> squad:remove_npc, whose
--- unregister_member detaches from m_members BEFORE safe_release_manager destroys the entity.
--- A direct alife():release() on a member leaves a dangling m_members pointer that the group's
--- update() dereferences (engine has no member auto-detach on release). Squad resolved fresh
--- in the drain frame, so member id and commander id are current (no build/drain staleness).
+-- Detach-before-destroy one offline squad member: named/story skip (is_unscriptable_se), clear the
+-- smart's per-NPC bookkeeping, then alife_release. Order and engine rationale: architecture.md "Release path (offline)".
 -- @return boolean released, boolean member_is_stalker
 local function _release_offline_member(member_id, commander_id)
     if member_id == commander_id then return false end
@@ -179,14 +161,9 @@ local function _release_offline_member(member_id, commander_id)
     return true, member_is_stalker
 end
 
--- One squad per frame: resolve fresh, release its surplus non-commander members down to the
--- shared per-cell budget. Both the expensive resolution (is_protected) and the releases are
--- frame-spread, so no single frame examines more than one squad. Commanders always kept.
--- Member ids are snapshotted BEFORE any release: alife_release -> remove_npc ->
--- unregister_member calls m_members.erase, which invalidates the return_stl_iterator that
--- squad_members() holds (xrserver_objects_alife_monsters_script3.cpp squad_members binding).
--- Releasing inside the live iterator is undefined behavior. Same reason Warfare snapshots
--- (sim_offline_combat.script:727).
+-- One squad per frame: resolve fresh, release surplus non-commander members to the cell budget.
+-- Member ids are snapshotted before any release (commanders always kept).
+-- @src xrserver_objects_alife_monsters_script3.cpp: squad_members() returns an STL iterator that release erases.
 local function _execute_squad_cull(item, acc)
     local budget = item.budget
     if budget.n <= 0 then return end
@@ -244,9 +221,8 @@ local function _add_cell_work(cell, work)
     end
 end
 
--- Build the work list pure-Lua (no luabind): flatten over-trigger cells into {squad_id, budget}
--- items sharing a per-cell budget table. All squad resolution and protection is deferred into
--- the xslice, one squad per frame, so this synchronous step stays flat regardless of cull size.
+-- Build the cull work list pure-Lua: flatten over-trigger cells into {squad_id, budget} items.
+-- Resolution, protection, and release are deferred to the xslice, one squad per frame.
 local function _try_cull()
     if xslice.is_active(DESPAWN_JOB) then return end
     local actor_level = xlevel.get_actor_level_id()
@@ -256,9 +232,6 @@ local function _try_cull()
     build_timer:start()
     local work = {}
     local cells_over = 0
-    -- cell.count > #squads requires at least one removable (non-commander) body. The drain keeps
-    -- every commander, so a cell already at its one-per-squad floor can never drop under trigger;
-    -- without this gate it re-flags every pass and drains to release nothing (offline hysteresis).
     for _, cell in pairs(_cells) do
         if cell.count > trigger and cell.level ~= actor_level and cell.count > #cell.squads then
             cells_over = cells_over + 1
