@@ -1,20 +1,34 @@
 # AlifeGuard Architecture
 
-A-Life performance and stability for STALKER Anomaly. Keeps online entity count under a configurable threshold by releasing NPCs back to offline simulation, and bounds NPC item inventories against the engine's alife-ID cap. Squad-aware: thins squad members before touching commanders, spreads removals evenly across factions and mutant types via round-robin, uses hysteresis to prevent oscillation. Releases are frame-spread (1 per frame via xslice) to bound `safe_release_manager`'s per-frame work and keep cleanup smooth.
+A-Life performance and stability for STALKER Anomaly.
+It keeps the online entity count under a configurable threshold by releasing NPCs back to offline simulation, and it bounds NPC item inventories against the engine's alife-ID cap.
+It is squad-aware: it thins squad members before touching commanders and spreads removals evenly across factions and mutant types through round-robin. Hysteresis prevents oscillation.
+Releases are frame-spread, 1 per frame through xslice, to bound the per-frame work of `safe_release_manager` and keep cleanup smooth.
 
 Built on xlibs (xsquad, xcreature, xslice, xprofiler, xtable, xlog, xinventory, xsmart, xtime).
 
-Runtime split: **ag_online_guard** (online culling), **ag_offline_guard** (offline density culling), **ag_smart_sanitizer** (respawn-counter hygiene), **ag_inventory_guard** (NPC item-inventory bounding), and **ag_queue** (the online guard's pure release-queue strategy). File and MCM-tab names share one vocabulary: Online Guard, Offline Guard, Smart Sanitizer, Inventory Guard.
+Runtime split into five modules. **ag_online_guard** does online culling and **ag_offline_guard** does offline density culling.
+**ag_smart_sanitizer** keeps respawn-counter hygiene, and **ag_inventory_guard** bounds NPC item inventories. **ag_queue** is the online guard's pure release-queue strategy.
+File and MCM-tab names share one vocabulary: Online Guard, Offline Guard, Smart Sanitizer, Inventory Guard.
 
-Part of a three-mod alife family: **AlifePlus** extends A-Life with new behaviors, **AlifeBalance** modulates rates and counts the engine already owns and never releases anything, **AlifeGuard** owns all release work, entities and items, and repairs alife state (this mod).
+Part of a three-mod alife family. **AlifePlus** extends A-Life with new behaviors, and **AlifeBalance** modulates rates and counts the engine already owns without releasing anything.
+**AlifeGuard**, this mod, owns all release work for entities and items and repairs alife state.
 
 ---
 
 ## Invariants
 
-- **No steady-state per-frame work.** Ongoing work runs on a throttled tick (a fixed interval) or on a discrete engine event (hit, shot, spawn, option change); it never runs continuously every frame. A per-frame engine callback (`npc_on_update`) is used only as a carrier that throttles before doing anything, and we never place our code on a path the engine runs every frame (a visibility or fire functor). Frame-spreading a bounded one-off batch (xslice, 1 item per frame) to avoid a single-frame spike is the one allowed use of the frame; it completes and stops. Full rule and rationale: `doc/standards/stalker-code.md` "No Per-Frame Work".
-- **Performance first.** Performance is the top priority and outranks features. A feature that cannot meet the budget is reworked, replaced, dropped, or removed with an X-Ray engine modification — never kept at the cost of the budget. Only correctness and "never break base gameplay" rank above it. See `doc/standards/stalker-code.md` "Performance is the priority".
-- **Use the engine, don't work around it.** Every capability comes from the engine and the Anomaly layer first, always through xlibs; our own code enters only where stock behavior falls short, escalating nudge / correct then, as a last resort, changing the layer itself (an engine modification or a full-file override). Never reimplement in script what the engine already does. See `doc/standards/stalker-code.md` "Use the engine, don't work around it".
+- **No steady-state per-frame work.** Ongoing work runs on a throttled interval or a discrete engine event (hit, shot, spawn, option change). It never runs continuously every frame.
+  A per-frame callback (`npc_on_update`) is only a carrier that throttles before doing anything, and we never put our code on a path the engine runs every frame, such as a visibility or fire functor.
+  Frame-spreading a bounded one-off batch (xslice, 1 item per frame) to avoid a single-frame spike is the one allowed use of the frame.
+  It completes and stops. Full rule: `doc/standards/stalker-code.md` "No Per-Frame Work".
+- **Performance first.** Performance is the top priority and outranks features.
+  A feature that cannot meet the budget is reworked or removed, even with an X-Ray engine modification. It is never kept at the cost of the budget.
+  Only correctness and "never break base gameplay" rank above it. See `doc/standards/stalker-code.md` "Performance is the priority".
+- **Use the engine, don't work around it.** Every capability comes from the engine and the Anomaly layer first, always through xlibs.
+  Our own code enters only where stock behavior falls short.
+  It escalates from a nudge to a correction, and as a last resort changes the layer itself with an engine modification or a full-file override.
+  Never reimplement in script what the engine already does. See `doc/standards/stalker-code.md` "Use the engine, don't work around it".
 
 ---
 
@@ -54,7 +68,9 @@ FRAMES 1..N: xslice "ag_despawn", step=1
 
 ### Why
 
-Releasing individual NPCs by distance destroys entire squads. `alife_release_id(npc)` routes through `_g.script:alife_release` -> `squad:remove_npc(id, true)`. When `npc_count()` hits 0, the squad is deleted, `already_spawned` is decremented, and the originating smart terrain gets a free respawn slot. This creates a feedback loop: AG culls -> smart terrain respawns -> AG culls again.
+Releasing individual NPCs by distance destroys entire squads. `alife_release_id(npc)` routes through `_g.script:alife_release` -> `squad:remove_npc(id, true)`.
+When `npc_count()` hits 0 the squad is deleted and `already_spawned` is decremented. The originating smart terrain then gets a free respawn slot.
+This creates a feedback loop: AG culls, the smart terrain respawns, and AG culls again.
 
 ### How
 
@@ -85,20 +101,24 @@ Two layers. Squad-level first, per-member fallback for named NPCs.
 
 ### Squad-level: xsquad.is_protected
 
-`xsquad.is_companion` is checked first and always protects, ungated by `check_tasks`: a recruited companion is never culled by either guard. Then a single `is_protected` call per squad, checks (in order):
+`xsquad.is_companion` is checked first and always protects, ungated by `check_tasks`. A recruited companion is never culled by either guard.
+Then a single `is_protected` call per squad checks, in order:
 
 1. **Permanent** (cached, session lifetime): story_id, trader, named NPC commander, empty squad
 2. **Active role** (dynamic, if `check_tasks` enabled): task_giver, companion
 3. **Task target** (dynamic, if `check_tasks` enabled): task_squads hash + current_target objective id (squad or any member) + member bounty/hostage
-4. **Scripted** (if `protect_scripted` enabled, default on): scripted_target, action_condlist, or random_targets. Protects any squad a script is steering (outpost services, chase targets, mod-spawned guards), in both the online and offline guards.
+4. **Scripted** (if `protect_scripted` on, default): scripted_target, action_condlist, or random_targets. Protects any script-steered squad (outpost services, chase targets, mod-spawned guards).
 
-Protected results cached with TTL (120s, positive-only). Uncached squads always get live check. False negatives impossible. False positives harmless (squad stays online slightly longer, clears on TTL expiry). Cache cleared on MCM config change.
+Protected results are cached with a TTL (120s, positive-only), and uncached squads always get a live check.
+False negatives are impossible, and false positives are harmless. The squad stays online slightly longer and clears on TTL expiry. The cache clears on an MCM config change.
 
-`is_scripted` is a protection check only when `protect_scripted` is on (the default): a scripted squad is then never culled by either guard. Turn it off and scripted squads are cullable again, deprioritized to tier 2/4 (see Priority Tiers) so unscripted squads go first.
+`is_scripted` is a protection check only when `protect_scripted` is on, the default. A scripted squad is then never culled by either guard.
+Turned off, scripted squads become cullable again, deprioritized to tier 2 or 4 (see Priority Tiers). Unscripted squads then go first.
 
 ### Per-member: xcreature.is_unscriptable
 
-After squad-level check passes, each non-commander member is checked individually. Catches named NPCs (traders, mechanics, guides) who are not the squad commander. Weak-key cache, session lifetime, 0 luabind on hit.
+After the squad-level check passes, each non-commander member is checked individually. This catches named NPCs (traders, mechanics, guides) who are not the squad commander.
+It uses a weak-key cache for the session lifetime and costs 0 luabind on a hit.
 
 ---
 
@@ -113,7 +133,8 @@ Entities are sorted into 4 tiers. Each tier is fully exhausted before the next i
 | 3 | Commanders from unscripted squads | Kills the squad, opens respawn slot |
 | 4 | Commanders from scripted squads | Last resort: kills a mod-controlled squad |
 
-Most cycles never leave tier 1. Heavy load reaches tier 2. Tiers 3-4 are edge cases (more lone-commander squads online than max). With `protect_scripted` on (the default) scripted squads are protected and never reach tiers 2 or 4, so those tiers apply only when it is off.
+Most cycles never leave tier 1. Heavy load reaches tier 2. Tiers 3 and 4 are edge cases, with more lone-commander squads online than the max.
+With `protect_scripted` on, the default, scripted squads are protected and never reach tiers 2 or 4. Those tiers apply only when it is off.
 
 ---
 
@@ -147,9 +168,14 @@ Without hysteresis: cull to 80, 2 NPCs respawn, cull again next cycle. With buff
 
 ## Frame-Spread Release
 
-xslice (xlibs) processes the release queue at 1 entity per frame via `AddUniqueCall`. Not multithreading -- cooperative time-slicing on X-Ray's single Lua thread.
+xslice (xlibs) processes the release queue at 1 entity per frame through `AddUniqueCall`. This is cooperative time-slicing on X-Ray's single Lua thread, not multithreading.
 
-Why 1 per frame: `safe_release_manager` (Alundaio, `safe_release_manager.script:4-7`) handles the binder-still-alive race between `release` and `net_destroy` by deferring each entity's actual release across several frames (`set_switch_online(false)` + `set_switch_offline(true)` + `switch_offline()`, then `sim:release` once the binder is gone). It drains its `objects_to_release` dict via `AddUniqueCall` once per frame and walks all pending entries on each pass. A synchronous N-entity release loop pushes N entries in one frame, so every subsequent drain pass does N `switch_offline` calls until the binders finish. xslice's 1-per-frame pacing keeps `objects_to_release` at depth 1, so per-frame cost stays flat. Intra-slice deaths (entity died between collection and release) fail the `alife_object(id)` verify and are skipped at zero cost.
+Why 1 per frame: `safe_release_manager` (Alundaio, `safe_release_manager.script:4-7`) handles the binder-still-alive race between `release` and `net_destroy`.
+It defers each entity's actual release across several frames (`set_switch_online(false)` + `set_switch_offline(true)` + `switch_offline()`, then `sim:release` once the binder is gone).
+It drains its `objects_to_release` dict through `AddUniqueCall` once per frame and walks all pending entries on each pass.
+A synchronous N-entity release loop pushes N entries in one frame, so every later drain pass does N `switch_offline` calls until the binders finish.
+xslice's 1-per-frame pacing keeps `objects_to_release` at depth 1, so per-frame cost stays flat.
+Intra-slice deaths fail the `alife_object(id)` verify and are skipped at zero cost.
 
 Release path per entity:
 ```
@@ -171,10 +197,12 @@ Stale entity IDs (entity died between collection and release): `alife_object(id)
 
 ### Why
 
-`smart.already_spawned[k].num` underflows when more than one release path decrements the counter. Source: engine `sim_squad_scripted.script:1028` (squad on_unregister) racing with external despawners (e.g. Grok's `grok_dynamic_despawner.script:289` calling `alife_release`). Two consequences:
+`smart.already_spawned[k].num` underflows when more than one release path decrements the counter.
+The source is engine `sim_squad_scripted.script:1028` (squad on_unregister) racing with external despawners, such as Grok's `grok_dynamic_despawner.script:289` calling `alife_release`.
+Two consequences:
 
 1. Save CTD. STATE_Write at `smart_terrain.script:955` casts `num` to `u8`. Negative values produce `CRITICAL ERROR: write u8 (-1)`.
-2. Infinite spawn. Respawn gate at `smart_terrain.script:1696` reads `max > num`. Negative `num` makes the comparison always true; the smart spawns every cycle without bound.
+2. Infinite spawn. Respawn gate at `smart_terrain.script:1696` reads `max > num`. Negative `num` makes the comparison always true, so the smart spawns every cycle without bound.
 
 ### How
 
@@ -187,12 +215,15 @@ Periodic walk over `SIMBOARD.smarts` clamping three invariant violations on each
 | C | `v.num < 0` | `v.num = 0` |
 
 Hooks:
-- `actor_on_reinit` fires after STATE_Read (data live) and before `bind_stalker.script:200` runs `set_objects_per_update(65534)` (engine load burst). Cleans corrupted save data before `try_respawn` reads it.
-- `actor_on_update` interval gate fires every 300 seconds during play. Catches mid-session corruption from misbehaving mods still installed. Runs on the Smart Sanitizer's own toggle, independent of the Online Guard's `enabled` flag, so disabling population culling never leaves save-CTD counters unclamped.
+- `actor_on_reinit` fires after STATE_Read (data live) and before `bind_stalker.script:200` runs `set_objects_per_update(65534)` (engine load burst).
+  It cleans corrupted save data before `try_respawn` reads it.
+- `actor_on_update` interval gate fires every 300 seconds during play, catching mid-session corruption from misbehaving mods still installed.
+  It runs on the Smart Sanitizer's own toggle, independent of the Online Guard's `enabled` flag, so disabling population culling never leaves save-CTD counters unclamped.
 
 ### Cost
 
-Pure Lua walk. 0 luabind in the inner loop. `smart:name()` is lazy: called once per smart only if a fix fires on that smart. Sub-millisecond for 50-200 smarts in a healthy save (no fixes). Worst case (every smart corrupted, 200 smarts): ~2ms.
+A pure Lua walk with 0 luabind in the inner loop. `smart:name()` is lazy, called once per smart only if a fix fires on that smart.
+It stays sub-millisecond for 50-200 smarts in a healthy save with no fixes. The worst case, every smart corrupted across 200 smarts, is about 2ms.
 
 ---
 
@@ -200,36 +231,65 @@ Pure Lua walk. 0 luabind in the inner loop. `smart:name()` is lazy: called once 
 
 ### Why
 
-`_collect_online` sees only online entities. An offline hub on another level can accumulate dozens of squads that all come online at once on fast-travel, spiking well past `max` before the online guard's first cycle. The Offline Guard measures offline density per region and shaves badly crowded regions to the online ceiling before the player arrives.
+`_collect_online` sees only online entities.
+An offline hub on another level can accumulate dozens of squads that all come online at once on fast-travel, spiking well past `max` before the online guard's first cycle.
+The Offline Guard measures offline density per region and shaves badly crowded regions to the online ceiling before the player arrives.
 
 ### Scan
 
-Time-event tick (`CreateTimeEvent`/`ResetTimeEvent`, no per-frame carrier), `density_interval` seconds apart. Each tick bins 25 squads from a `xsquad.collect_squad_ids` snapshot via a circular cursor; a full pass spreads across ticks at constant cost regardless of total squad count.
+The scan runs on a time-event (`CreateTimeEvent`/`ResetTimeEvent`, no per-frame carrier), `density_interval` seconds apart.
+Each pass bins 25 squads from a `xsquad.collect_squad_ids` snapshot through a circular cursor. A full pass spreads across passes at constant cost regardless of total squad count.
 
-Per squad: skip online, skip empty, skip the actor's level; bin `squad:npc_count()` into a cell keyed `level_id:floor(x/D):floor(z/D)` with `D = sim:switch_distance()`. The squad's own `position`/`m_game_vertex_id` is used directly: offline, the engine moves the group and syncs every member's position FROM it (`CSE_ALifeOnlineOfflineGroup::update`, alife_online_offline_group.cpp:73-87), so the group fields are the bodies' physical position. `[DENSITY]` lines at DEBUG per completed pass.
+Per squad, it skips online, empty, and actor-level squads, then bins `squad:npc_count()` into a cell keyed `level_id:floor(x/D):floor(z/D)` with `D = sim:switch_distance()`.
+The squad's own `position` and `m_game_vertex_id` are used directly.
+Offline, the engine moves the group and syncs every member's position from it (`CSE_ALifeOnlineOfflineGroup::update`, alife_online_offline_group.cpp:73-87).
+The group fields are then the bodies' physical position.
+A `[DENSITY]` line is logged at DEBUG per completed pass.
 
 ### Cull
 
-At pass end, cells with `count > density_trigger` on non-actor levels are thinned by `count - density_target` members. A third gate `count > #squads` requires at least one removable non-commander body: the drain keeps every commander, so a cell already at its one-per-squad floor can never drop under trigger, and without this gate it re-flags every pass and drains to release nothing (offline hysteresis). The synchronous step is only a pure-Lua work list: each over-trigger cell contributes a shared budget table (`count - target`) and one `{squad_id, budget}` item per squad, with zero luabind. All squad resolution, protection, and release is deferred into the shared xslice `"ag_despawn"` job, one squad per frame, so no single frame examines more than one squad and the build stays flat regardless of cull size.
+At pass end, cells with `count > density_trigger` on non-actor levels are thinned by `count - density_target` members.
+A third gate `count > #squads` requires at least one removable non-commander body. The drain keeps every commander, so a cell already at its one-per-squad floor can never drop under trigger.
+Without this gate it re-flags every pass and drains to release nothing, which is offline hysteresis.
+The synchronous step is only a pure-Lua work list: each over-trigger cell contributes a shared budget table (`count - target`) and one `{squad_id, budget}` item per squad, with zero luabind.
+All squad resolution, protection, and release is deferred into the shared xslice `"ag_despawn"` job, one squad per frame.
+No single frame examines more than one squad, so the build stays flat regardless of cull size.
 
-Per squad in its frame: resolve fresh, skip if gone/online/lone/protected (`xsquad.is_protected`), then release its non-commander members down to the cell budget. Commanders are never queued. Per-member protection uses `xcreature.is_unscriptable_se`, the offline-safe variant of the online path's `is_unscriptable` (story-id registry, `xdata.unscriptable_npcs` section hash, squad story-id — everything the online check reads except the game-object-only companion flag). Task-giver and bounty/hostage protection is squad-level via `is_protected`, gated by the offline guard's own `density_check_tasks`.
+Per squad in its frame it resolves fresh. It skips squads that are gone, online, lone, or protected (`xsquad.is_protected`).
+It then releases its non-commander members down to the cell budget. Commanders are never queued.
+Per-member protection uses `xcreature.is_unscriptable_se`, the offline-safe variant of the online path's `is_unscriptable`.
+That variant reads the story-id registry, the `xdata.unscriptable_npcs` section hash, and the squad story-id, everything the online check reads except the game-object-only companion flag.
+Task-giver and bounty/hostage protection is squad-level through `is_protected`, gated by the offline guard's own `density_check_tasks`.
 
-No round-robin across factions (that needs the whole member set built at once, which defeats frame-spreading). It is unnecessary offline: every squad keeps its commander and survives, so no faction is wiped and there is nothing to spread fairly. Cells are processed in scan order. The `xslice.is_active` guard means the offline and online culls never run despawn jobs concurrently; a cull that outlasts the next scan pass simply defers the next cull until it finishes.
+No round-robin across factions, which would need the whole member set built at once and defeat frame-spreading.
+It is unnecessary offline: every squad keeps its commander and survives. No faction is wiped, and nothing needs spreading.
+Cells are processed in scan order. The `xslice.is_active` guard means the offline and online culls never run despawn jobs concurrently.
+A cull that outlasts the next scan pass simply defers the next cull until it finishes.
 
-Fully decoupled from the online guard. `density_trigger` (when a region is overcrowded) and `density_target` (what to thin it to) are absolute body counts, not derived from the online `max`. Target can go as low as 0 (strip a region to lone commanders), so offline can be culled harder than the online cap if wanted. A target above the trigger is clamped to the trigger. The offline pass reads none of the online guard's keys.
+Fully decoupled from the online guard. `density_trigger` (when a region is overcrowded) and `density_target` (what to thin it to) are absolute body counts, not derived from the online `max`.
+Target can go as low as 0 to strip a region to lone commanders, so offline can be culled harder than the online cap if wanted.
+A target above the trigger is clamped to the trigger. The offline pass reads none of the online guard's keys.
 
 ### Release path (offline)
 
-The squad is resolved fresh in its own drain frame, so member id and commander id are current — there is no build/drain staleness window (the squad could have gone online, dissolved, or lost its commander between the pass end and this frame, all caught by the fresh `_cull_squad` resolve). Per member: skip if it is the commander, gone, online, or named/story (`is_unscriptable_se`). Then, in order:
+The squad is resolved fresh in its own drain frame, so member id and commander id are current, with no build/drain staleness window.
+The squad could have gone online, dissolved, or lost its commander between the pass end and this frame, all caught by the fresh `_cull_squad` resolve.
+Per member, skip if it is the commander, gone, online, or named/story (`is_unscriptable_se`). Then, in order:
 
-1. `smart:unregister_npc(se)` with the NPC when `smart_terrain_id() ~= 65535` - clears the smart's `npc_info[npc_id]`/`arriving_npc[npc_id]` by the correct key and sets `m_smart_terrain_id = 0xffff`. Vanilla `remove_npc` passes the squad instead, which would leave a stale `npc_info` entry holding a destroyed server-object reference.
-2. `alife_release(se)` - routes to `squad:remove_npc(id, true)`: `unregister_member` detaches the engine-side member pointer BEFORE `safe_release_manager` destroys the entity. Offline entities have no binder, so the release completes on the manager's next pass.
+1. `smart:unregister_npc(se)` with the NPC when `smart_terrain_id() ~= 65535`.
+   This clears the smart's `npc_info[npc_id]` and `arriving_npc[npc_id]` by the correct key and sets `m_smart_terrain_id = 0xffff`.
+   Vanilla `remove_npc` passes the squad instead, which would leave a stale `npc_info` entry holding a destroyed server-object reference.
+2. `alife_release(se)` routes to `squad:remove_npc(id, true)`. `unregister_member` detaches the engine-side member pointer before `safe_release_manager` destroys the entity.
+   Offline entities have no binder, so the release completes on the manager's next pass.
 
-A squad's surplus members release together in its one frame (bounded by squad size, ~9 max, all offline so no `switch_offline` dance and no binder wait). One squad per frame keeps per-frame work bounded and the synchronous build off the hot path.
+A squad's surplus members release together in its one frame, bounded by squad size at about 9 max, all offline so no `switch_offline` dance and no binder wait.
+One squad per frame keeps per-frame work bounded and the synchronous build off the hot path.
 
-Direct `alife():release()` on a squad member is forbidden: the group's `update()` writes through raw `m_members` pointers and the engine has no member auto-detach on release (use-after-free).
+Direct `alife():release()` on a squad member is forbidden.
+The group's `update()` writes through raw `m_members` pointers and the engine has no member auto-detach on release (use-after-free).
 
-Keeping the commander keeps `npc_count() > 0`, so `remove_npc` never reaches its squad-deletion branch: the squad stays in SIMBOARD, `already_spawned` stays untouched, no respawn feedback.
+Keeping the commander keeps `npc_count() > 0`, so `remove_npc` never reaches its squad-deletion branch.
+The squad stays in SIMBOARD, `already_spawned` stays untouched, and there is no respawn feedback.
 
 Full design record with engine citations: `stalker-dev/doc/todo/todo-alifeguard-offline-density.md`.
 
@@ -254,7 +314,11 @@ Total: ~9-10 luabind per entity (production), ~1-6 per squad. Sub-millisecond fo
 
 ### Why the all-objects walk, not a creature-only iterator
 
-Iterating only creatures is tempting: stalkers are free from `db.OnlineStalkers`, so only monsters would need tracking. It was tried (n12) and reverted. Monsters have no engine-maintained list, so it needs a script-maintained online-monster set, and that set has no reliable removal: neither `monster_on_net_destroy` nor `server_entity_on_unregister` fires on the guard's own script cull, so it accumulates ids of already-deleted monsters without bound (`skipped` reached 117 under load with the monsters confirmed deleted). The saving is one sub-2ms frame every 10-30s, already inside budget. A stateless walk holds no state between cycles and cannot leak, which is worth more than that.
+Iterating only creatures is tempting: stalkers are free from `db.OnlineStalkers`, so only monsters would need tracking. It was tried (n12) and reverted.
+Monsters have no engine-maintained list, so it needs a script-maintained online-monster set, and that set has no reliable removal.
+Neither `monster_on_net_destroy` nor `server_entity_on_unregister` fires on the guard's own script cull, so it accumulates ids of already-deleted monsters without bound.
+Under load `skipped` reached 117 with the monsters confirmed deleted.
+The saving is one sub-2ms frame every 10-30s, already inside budget. A stateless walk holds no state between cycles and cannot leak, which is worth more than that.
 
 ### Release (frames 1-N)
 
@@ -268,19 +332,33 @@ Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frame
 
 ## Inventory Guard
 
-The goal is to let the player keep vanilla NPC corpse looting enabled. Vanilla looting pays two costs over long sessions: jackpot bodies (one stalker carrying a vendor run of gear), and creep toward the engine's 65535 alife-ID cap as every looted item consumes one ID (vanilla Anomaly warns at 64000 via `alife_on_limit`). Anti-loot addons (NPC Stop Looting Dead Bodies, Weapons Drop on Bodies, BoltBeGone) sidestep both by blocking or rewriting the loot path. Inventory Guard bounds hoarding at the source instead, so anti-loot addons are no longer needed.
+The goal is to let the player keep vanilla NPC corpse looting enabled.
+Vanilla looting pays two costs over long sessions. First, jackpot bodies, where one stalker carries a vendor run of gear.
+Second, creep toward the engine's 65535 alife-ID cap as every looted item consumes one ID (vanilla Anomaly warns at 64000 through `alife_on_limit`).
+Anti-loot addons (NPC Stop Looting Dead Bodies, Weapons Drop on Bodies, BoltBeGone) sidestep both by blocking or rewriting the loot path.
+Inventory Guard bounds hoarding at the source, so anti-loot addons are no longer needed.
 
-Periodic scanner over online stalkers. Walks the online set in small batches, trims one NPC per frame, rescans each NPC at most twice per game-day (default 12 game-hour cooldown). Scope is random long-lived stalkers (gulag survivors, generic patrols). Companions, story NPCs, and named characters are filtered at the scheduler via `xcreature.is_unscriptable`. Service NPCs (traders, mechanics, medics, barmen), including dynamically spawned ones, are detected via `xsmart.get_npc_roles` and skipped — their stock is trade stock managed by the trade flow, never trimmed. Neither reaches `trim_npc`.
+A periodic scanner over online stalkers walks the online set in small batches and trims one NPC per frame.
+It rescans each NPC at most twice per game-day (default 12 game-hour cooldown). Scope is random long-lived stalkers (gulag survivors, generic patrols).
+Companions, story NPCs, and named characters are filtered at the scheduler through `xcreature.is_unscriptable`.
+Service NPCs (traders, mechanics, medics, barmen), including dynamically spawned ones, are detected through `xsmart.get_npc_roles` and skipped.
+Their stock is trade stock managed by the trade flow. Neither reaches `trim_npc`.
 
 ### Why scanner, not death-time hook
 
 A death-time hook (wrapping `death_manager.keep_item`) only runs when an NPC dies. Three failure modes are missed:
 
-1. **Long-lived NPCs never trim**. The population that survives is the population that hoards. Hundreds of random online stalkers (gulag survivors, generic patrols) keep looting corpses they walk over and never die. Death-time only catches NPCs that die; the survivors drive save bloat and steady performance drag indefinitely. (Companions, story NPCs, and named characters are scripted-identity holders filtered at the scheduler via `xcreature.is_unscriptable`, and service NPCs are skipped by role (`xsmart.get_npc_roles`) since their stock is trade-flow-managed, so the hoarding problem `trim_npc` addresses is the random long-lived population only.)
-2. **Save bloat accumulates between deaths**. Every looted item is a server object persisted in the save. Long sessions accumulate without bound. Continuous trim bounds live state instead of waiting for the death event.
+1. **Long-lived NPCs never trim**. The population that survives is the population that hoards.
+   Hundreds of random online stalkers (gulag survivors, generic patrols) keep looting corpses they walk over and never die.
+   Death-time only catches NPCs that die, so the survivors drive save bloat and steady performance drag indefinitely.
+   Companions, story NPCs, and named characters are filtered at the scheduler through `xcreature.is_unscriptable`.
+   Service NPCs are skipped by role (`xsmart.get_npc_roles`), so the hoarding problem `trim_npc` addresses is the random long-lived population only.
+2. **Save bloat accumulates between deaths**. Every looted item is a server object persisted in the save. Long sessions accumulate without bound.
+   Continuous trim bounds live state and does not wait for the death event.
 3. **Bursty performance**. N deaths in a firefight = N trims in the same frame as the corpse spawn. xslice spreads the trim cost across frames.
 
-The engine `utils_item.is_overweight(npc)` self-limit at `xr_corpse_detection.script:421` caps live hoarding by weight (around 50kg) but the cap is generous; NPCs accumulate plenty before hitting it.
+The engine `utils_item.is_overweight(npc)` self-limit at `xr_corpse_detection.script:421` caps live hoarding by weight, around 50kg.
+The cap is generous, so NPCs accumulate plenty before hitting it.
 
 ### Pipeline
 
@@ -295,7 +373,7 @@ _start_cycle()
   - eligible = [ npc_id for id, npc in xcreature.online_iter_with_id()
                  if alife_object(id)
                     and IsStalker(npc) and npc:alive()
-                    and xsmart.get_npc_roles(npc) empty        (service NPCs skipped; hub traders fail IsStalker)
+                    and xsmart.get_npc_roles(npc) empty        (service NPCs skipped, hub traders fail IsStalker)
                     and not xcreature.is_unscriptable(npc)      (companions / story / named skipped)
                     and now - _last_scan_game_sec[npc_id] >= scan_cooldown_h * 3600 ]
   - sort eligible by oldest scan first
@@ -322,7 +400,7 @@ _on_cycle_done()
   - log [SCAN] cycle summary (cycle_id, visited, released, dt_ms)
 ```
 
-The scanner's xslice queue (`ag_inventory_guard_scan`) is independent of the despawn job (`ag_despawn`); xslice queues are keyed by name and run concurrently without contention.
+The scanner's xslice queue (`ag_inventory_guard_scan`) is independent of the despawn job (`ag_despawn`). xslice queues are keyed by name and run concurrently without contention.
 
 ### Public API
 
@@ -334,15 +412,31 @@ Probes, MCM "trim now" buttons, TestZone probes, and console diagnostics call `t
 
 ### Traders skipped
 
-Service NPCs (traders, mechanics, medics, barmen — detected by section, community, or clsid via `xsmart.get_npc_roles`; hub traders also fail the `IsStalker` admit by `script_trader` clsid) are skipped entirely at the scheduler. Their inventory is trade stock, not a lootable hoard, and it is already bounded by the trade flow: the engine destroys a trader's unslotted stock at each restock (`CInventoryOwner::buy_supplies` -> `CPurchaseList::process` -> `sell_useless_items`), and the Trader Destockifier caps weapon/outfit/helmet count per trader on every trade-open. Trimming a trader with the stalker policy would gut the shelf, so the guard never touches one.
+Service NPCs (traders, mechanics, medics, barmen) are detected by section, community, or clsid through `xsmart.get_npc_roles`.
+Hub traders also fail the `IsStalker` admit by `script_trader` clsid. They are skipped entirely at the scheduler.
+Their inventory is trade stock, not a lootable hoard, and it is already bounded by the trade flow.
+The engine destroys a trader's unslotted stock at each restock (`CInventoryOwner::buy_supplies` -> `CPurchaseList::process` -> `sell_useless_items`).
+The Trader Destockifier caps weapon, outfit, and helmet count per trader on every trade-open.
+Trimming a trader with the stalker policy would gut the shelf, so the guard never touches one.
 
 ### Frame-cost cap
 
-`trim_npc` bounds each walk to `MAX_SCAN_ITEMS` (80): `classify` and `iterate_surplus` each forward the cap to `xinventory.iterate_inventory`, which stops the engine walk after that many items and reports the truncation as its second return value. This holds a single trim under the ~2ms frame ceiling (`code-standards` Performance budget) even on a pathological inventory. `_run_npc` stamps the cooldown only when a trim released nothing: a trim that shed surplus leaves the NPC eligible to re-trim next cycle (a hoarder converges over the next cycles instead of waiting the full cooldown), while a clean NPC stamps and benches normally. A stalker past the cap is a fat corpse-hoarder; the surplus beyond the window is trimmed on the next cooldown pass as releases shrink the inventory and the tail shifts into the first-`MAX_SCAN_ITEMS` slots (`m_all` iteration order is stable across the two walks, so `classify` and `iterate_surplus` cover the identical items). Truncation is logged as `capped=true` on the `[VISIT]` line when DEBUG is on. Capping only ever under-releases; it never touches a legitimate item.
+`trim_npc` bounds each walk to `MAX_SCAN_ITEMS` (80).
+`classify` and `iterate_surplus` each forward the cap to `xinventory.iterate_inventory`, which stops the engine walk after that many items and reports the truncation as its second return value.
+This holds a single trim under the ~2ms frame ceiling (`code-standards` Performance budget) even on a pathological inventory.
+`_run_npc` stamps the cooldown only when a trim released nothing.
+A trim that shed surplus leaves the NPC eligible to re-trim next cycle, so a hoarder keeps converging over the next cycles. A clean NPC stamps and benches normally.
+A stalker past the cap is a fat corpse-hoarder.
+The surplus beyond the window is trimmed on the next cooldown pass as releases shrink the inventory and the tail shifts into the first-`MAX_SCAN_ITEMS` slots.
+`m_all` iteration order is stable across the two walks, so both walks cover the identical items. Truncation is logged as `capped=true` on the `[VISIT]` line when DEBUG is on.
+Capping only ever under-releases and never touches a legitimate item.
 
 ### Policy
 
-Policy values live in `gamedata/configs/alifeguard/ag_inventory_policy.ltx` (DLTX-overridable). Single uniform block `[ag_inventory_policy]` with single-value `<category> = <max>` rows; loaded once at on_game_start via `xinventory.load_policy` and applied per-NPC via `xinventory.classify` (counts) + `xinventory.iterate_surplus` (release pass with `on_surplus = xinventory.release_item`); each walk is capped at `MAX_SCAN_ITEMS` (see Frame-cost cap).
+Policy values live in `gamedata/configs/alifeguard/ag_inventory_policy.ltx` (DLTX-overridable).
+A single uniform block `[ag_inventory_policy]` holds single-value `<category> = <max>` rows, loaded once at on_game_start through `xinventory.load_policy`.
+It is applied per-NPC through `xinventory.classify` for counts and `xinventory.iterate_surplus` for the release pass (`on_surplus = xinventory.release_item`).
+Each walk is capped at `MAX_SCAN_ITEMS` (see Frame-cost cap).
 
 | Category | max | Effect |
 |---|---|---|
@@ -361,11 +455,17 @@ Policy values live in `gamedata/configs/alifeguard/ag_inventory_policy.ltx` (DLT
 | artefact, crafting | 3 | Harvested artefacts / tools-parts-upgrades for traders |
 | other | 3 | Fallthrough sentinel; small cap to bound unknown items |
 
-`money` (kind=i_money pickups) is intentionally absent from the LTX. Cull's `on_surplus` is `release_item` which destroys; a no-rule = keep gap is the safe default for this consumer, so money piles are never destroyed.
+`money` (kind=i_money pickups) is intentionally absent from the LTX.
+Cull's `on_surplus` is `release_item`, which destroys. A no-rule-means-keep gap is the safe default here, so money piles are never destroyed.
 
-Ammo categories count in ROUNDS (sum of `ammo_get_count` per stack via `xinventory.classify`); other categories count in items. Untouchables (quest / anim / blacklisted) and equipped items are pre-filtered by `xinventory.get_category`. Three runtime per-item untouchable checks also gate via xinventory: items with `get_object_story_id`, items the actor gave to a companion (`axr_companions.is_assigned_item`), and player-strapped weapons (`se_load_var "strapped_item"`). None of these reach the policy.
+Ammo categories count in ROUNDS (the sum of `ammo_get_count` per stack through `xinventory.classify`), and other categories count in items.
+Untouchables (quest, anim, blacklisted) and equipped items are pre-filtered by `xinventory.get_category`.
+Three runtime per-item untouchable checks also gate through xinventory: `get_object_story_id` items and actor-given companion items (`axr_companions.is_assigned_item`).
+The third is player-strapped weapons (`se_load_var "strapped_item"`). None of these reach the policy.
 
-Companions, story characters, and named NPCs are filtered at the scheduler via `xcreature.is_unscriptable(obj)`; service NPCs (traders, mechanics, medics, barmen, including dynamically spawned ones) are detected via `xsmart.get_npc_roles(obj)` and skipped (their stock is trade-flow-managed). Neither reaches `trim_npc`; the policy only sees random extras whose identities no script depends on.
+Companions, story characters, and named NPCs are filtered at the scheduler through `xcreature.is_unscriptable(obj)`.
+Service NPCs (traders, mechanics, medics, barmen, including dynamically spawned ones) are detected through `xsmart.get_npc_roles(obj)` and skipped, since their stock is trade-flow-managed.
+Neither reaches `trim_npc`. The policy only sees random extras whose identities no script depends on.
 
 ### State
 
@@ -375,7 +475,7 @@ Companions, story characters, and named NPCs are filtered at the scheduler via `
 | `_cycle_id`, `_cycle_visited`, `_cycle_released`, `_cycle_timer` | per-cycle counters. Reset in `_start_cycle`. |
 | `_last_update`, `_dbg` | wall-clock gate (os.clock), debug-level mirror. |
 
-No persistence. The cooldown table not saved; on game load every NPC is fresh and the first round of cycles trims everyone, then steady-state takes over.
+No persistence. The cooldown table is not saved, so on game load every NPC is fresh and the first round of cycles trims everyone, then steady-state takes over.
 
 ### Prerequisites and conflicts
 
