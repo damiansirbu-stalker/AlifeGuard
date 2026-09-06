@@ -308,7 +308,7 @@ Full design record with engine citations: `stalker-dev/doc/todo/todo-alifeguard-
 | alife_object(group_id) | 1 luabind medium | Squad resolution (skip if 65535) |
 | xcreature.is_unscriptable | 0 luabind (cached) | Weak-key, session lifetime |
 | xsquad.is_protected | 0 luabind (TTL cached) | Per squad, not per member |
-| obj:section() | 1 luabind heavy | Per collected entry; stored for the release-time id-recycle check |
+| obj:section() | 1 luabind heavy | Per collected entry, stored for the release-time id-recycle check |
 
 Total: ~9-10 luabind per entity (production), ~1-6 per squad. Sub-millisecond for 100-200 entities.
 
@@ -444,16 +444,16 @@ Each walk is capped at `MAX_SCAN_ITEMS` (see Frame-cost cap).
 | ammo_slot_2_t1, ammo_slot_2_t2 | 48 (rounds) | NPC keeps 3 boxes of pistol ammo per tier |
 | ammo_not_equipped | 0 | Always release mismatched ammo |
 | grenade | 3 | Hand grenade buffer |
-| grenade_smoke | 0 | Culled entirely; NPCs throwing smoke crash current exes |
+| grenade_smoke | 0 | Culled entirely. NPCs throwing smoke crash current exes |
 | grenade_ammo | 3 | Launcher rounds (vog-25, og-7b, m209) |
-| medkit, bandage | 5 | Self-heal supply; matches trade veteran max so trade-acquired bandages survive between visits |
+| medkit, bandage | 5 | Self-heal supply, at the trade-veteran max so trade-acquired bandages survive between visits |
 | food | 5 | Spare consumables |
 | antirad, stim, pill | 3 | Niche consumables |
 | drink | 3 | NPCs rarely benefit |
 | weapon | 1 | One spare for trading (equipped pre-filtered) |
 | outfit, helmet, device | 1 | One spare each (equipped pre-filtered) |
 | artefact, crafting | 3 | Harvested artefacts / tools-parts-upgrades for traders |
-| other | 3 | Fallthrough sentinel; small cap to bound unknown items |
+| other | 3 | Fallthrough sentinel, a small cap to bound unknown items |
 
 `money` (kind=i_money pickups) is intentionally absent from the LTX.
 Cull's `on_surplus` is `release_item`, which destroys. A no-rule-means-keep gap is the safe default here, so money piles are never destroyed.
@@ -471,7 +471,7 @@ Neither reaches `trim_npc`. The policy only sees random extras whose identities 
 
 | State | Purpose |
 |---|---|
-| `_last_scan_game_sec[npc_id]` | game-second of last visit. Persists for session only; on game load every NPC is eligible. Stale ids harmless: the engine recycles freed server ids within a session, but `_on_npc_net_destroy` prunes the row when an NPC despawns, so a recycled id starts fresh. |
+| `_last_scan_game_sec[npc_id]` | game-second of last visit. Persists for the session only. On game load every NPC is eligible. Stale ids harmless: the engine recycles freed server ids within a session, but `_on_npc_net_destroy` prunes the row when an NPC despawns, so a recycled id starts fresh. |
 | `_cycle_id`, `_cycle_visited`, `_cycle_released`, `_cycle_timer` | per-cycle counters. Reset in `_start_cycle`. |
 | `_last_update`, `_dbg` | wall-clock gate (os.clock), debug-level mirror. |
 
@@ -483,9 +483,9 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 |---|---|
 | Vanilla NPC corpse looting enabled | Required. Inventory Guard bounds vanilla looting at the source. With looting disabled the scanner runs but finds nothing to release. |
 | Anti-loot addons (`311- NPC Stop Looting Dead Bodies`, `BoltBeGone`, equivalents) | Anti-loot addons Inventory Guard replaces. Disable. They were created to work around two costs of vanilla looting (jackpot kills, 65k alife-ID cap) by blocking or rewriting the corpse-loot path. Inventory Guard bounds the cause, so the workarounds are no longer needed. |
-| Jabbers' "Weapons Drop on bodies" 134 | No conflict. They patch `death_manager.keep_item`; we do not touch that seam. The scanner releases from online inventories; their wrap fires at death on whatever the scanner left behind. |
+| Jabbers' "Weapons Drop on bodies" 134 | No conflict. They patch `death_manager.keep_item` and we do not touch that seam. The scanner releases from online inventories, and their wrap fires at death on whatever the scanner left behind. |
 | Ish's BoltBeGone in Nitpicker's Modpack 124 | Same as Jabbers'. No conflict. |
-| Unscriptable NPCs (`xcreature.is_unscriptable`) | Skipped at scheduler level for the trim pass. Covers story characters (Strider, Magpie, Sidorovich) via engine story_id, companions via `npcx_is_companion` info-portion, named NPCs (traders, medics, mechanics, guides, guards, bodyguards, leaders, quest-givers) via `xdata.unscriptable_npcs`, and members of story squads. These NPCs have scripted identities the rest of the game depends on; trimming their inventories risks breaking quest scripts. Service NPCs (`xsmart.get_npc_roles` non-empty) are rejected by their own gate before this one: their stock is trade stock managed by the trade flow, never trimmed. |
+| Unscriptable NPCs (`xcreature.is_unscriptable`) | Skipped at scheduler level for the trim pass. Covers story characters (Strider, Magpie, Sidorovich) via engine story_id, companions via `npcx_is_companion` info-portion, named NPCs (traders, medics, mechanics, guides, guards, bodyguards, leaders, quest-givers) via `xdata.unscriptable_npcs`, and members of story squads. These NPCs have scripted identities the rest of the game depends on, so trimming their inventories risks breaking quest scripts. Service NPCs (`xsmart.get_npc_roles` non-empty) are rejected by their own gate before this one: their stock is trade stock managed by the trade flow, never trimmed. |
 | Untouchables (`xinventory.get_section_category(sec) == "untouchable"`) | Never released regardless of category. Covers quest items (`quest_item=1` or `kind=i_quest`), animation props (`anim_item=1`), and sections in `xr_corpse_detection.ltx [ignore_sections]`. Resolved once per section by xinventory and cached. |
 
 ### Performance (Inventory Guard)
@@ -513,7 +513,7 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 | ag_inventory_guard.script | 309 | Inventory Guard: online inventory scanner, public `trim_npc`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
 | ag_mcm.script | 239 | MCM defaults, UI definition, button handlers |
 | _ag_deps.script | 121 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
-| ag_test.script | 653 | Dormant console harness: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and ag_test_torture (toggle loop spawning squads online+offline and flooding/trimming every tick, exercising every guard under sustained load; toggle off to tear down) |
+| ag_test.script | 653 | Dormant console harness: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and ag_test_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds, exercising every guard under sustained load. Toggle off to tear down) |
 
 Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventory Guard per-category ceilings (DLTX-overridable).
 
@@ -535,12 +535,12 @@ Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventor
 | pda_sound | true | Play a sound with the cleanup notification |
 | density_enabled | true | Offline Guard master toggle |
 | density_trigger | 120 | Offline body count that flags a region as overcrowded (absolute, own setting) |
-| density_target | 80 | Body count a flagged region is thinned to (0-300, clamped to trigger; 0 = lone commanders) |
+| density_target | 80 | Body count a flagged region is thinned to (0-300, clamped to trigger, 0 = lone commanders) |
 | density_check_tasks | true | Protect task givers, bounty/hostage targets in the offline pass (own toggle) |
 | density_interval | 1 | Seconds between offline scan steps (1-10) |
 | sanitize_smarts | true | Periodic walk that clamps corrupted already_spawned counters |
 | sanitize_interval | 300 | Seconds between periodic sanitizer passes (60-1800) |
-| enabled_inventory | true | Inventory Guard scanner enable. When off, no scheduler and no trims. |
+| enabled_inventory | true | Inventory Guard scanner toggle. When off, no scheduler and no trims. |
 | npcs_per_frame | 1 | xslice step: NPCs trimmed per frame inside a cycle (1-10) |
 | scan_cooldown_h | 12 | Per-NPC rescan cooldown in game-hours (1-72) |
 | log_level | WARN | Logger verbosity (ERROR/WARN/INFO/DEBUG) |
