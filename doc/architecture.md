@@ -342,7 +342,7 @@ A periodic scanner over online stalkers walks the online set in small batches an
 It rescans each NPC at most twice per game-day (default 12 game-hour cooldown). Scope is random long-lived stalkers (gulag survivors, generic patrols).
 Companions, story NPCs, and named characters are filtered at the scheduler through `xcreature.is_unscriptable`.
 Service NPCs (traders, mechanics, medics, barmen), including dynamically spawned ones, are detected through `xsmart.get_npc_roles` and skipped.
-Their stock is trade stock managed by the trade flow. Neither reaches `trim_npc`.
+Their stock is trade stock managed by the trade flow. Neither reaches `apply_policy`.
 
 ### Why scanner, not death-time hook
 
@@ -352,7 +352,7 @@ A death-time hook (wrapping `death_manager.keep_item`) only runs when an NPC die
    Hundreds of random online stalkers (gulag survivors, generic patrols) keep looting corpses they walk over and never die.
    Death-time only catches NPCs that die, so the survivors drive save bloat and steady performance drag indefinitely.
    Companions, story NPCs, and named characters are filtered at the scheduler through `xcreature.is_unscriptable`.
-   Service NPCs are skipped by role (`xsmart.get_npc_roles`), so the hoarding problem `trim_npc` addresses is the random long-lived population only.
+   Service NPCs are skipped by role (`xsmart.get_npc_roles`), so the hoarding problem `apply_policy` addresses is the random long-lived population only.
 2. **Save bloat accumulates between deaths**. Every looted item is a server object persisted in the save. Long sessions accumulate without bound.
    Continuous trim bounds live state and does not wait for the death event.
 3. **Bursty performance**. N deaths in a firefight = N trims in the same frame as the corpse spawn. xslice spreads the trim cost across frames.
@@ -388,7 +388,7 @@ FRAME (each frame while queue active)
 _visit(npc_id)
   - npc = level.object_by_id(npc_id)
   - if not npc or not npc:alive(): return true  (drain; went offline)
-  - r = trim_npc(npc)
+  - r = apply_policy(npc)
   - _last_scan_game_sec[npc_id] = xtime.game_sec()
   - cycle counters += r
   - return true  (drain)
@@ -406,9 +406,9 @@ The scanner's xslice queue (`ag_inventory_guard_scan`) is independent of the des
 
 | Function | Purpose | Returns |
 |---|---|---|
-| `trim_npc(npc, opts)` | Apply inventory policy to one NPC. opts: `{ dry_run }`. Cooldown table NOT touched. Both walks capped at `MAX_SCAN_ITEMS` (80). | `{ released, released_by_category, dt_ms }` |
+| `apply_policy(npc, opts)` | Apply inventory policy to one NPC. opts: `{ dry_run }`. Cooldown table NOT touched. Both walks capped at `MAX_SCAN_ITEMS` (40). | `{ released, released_by_category, dt_ms }` |
 
-Probes, MCM "trim now" buttons, TestZone probes, and console diagnostics call `trim_npc` directly without scheduler involvement.
+Probes, MCM "trim now" buttons, TestZone probes, and console diagnostics call `apply_policy` directly without scheduler involvement.
 
 ### Traders skipped
 
@@ -421,7 +421,7 @@ Trimming a trader with the stalker policy would gut the shelf, so the guard neve
 
 ### Frame-cost cap
 
-`trim_npc` bounds each walk to `MAX_SCAN_ITEMS` (80).
+`apply_policy` bounds each walk to `MAX_SCAN_ITEMS` (40).
 `classify` and `iterate_surplus` each forward the cap to `xinventory.iterate_inventory`, which stops the engine walk after that many items and reports the truncation as its second return value.
 This holds a single trim under the ~2ms frame ceiling (`code-standards` Performance budget) even on a pathological inventory.
 `_run_npc` stamps the cooldown only when a trim released nothing.
@@ -465,7 +465,7 @@ The third is player-strapped weapons (`se_load_var "strapped_item"`). None of th
 
 Companions, story characters, and named NPCs are filtered at the scheduler through `xcreature.is_unscriptable(obj)`.
 Service NPCs (traders, mechanics, medics, barmen, including dynamically spawned ones) are detected through `xsmart.get_npc_roles(obj)` and skipped, since their stock is trade-flow-managed.
-Neither reaches `trim_npc`. The policy only sees random extras whose identities no script depends on.
+Neither reaches `apply_policy`. The policy only sees random extras whose identities no script depends on.
 
 ### State
 
@@ -510,7 +510,7 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 | ag_offline_guard.script | 316 | Offline Guard: offline density scan per switch_distance cell, per-cell offline cull |
 | ag_queue.script | 143 | Release-queue strategy: 4 priority tiers, round-robin/linear fairness fill (pure Lua) |
 | ag_smart_sanitizer.script | 113 | Smart Sanitizer: clamps corrupted already_spawned respawn counters |
-| ag_inventory_guard.script | 309 | Inventory Guard: online inventory scanner, public `trim_npc`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
+| ag_inventory_guard.script | 309 | Inventory Guard: online inventory scanner, public `apply_policy`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
 | ag_mcm.script | 239 | MCM defaults, UI definition, button handlers |
 | _ag_deps.script | 121 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
 | ag_test.script | 653 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and ag_test_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds, exercising every guard under sustained load. Toggle off to tear down) |
