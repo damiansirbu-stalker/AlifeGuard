@@ -225,7 +225,7 @@ end
 -- Resolution, protection, and release are deferred to the xslice, one squad per frame.
 local function _try_cull()
     if xslice.is_active(DESPAWN_JOB) then return end
-    local actor_level = xlevel.get_actor_level_id()
+    local actor_level = xlevel.get_actor_level()
     local trigger = cfg.density_trigger
     for key in pairs(_cull_stats) do _cull_stats[key] = 0 end
     local build_timer = xprofiler.new_if(_dbg)
@@ -265,7 +265,7 @@ local function _update_density()
     end
     local graph = game_graph()
     if not graph then return end
-    local actor_level = xlevel.get_actor_level_id()
+    local actor_level = xlevel.get_actor_level()
     if not actor_level then return end
     local prof = xprofiler.new_if(_dbg)
     prof:start()

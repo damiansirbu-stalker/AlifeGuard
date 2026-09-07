@@ -152,7 +152,7 @@ local function _driver_tick()
     local graph = game_graph()
     local smart = _target_name and SIMBOARD and SIMBOARD.smarts_by_names and SIMBOARD.smarts_by_names[_target_name]
     if not (sim and graph and smart) then return false end
-    local actor_level = xlevel.get_actor_level_id()
+    local actor_level = xlevel.get_actor_level()
     if _spawned < FEED_MAX then _spawn_one(smart, _target_name) end
     local cell_size = sim:switch_distance()
     _log_offline_cells(graph, actor_level, cell_size)
@@ -172,7 +172,7 @@ function run()
     local sim = alife()
     local graph = game_graph()
     if not (sim and graph) then _tip("ag_test: alife not ready") return end
-    local actor_level = xlevel.get_actor_level_id()
+    local actor_level = xlevel.get_actor_level()
     local name = _pick_offline_smart(graph, actor_level)
     if not name then _tip("ag_test: no smart on another level (need a non-actor level)") return end
     _active = true
@@ -725,7 +725,7 @@ function ag_test_torture()
     end
     local sim, graph = alife(), game_graph()
     if not (sim and graph) then _flow_tip("[FAIL] torture: alife not ready"); return end
-    local actor_level = xlevel.get_actor_level_id()
+    local actor_level = xlevel.get_actor_level()
     _torture_on = _pick_online_smart(graph, actor_level)
     _torture_off = _pick_offline_smart(graph, actor_level)
     if not (_torture_on or _torture_off) then _flow_tip("[FAIL] torture: no smarts found"); return end

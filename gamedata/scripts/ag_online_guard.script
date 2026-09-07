@@ -182,7 +182,7 @@ local function _collect_entity(obj, id, ctx)
 
     if is_orphan and xcreature.is_unscriptable(obj) then stats.protected = stats.protected + 1; return end
     if is_orphan and xcreature.is_task_giver(obj) then stats.protected = stats.protected + 1; return end
-    if is_orphan and cfg.check_tasks and xsquad.get_active_task_targets()[id] then stats.protected = stats.protected + 1; return end
+    if is_orphan and cfg.check_tasks and xsquad.get_task_targets()[id] then stats.protected = stats.protected + 1; return end
     if is_orphan then ctx.orphans[#ctx.orphans + 1] = _build_entry(id, dist_sq, obj_is_stalker, obj); return end
 
     local squad = xobject.get_se(group_id)
