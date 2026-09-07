@@ -513,7 +513,7 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 | ag_inventory_guard.script | 309 | Inventory Guard: online inventory scanner, public `trim_npc`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
 | ag_mcm.script | 239 | MCM defaults, UI definition, button handlers |
 | _ag_deps.script | 121 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
-| ag_test.script | 653 | Dormant console harness: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and ag_test_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds, exercising every guard under sustained load. Toggle off to tear down) |
+| ag_test.script | 653 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and ag_test_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds, exercising every guard under sustained load. Toggle off to tear down) |
 
 Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventory Guard per-category ceilings (DLTX-overridable).
 
