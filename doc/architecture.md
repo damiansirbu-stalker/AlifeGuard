@@ -506,14 +506,14 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 
 | File | Lines | Purpose |
 |---|---|---|
-| ag_online_guard.script | 362 | Online Guard: collection, squad grouping, protection, frame-spread release, PDA notify, orchestration |
-| ag_offline_guard.script | 316 | Offline Guard: offline density scan per switch_distance cell, per-cell offline cull |
-| ag_queue.script | 143 | Release-queue strategy: 4 priority tiers, round-robin/linear fairness fill (pure Lua) |
-| ag_smart_sanitizer.script | 113 | Smart Sanitizer: clamps corrupted already_spawned respawn counters |
-| ag_inventory_guard.script | 309 | Inventory Guard: online inventory scanner, public `apply_policy`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
-| ag_mcm.script | 239 | MCM defaults, UI definition, button handlers |
-| _ag_deps.script | 121 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
-| ag_test.script | 653 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and ag_test_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds, exercising every guard under sustained load. Toggle off to tear down) |
+| ag_online_guard.script | 349 | Online Guard: collection, squad grouping, protection, frame-spread release, PDA notify, orchestration |
+| ag_offline_guard.script | 291 | Offline Guard: offline density scan per switch_distance cell, per-cell offline cull |
+| ag_queue.script | 135 | Release-queue strategy: 4 priority tiers, round-robin/linear fairness fill (pure Lua) |
+| ag_smart_sanitizer.script | 107 | Smart Sanitizer: clamps corrupted already_spawned respawn counters |
+| ag_inventory_guard.script | 265 | Inventory Guard: online inventory scanner, public `apply_policy`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
+| ag_mcm.script | 210 | MCM defaults, UI definition, button handlers |
+| _ag_deps.script | 110 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
+| ag_test.script | 739 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and ag_test_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds, exercising every guard under sustained load. Toggle off to tear down) |
 
 Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventory Guard per-category ceilings (DLTX-overridable).
 
