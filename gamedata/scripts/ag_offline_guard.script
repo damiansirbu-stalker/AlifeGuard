@@ -178,12 +178,12 @@ local function _execute_squad_cull(item, acc)
     for index = 1, #member_ids do
         if budget.n <= 0 then break end
         local ok, member_is_stalker = _release_offline_member(member_ids[index], commander_id)
-        if ok then
-            budget.n = budget.n - 1
-            acc.released = acc.released + 1
-            acc.stalkers = acc.stalkers + (member_is_stalker and 1 or 0)
-            acc.mutants = acc.mutants + (member_is_stalker and 0 or 1)
-        end
+        if not ok then goto continue end
+        budget.n = budget.n - 1
+        acc.released = acc.released + 1
+        acc.stalkers = acc.stalkers + (member_is_stalker and 1 or 0)
+        acc.mutants = acc.mutants + (member_is_stalker and 0 or 1)
+        ::continue::
     end
 end
 

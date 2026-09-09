@@ -22,7 +22,7 @@ end
 -- Sort squad members into 4 priority tiers by scripted status (see architecture.md "Priority Tiers").
 local function _build_tiers(squads, orphans, tiers, squad_culling)
     for _, rec in pairs(squads) do
-        if rec.protected then goto next_squad end
+        if rec.protected then goto continue end
         local mt = _get_member_tier(rec, squad_culling)
         for _, ent in ipairs(rec.removable) do
             _add_tier_entry(tiers[mt], rec.category, ent)
@@ -30,7 +30,7 @@ local function _build_tiers(squads, orphans, tiers, squad_culling)
         if rec.commander_entry then
             _add_tier_entry(tiers[_get_commander_tier(rec, squad_culling)], rec.category, rec.commander_entry)
         end
-        ::next_squad::
+        ::continue::
     end
     if #orphans > 0 then
         tiers[1]["orphan"] = orphans
@@ -40,9 +40,7 @@ end
 -- Sort or shuffle entries within a single tier's categories.
 local function _sort_tier(tier, sort_fn)
     for cat, entries in pairs(tier) do
-        if #entries > 1 then
-            tier[cat] = sort_fn and xtable.sort(entries, sort_fn) or xtable.shuffle(entries)
-        end
+        if #entries > 1 then tier[cat] = sort_fn and xtable.sort(entries, sort_fn) or xtable.shuffle(entries) end
     end
 end
 
