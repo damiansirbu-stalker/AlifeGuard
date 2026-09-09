@@ -67,49 +67,6 @@ local function _get_cooldown_sec()
     return hours * 3600
 end
 
--- PER-NPC TRIM (PUBLIC)
-
---- Apply inventory policy to one NPC; callers (scheduler, probes, MCM buttons) may call it directly.
---- The cooldown table is the scheduler's concern; this never touches it.
---- @safety SAFE - returns nil on nil npc / nil policy; iterate tolerates nil items
---- @cost O(min(items, MAX_SCAN_ITEMS)) | one xinventory.collect_surplus walk (capped at MAX_SCAN_ITEMS) + 0-N xinventory.release_item per surplus
---- @param npc game_object Online stalker
---- @param opts table|nil { dry_run = false }
---- @return table|nil { released, released_by_category = {[cat]=n}, dt_ms }
-function apply_policy(npc, opts)
-    if not npc or not INVENTORY_POLICY then return nil end
-    opts = opts or {}
-    local dry_run = opts.dry_run == true
-
-    local timer = xprofiler.new_if(_dbg):start()
-
-    local npc_id = npc:id()
-    local cat_opts = xinventory.get_category_opts(npc)
-
-    local result = {
-        released = 0,
-        released_by_category = {},
-        dt_ms = 0,
-    }
-
-    local released, _, hit_cap = xinventory.collect_surplus(npc, cat_opts, {
-        rules = INVENTORY_POLICY.rules,
-        max_items = MAX_SCAN_ITEMS,
-        on_surplus = function(item, cat, sec, _unit)
-            if not dry_run then xinventory.release_item(item) end
-            result.released_by_category[cat] = (result.released_by_category[cat] or 0) + 1
-            if _dbg then log.debug("[RELEASE] npc=%d section=%s category=%s", npc_id, sec, cat) end
-        end,
-    })
-    result.released = released
-
-    timer:stop()
-    result.dt_ms = timer:get_ms()
-    if _dbg then log.debug("[VISIT] npc=%d released=%d capped=%s dt=%.3fms", npc_id, result.released, tostring(hit_cap), result.dt_ms) end
-
-    return result
-end
-
 -- SCHEDULER
 
 -- Admit plain lootable stalkers, reject everyone else; pure-Lua actor/cooldown checks run first to short-circuit before any bridge call.
@@ -251,6 +208,49 @@ end
 local function _on_npc_net_destroy(npc)
     if not npc then return end
     _last_scan_game_sec[npc:id()] = nil
+end
+
+-- PER-NPC TRIM (PUBLIC)
+
+--- Apply inventory policy to one NPC; callers (scheduler, probes, MCM buttons) may call it directly.
+--- The cooldown table is the scheduler's concern; this never touches it.
+--- @safety SAFE - returns nil on nil npc / nil policy; iterate tolerates nil items
+--- @cost O(min(items, MAX_SCAN_ITEMS)) | one xinventory.collect_surplus walk (capped at MAX_SCAN_ITEMS) + 0-N xinventory.release_item per surplus
+--- @param npc game_object Online stalker
+--- @param opts table|nil { dry_run = false }
+--- @return table|nil { released, released_by_category = {[cat]=n}, dt_ms }
+function apply_policy(npc, opts)
+    if not npc or not INVENTORY_POLICY then return nil end
+    opts = opts or {}
+    local dry_run = opts.dry_run == true
+
+    local timer = xprofiler.new_if(_dbg):start()
+
+    local npc_id = npc:id()
+    local cat_opts = xinventory.get_category_opts(npc)
+
+    local result = {
+        released = 0,
+        released_by_category = {},
+        dt_ms = 0,
+    }
+
+    local released, _, hit_cap = xinventory.collect_surplus(npc, cat_opts, {
+        rules = INVENTORY_POLICY.rules,
+        max_items = MAX_SCAN_ITEMS,
+        on_surplus = function(item, cat, sec, _unit)
+            if not dry_run then xinventory.release_item(item) end
+            result.released_by_category[cat] = (result.released_by_category[cat] or 0) + 1
+            if _dbg then log.debug("[RELEASE] npc=%d section=%s category=%s", npc_id, sec, cat) end
+        end,
+    })
+    result.released = released
+
+    timer:stop()
+    result.dt_ms = timer:get_ms()
+    if _dbg then log.debug("[VISIT] npc=%d released=%d capped=%s dt=%.3fms", npc_id, result.released, tostring(hit_cap), result.dt_ms) end
+
+    return result
 end
 
 function on_game_start()
