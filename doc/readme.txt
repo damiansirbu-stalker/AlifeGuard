@@ -43,14 +43,6 @@ Mechanisms (how the culling stays safe):
 - Frame-spread - entities released one per frame via xslice, so a cleanup spreads over frames and never hitches the game.
 - Protection - story squads, traders, named NPCs, companions, task givers, quest/bounty/hostage targets, and scripted squads are never touched. Toggle scripted protection off for the most aggressive culling.
 
-Performance:
-Performance comes first, ahead of any feature.
-When a feature cannot fit the budget it is reworked or removed, even with an X-Ray engine modification. It is never allowed to slow the game.
-Collection is a single pass over a native C++ iterator with cached protection lookups, sub-millisecond for 200 entities.
-Release costs 0.05ms, and debug work drops to nothing when the log level is below DEBUG.
-The timings are measured on the engine built from the latest source with no multithreading and no optimizations, so they are worst-case.
-The optimized multithreaded build you run is always faster.
-
 Requirements:
 Anomaly 1.5.3
 Modded exes: themrdemonized 2025.9.10 or newer, or AOEngine v0.55 or newer. The full feature set needs the latest demonized build; a feature that needs a newer one stays inactive on older exes.
@@ -75,24 +67,21 @@ Coexists with AlifePlus, Warfare, ZCP, Guards Spawner, AlifeBalance, and any mod
 Known issue:
 A rare crash on entity release (Perform_reject assertion). This is an engine-level fault in X-Ray inventory parent tracking, present in all population mods, with no script-side fix.
 
-Architecture:
+Performance:
+Performance comes first, ahead of any feature.
+When a feature cannot fit the budget it is reworked or removed, even with an X-Ray engine modification. It is never allowed to slow the game.
+Collection is a single pass over a native C++ iterator with cached protection lookups, sub-millisecond for 200 entities.
+Release costs 0.05ms, and debug work drops to nothing when the log level is below DEBUG.
+The timings are measured on the engine built from the latest source with no multithreading and no optimizations, so they are worst-case.
+The optimized multithreaded build you run is always faster.
+
+Development:
 - AlifeGuard runs on xlibs, a reverse-engineered API that wraps the X-Ray engine source. Squad lifecycle, protection checks, and spawn bookkeeping were traced through the C++ source.
 - Core design patterns were studied from the most accomplished mods in the Anomaly ecosystem.
 - No base script edits, no engine patches, runtime callbacks only.
-- A two-phase pipeline runs synchronous collection on frame 0, then frame-spread release over frames 1-N. See doc/architecture.md for the full design documentation.
-
-Performance detail:
-- Performance was a design constraint from the start. Collection is sub-millisecond for 200 entities, and release costs 0.05ms per frame.
-- Cooperative time-slicing (xslice) bounds per-frame release work and prevents frame stutter under heavy cleanup.
+- A two-phase pipeline runs synchronous collection on frame 0, then frame-spread release over frames 1-N. Cooperative time-slicing (xslice) bounds per-frame release work and prevents frame stutter under heavy cleanup.
 - Structured tracing carries trace IDs and per-phase timing, and null object singletons drop debug overhead to nothing when the log level is below DEBUG.
-
-Multi-stage validation pipeline:
-- luacheck and selene (static analysis)
-- tree-sitter AST analysis and ast-grep structural patterns
-- Contract rules (API safety, cross-file dependencies, cyclomatic complexity, coding standards)
-- lua54 integration testing with X-Ray engine stubs
-- gitleaks (secret scanning)
-The full report lives in doc/test-report.log.
+- Validated by a multi-stage pipeline: luacheck and selene (static analysis), tree-sitter AST analysis and ast-grep structural patterns, contract rules (API safety, cross-file dependencies, cyclomatic complexity, coding standards), lua54 integration testing with X-Ray engine stubs, and gitleaks secret scanning. The full report lives in doc/test-report.log. See doc/architecture.md for the full design.
 
 Credits:
 Altogolik - support, ideas, source materials
@@ -102,10 +91,6 @@ Modpacks are allowed and encouraged. Keep the readme and license files.
 Addons, patches, and integrations are allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.
 Reproducing the implementation in other software is not allowed, even with credit. The full license lives in the LICENSE file and on GitHub.
 
-Reporting issues and suggestions:
-Open a report at https://github.com/damiansirbu-stalker/AlifeGuard/issues/new/choose, or ask on the EFP, Anomaly, and Zona Discord servers. Read this readme and the MCM options first.
-Include exact repro steps (new game or named save, expected against actual), engine build, modlist, load order, xray.log, and the mod debug log.
-With hundreds of mods loaded, only the log shows whether this one was involved.
-The debug log is required. Set the MCM log level to DEBUG, reproduce, then set it back to WARN.
-DEBUG is not free. It writes a timed line for every evaluation and hitches single-threaded exes.
-The millisecond figures include the tracing itself, so treat them as relative.
+Diagnostics and reporting:
+Development > Log level: set to DEBUG, reproduce, then back to WARN. Writes the debug log.
+Report at https://github.com/damiansirbu-stalker/AlifeGuard/issues/new/choose or the EFP, Anomaly, and Zona Discord. Include repro steps, engine build, modlist, load order, xray.log, and the debug log.
