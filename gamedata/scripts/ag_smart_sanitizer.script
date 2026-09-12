@@ -15,8 +15,6 @@ local cfg = {
     log_level = "WARN",
 }
 
--- CONFIG
-
 local function load_config()
     local get = ag_mcm and ag_mcm.get_config
     if not get then return end
@@ -31,8 +29,6 @@ local function load_config()
     log.info("[CONFIG] sanitize=%s interval=%ds log=%s",
         tostring(cfg.sanitize_smarts), cfg.sanitize_interval, cfg.log_level)
 end
-
--- SANITIZE
 
 -- Clamp already_spawned[k] corruption: non-table value, non-number num, num < 0 (architecture.md "Smart Sanitizer").
 local function _execute_smart_sanitize(smart)
@@ -75,8 +71,6 @@ local function _execute_sanitize()
     log.info("[SANITIZE] scanned=%d fixed=%d [%.2fms]", scanned, fixed, timer:get_ms())
     return scanned, fixed
 end
-
--- LIFECYCLE
 
 -- Independent of the Online Guard's enabled toggle: state hygiene runs whenever the Smart Sanitizer itself is on.
 -- A disabled population guard never leaves save-CTD counters unclamped.

@@ -74,8 +74,6 @@ local function _spawn_one(smart, name)
     log.info("[DRIVER] spawned=%d squad=%d sec=%s smart=%s", _spawned, squad.id, section, name)
 end
 
--- CONFORMITY SNAPSHOT
-
 local function _bin_offline(squad_id, graph, actor_level, cell_size, counts)
     local squad = alife_object(squad_id)
     if not squad or squad.online then return end
@@ -146,8 +144,6 @@ local function _log_audit(smart, name)
     log.info("[CONFORM] audit=%s npc_info=%d(stale %d) arriving=%d(stale %d)",
         name, info_total, info_stale, arr_total, arr_stale)
 end
-
--- DRIVER
 
 local function _driver_tick()
     ResetTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, TICK_SEC)
