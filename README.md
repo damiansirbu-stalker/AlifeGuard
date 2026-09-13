@@ -5,6 +5,8 @@ It caps online entities, thins overcrowded regions before you arrive, bounds NPC
 
 [ModDB](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001) | [Nexus](https://www.nexusmods.com/stalkeranomaly/mods/104) | [Releases](https://github.com/damiansirbu-stalker/AlifeGuard/releases) | [Bugs, suggestions](https://github.com/damiansirbu-stalker/AlifeGuard/issues)
 
+[![Grade](https://img.shields.io/endpoint?url=https%3A%2F%2Fdamiansirbu-stalker.github.io%2FAlifeGuard%2Fbadge.json)](https://damiansirbu-stalker.github.io/AlifeGuard/) [![validate](https://github.com/damiansirbu-stalker/AlifeGuard/actions/workflows/validate.yml/badge.svg)](https://github.com/damiansirbu-stalker/AlifeGuard/actions/workflows/validate.yml) [![Project Health](https://img.shields.io/badge/project_health-dashboard-00ced1)](https://damiansirbu-stalker.github.io/AlifeGuard/)
+
 Requires: Anomaly 1.5.3, modded exes (themrdemonized or AOEngine), [xlibs](https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001), MCM. Exact versions in [readme.txt](doc/readme.txt).
 
 ## Alife Collection
