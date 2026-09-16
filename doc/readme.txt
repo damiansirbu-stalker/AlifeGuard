@@ -45,7 +45,7 @@ Mechanisms (how the culling stays safe):
 
 Requirements:
 Anomaly 1.5.3
-Modded exes: themrdemonized 2025.9.10 or newer, or AOEngine v0.55 or newer. The full feature set needs the latest demonized build; a feature that needs a newer one stays inactive on older exes.
+Modded exes: themrdemonized or AOEngine v0.55 or newer. The full feature set needs the latest demonized build; a feature that needs a newer one stays inactive on older exes.
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
@@ -67,21 +67,18 @@ Coexists with AlifePlus, Warfare, ZCP, Guards Spawner, AlifeBalance, and any mod
 Known issue:
 A rare crash on entity release (Perform_reject assertion). This is an engine-level fault in X-Ray inventory parent tracking, present in all population mods, with no script-side fix.
 
-Performance:
+Performance and Infrastructure:
 Performance comes first, ahead of any feature.
 When a feature cannot fit the budget it is reworked or removed, even with an X-Ray engine modification. It is never allowed to slow the game.
 Collection is a single pass over a native C++ iterator with cached protection lookups, sub-millisecond for 200 entities.
 Release costs 0.05ms, and debug work drops to nothing when the log level is below DEBUG.
-The timings are measured on the engine built from the latest source with no multithreading and no optimizations, so they are worst-case.
-The optimized multithreaded build you run is always faster.
-
-Development:
-- AlifeGuard runs on xlibs, a reverse-engineered API that wraps the X-Ray engine source. Squad lifecycle, protection checks, and spawn bookkeeping were traced through the C++ source.
-- Core design patterns were studied from the most accomplished mods in the Anomaly ecosystem.
-- No base script edits, no engine patches, runtime callbacks only.
-- A two-phase pipeline runs synchronous collection on frame 0, then frame-spread release over frames 1-N. Cooperative time-slicing (xslice) bounds per-frame release work and prevents frame stutter under heavy cleanup.
-- Structured tracing carries trace IDs and per-phase timing, and null object singletons drop debug overhead to nothing when the log level is below DEBUG.
-- Validated by a multi-stage pipeline: luacheck and selene (static analysis), tree-sitter AST analysis and ast-grep structural patterns, contract rules (API safety, cross-file dependencies, cyclomatic complexity, coding standards), lua54 integration testing with X-Ray engine stubs, and gitleaks secret scanning. The full report lives in doc/test-report.log. See doc/architecture.md for the full design.
+Built from the X-Ray engine source by reverse engineering, with targeted engine changes of my own for performance, precision, and accuracy.
+Heavy work spreads across frames, paced by rate limiters and staggered, deferred queues, with the math to keep cost bounded at any entity count.
+A layered validator runs on every change, locally and in CI, and blocks the build on any crash, unsafe engine call, performance regression, style break, failed smoke load, or leaked secret.
+Profiled with JitProfiler, an engine-native, scientific profiler.
+Timings are worst-case, from a build with no multithreading or optimizations, so yours runs faster.
+Project Health: https://damiansirbu-stalker.github.io/AlifeGuard/
+[JitProfiler: AlifeGuard under CPU and allocation capture]
 
 Credits:
 Altogolik - support, ideas, source materials
