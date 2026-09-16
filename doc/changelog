@@ -1,5 +1,5 @@
 next
-  Summary: scripted NPC protection, quest-target protection, online limit default, kept gear, trader purge removed, hoard clearing, trim performance
+  Summary: scripted NPC protection, quest-target protection, online limit default, kept gear, trader purge removed, hoard clearing, trim performance, performance and infrastructure
 
   Online Guard
     - Added a Protect scripted NPCs option, on by default. A squad another script is steering (an outpost service holding its post, a chase target, a mod-spawned guard) is no longer removed by either guard,
@@ -15,6 +15,12 @@ next
       so even a heavily looted NPC stays within the frame budget.
     - Removed the trader stock purge. Trader, mechanic, medic, and barman stock is left to the trade flow that already bounds it, so the guard no longer scans a trader at all.
     - Fixed a heavily looted NPC clearing only part of its surplus, then waiting a full cooldown. It now rescans each cycle until clean.
+
+  Performance and Infrastructure
+    - Rebuilt the validator into layered rules for crashes, unsafe engine usage, performance, best practices, smoke load, and secret leaks.
+    - The validator runs on every change, locally and in CI, and a grade gate fails the build on any finding.
+    - Profiled and tuned with JitProfiler, an engine-native, scientific profiler.
+    - Consolidated the whole engine layer into xlibs and standardized naming and structure across every mod.
 
 1.3.1
   Summary: Inventory Guard, trader stock purge, sanitizer setting, offline culling fix
