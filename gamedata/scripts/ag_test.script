@@ -1,4 +1,5 @@
 --- ag_test: dormant console harness driving the guards under load (run() / ag_test_torture() toggles, ag_test_inventory_* flow tests)
+--- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
 local ipairs, type, next = ipairs, type, next
 local math_max, math_min, math_huge = math.max, math.min, math.huge
@@ -48,14 +49,14 @@ local _torture_items   = {}
 -- session-cached logger for flow tests; one file per game session, appears immediately on disk
 local _flow_log
 
-local function _tip(msg)
+local function _show_tip(msg)
     log.info("%s", msg)
-    if db and db.actor then news_manager.send_tip(db.actor, msg, nil, nil, 6000) end
+    if db and db.actor then news_manager.send_show_tip(db.actor, msg, nil, nil, 6000) end
 end
 
 -- Pick a smart on a level other than the actor's, so spawns land offline and the guard processes them.
 -- Returns name + server object, or nil if the world has one level only.
-local function _pick_offline_smart(graph, actor_level)
+local function _select_offline_smart(graph, actor_level)
     if not (SIMBOARD and SIMBOARD.smarts_by_names) then return nil end
     for name, smart in pairs(SIMBOARD.smarts_by_names) do
         local gvid = smart.m_game_vertex_id
@@ -65,7 +66,7 @@ local function _pick_offline_smart(graph, actor_level)
     return nil
 end
 
-local function _spawn_one(smart, name)
+local function _spawn_squad(smart, name)
     _section_idx = _section_idx + 1
     local section = SECTIONS[(_section_idx % #SECTIONS) + 1]
     local squad = xsquad.create_squad(smart, section)
@@ -74,7 +75,7 @@ local function _spawn_one(smart, name)
     log.info("[DRIVER] spawned=%d squad=%d sec=%s smart=%s", _spawned, squad.id, section, name)
 end
 
-local function _bin_offline(squad_id, graph, actor_level, cell_size, counts)
+local function _collect_offline_cell(squad_id, graph, actor_level, cell_size, counts)
     local squad = alife_object(squad_id)
     if not squad or squad.online then return end
     local body_count = squad:npc_count()
@@ -92,14 +93,14 @@ end
 local function _log_offline_cells(graph, actor_level, cell_size)
     local counts = {}
     for squad_id in pairs(SIMBOARD.squads) do
-        _bin_offline(squad_id, graph, actor_level, cell_size, counts)
+        _collect_offline_cell(squad_id, graph, actor_level, cell_size, counts)
     end
     for key, count in pairs(counts) do
         log.info("[CONFORM] cell=%s count=%d", key, count)
     end
 end
 
-local function _count_named(squad, commander_id)
+local function _get_named_count(squad, commander_id)
     local named = 0
     for member_id in xsquad.iterate_member_ids(squad) do
         local se = member_id ~= commander_id and alife_object(member_id)
@@ -108,7 +109,7 @@ local function _count_named(squad, commander_id)
     return named
 end
 
-local function _tally_hub(squad_id, smart_pos, max_dist_sqr, totals)
+local function _collect_hub(squad_id, smart_pos, max_dist_sqr, totals)
     local squad = alife_object(squad_id)
     if not squad or not squad.position then return end
     if smart_pos:distance_to_sqr(squad.position) > max_dist_sqr then return end
@@ -116,20 +117,20 @@ local function _tally_hub(squad_id, smart_pos, max_dist_sqr, totals)
     totals.cmd = totals.cmd + 1
     totals.protected = totals.protected + (xsquad.is_protected(squad, _protection_opts) and 1 or 0)
     totals.scripted = totals.scripted + (xsquad.is_scripted(squad) and 1 or 0)
-    totals.named = totals.named + _count_named(squad, squad:commander_id())
+    totals.named = totals.named + _get_named_count(squad, squad:commander_id())
 end
 
 local function _log_hub(smart, name, max_dist_sqr)
     local smart_pos = smart.position
     local totals = { bodies = 0, cmd = 0, protected = 0, scripted = 0, named = 0 }
     for squad_id in pairs(SIMBOARD.squads) do
-        _tally_hub(squad_id, smart_pos, max_dist_sqr, totals)
+        _collect_hub(squad_id, smart_pos, max_dist_sqr, totals)
     end
     log.info("[CONFORM] hub=%s bodies=%d cmd=%d protected=%d scripted=%d named=%d",
         name, totals.bodies, totals.cmd, totals.protected, totals.scripted, totals.named)
 end
 
-local function _audit_table(tbl)
+local function _compute_audit(tbl)
     local total, stale = 0, 0
     for id in pairs(tbl) do
         total = total + 1
@@ -139,13 +140,13 @@ local function _audit_table(tbl)
 end
 
 local function _log_audit(smart, name)
-    local info_total, info_stale = _audit_table(smart.npc_info or {})
-    local arr_total, arr_stale = _audit_table(smart.arriving_npc or {})
+    local info_total, info_stale = _compute_audit(smart.npc_info or {})
+    local arr_total, arr_stale = _compute_audit(smart.arriving_npc or {})
     log.info("[CONFORM] audit=%s npc_info=%d(stale %d) arriving=%d(stale %d)",
         name, info_total, info_stale, arr_total, arr_stale)
 end
 
-local function _driver_tick()
+local function _update_driver()
     ResetTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, TICK_SEC)
     if not _active then return true end
     local sim = alife()
@@ -153,7 +154,7 @@ local function _driver_tick()
     local smart = _target_name and SIMBOARD and SIMBOARD.smarts_by_names and SIMBOARD.smarts_by_names[_target_name]
     if not (sim and graph and smart) then return false end
     local actor_level = xlevel.get_actor_level()
-    if _spawned < FEED_MAX then _spawn_one(smart, _target_name) end
+    if _spawned < FEED_MAX then _spawn_squad(smart, _target_name) end
     local cell_size = sim:switch_distance()
     _log_offline_cells(graph, actor_level, cell_size)
     _log_hub(smart, _target_name, cell_size * cell_size)
@@ -182,12 +183,12 @@ local function _log_info(msg, ...)
     xlog.flush_all()
 end
 
-local function _flow_tip(msg, ms)
-    if db and db.actor then news_manager.send_tip(db.actor, msg, nil, nil, ms or 25000) end
+local function _notify_flow(msg, ms)
+    if db and db.actor then news_manager.send_show_tip(db.actor, msg, nil, nil, ms or 25000) end
 end
 
 -- Pick the nearest online stalker that passes xcreature.is_unscriptable.
-local function _pick_npc()
+local function _select_npc()
     local actor = db.actor
     if not actor then return nil end
     local actor_pos = actor:position()
@@ -204,7 +205,7 @@ local function _pick_npc()
 end
 
 -- Extract server ids from a create_item result: userdata for one cse, array when the engine splits ammo.
-local function _extract_ids(se)
+local function _get_ids(se)
     if not se then return {} end
     local se_type = type(se)
     if se_type == "userdata" then
@@ -224,11 +225,11 @@ local function _extract_ids(se)
     return {}
 end
 
-local function _inject(npc, sec, count, ammo)
+local function _add_items(npc, sec, count, ammo)
     local all_ids = {}
     for i = 1, count do
         local se = xinventory.create_item(sec, npc:id(), ammo and { ammo = ammo } or nil)
-        local ids = _extract_ids(se)
+        local ids = _get_ids(se)
         if #ids == 0 then
             _log_info("[INJECT WARN] %s #%d create returned type=%s (no ids)", sec, i, type(se))
         end
@@ -237,7 +238,7 @@ local function _inject(npc, sec, count, ammo)
     return all_ids
 end
 
-local function _cleanup(ids)
+local function _release_ids(ids)
     local released = 0
     for _, id in ipairs(ids or {}) do
         if alife_object(id) then alife_release_id(id); released = released + 1 end
@@ -261,7 +262,7 @@ local function _find_mismatched_ammo(opts)
 end
 
 -- Collect up to `limit` eligible online stalkers (stalker, alive, no service role, not unscriptable) for the torture harness.
-local function _pick_npcs(limit)
+local function _select_npcs(limit)
     local actor = db.actor
     if not actor then return {} end
     local actor_id = actor:id()
@@ -277,7 +278,7 @@ local function _pick_npcs(limit)
 end
 
 -- Online inventory item count (for the cap-boundary assertions).
-local function _item_count(npc_id)
+local function _get_item_count(npc_id)
     local count = 0
     xinventory.iterate_inventory(npc_id, function(_, item) if item then count = count + 1 end end)
     return count
@@ -285,11 +286,11 @@ end
 
 -- Evaluate and report the inventory-cap assertions.
 -- Kept out of the deferred closure to hold its cyclomatic complexity down.
-local function _report_inventory_cap(before, mid, after, r1, r2)
+local function _log_inventory_cap(before, mid, after, r1, r2)
     local TEST = "inventory_cap"
     if not r1 or not r2 then
         _log_info("[FAIL] %s: trim returned nil (policy not loaded?)", TEST)
-        _flow_tip("[FAIL] " .. TEST .. ": trim nil")
+        _notify_flow("[FAIL] " .. TEST .. ": trim nil")
         return
     end
     local over_cap  = before > INV_SCAN_CAP
@@ -302,16 +303,16 @@ local function _report_inventory_cap(before, mid, after, r1, r2)
     _log_info("[SUMMARY] %s", summary)
     if over_cap and truncated and converged and bounded then
         _log_info("[PASS] %s | %s", TEST, summary)
-        _flow_tip(string_format("[PASS] %s\n%s", TEST, summary), 30000)
+        _notify_flow(string_format("[PASS] %s\n%s", TEST, summary), 30000)
     else
         _log_info("[FAIL] %s | %s | over_cap=%s truncated=%s converged=%s bounded=%s",
             TEST, summary, tostring(over_cap), tostring(truncated), tostring(converged), tostring(bounded))
-        _flow_tip(string_format("[FAIL] %s (see log)", TEST), 30000)
+        _notify_flow(string_format("[FAIL] %s (see log)", TEST), 30000)
     end
 end
 
 -- Diff two ordered released streams (each entry { id, cat, sec, unit }); nil on match, else a reason.
-local function _stream_diff(ref_stream, new_stream)
+local function _find_stream_diff(ref_stream, new_stream)
     if #ref_stream ~= #new_stream then
         return string_format("stream length ref=%d new=%d", #ref_stream, #new_stream)
     end
@@ -327,7 +328,7 @@ local function _stream_diff(ref_stream, new_stream)
 end
 
 -- Diff two post-release count maps over the union of their keys; nil on match, else a reason.
-local function _counts_diff(ref_counts, new_counts)
+local function _find_counts_diff(ref_counts, new_counts)
     for k, v in pairs(ref_counts) do
         if (new_counts[k] or 0) ~= v then
             return string_format("counts[%s] ref=%d new=%d", tostring(k), v, new_counts[k] or 0)
@@ -343,11 +344,11 @@ end
 
 -- Exact parity of two surplus captures, each { stream, counts, hit } (candidate also carries released).
 -- Delegates the stream and counts diffs; returns (ok, reason).
-local function _compare_surplus(ref, new)
+local function _check_surplus(ref, new)
     if new.released ~= #new.stream then
         return false, string_format("collect_surplus released=%d but its stream=%d", new.released, #new.stream)
     end
-    local reason = _stream_diff(ref.stream, new.stream) or _counts_diff(ref.counts, new.counts)
+    local reason = _find_stream_diff(ref.stream, new.stream) or _find_counts_diff(ref.counts, new.counts)
     if reason then return false, reason end
     if (ref.hit or false) ~= (new.hit or false) then
         return false, string_format("hit_cap ref=%s new=%s", tostring(ref.hit), tostring(new.hit))
@@ -356,7 +357,7 @@ local function _compare_surplus(ref, new)
 end
 
 -- Pick the first smart on the actor's own level, so its spawns go online near the actor and the guards engage.
-local function _pick_online_smart(graph, actor_level)
+local function _select_online_smart(graph, actor_level)
     if not (SIMBOARD and SIMBOARD.smarts_by_names) then return nil end
     for name, smart in pairs(SIMBOARD.smarts_by_names) do
         local gvid = smart.m_game_vertex_id
@@ -368,7 +369,7 @@ local function _pick_online_smart(graph, actor_level)
 end
 
 -- Spawn `count` squads at a smart, ledgering their ids for teardown.
-local function _torture_spawn(smart, name, count)
+local function _spawn_squads(smart, name, count)
     local spawned = 0
     for k = 1, count do
         local squad = xsquad.create_squad(smart, SECTIONS[(k % #SECTIONS) + 1])
@@ -382,24 +383,24 @@ local function _torture_spawn(smart, name, count)
 end
 
 -- Flood and trim one online NPC; returns its trim dt and whether it hit the walk cap.
-local function _torture_flood_one(npc_id)
+local function _run_flood_npc(npc_id)
     local npc = level.object_by_id(npc_id)
     if not npc then return 0, false end
     if not npc:alive() then return 0, false end
-    local got = _inject(npc, "medkit", TORTURE_FLOOD)
+    local got = _add_items(npc, "medkit", TORTURE_FLOOD)
     for j = 1, #got do _torture_items[#_torture_items + 1] = got[j] end
-    local before = _item_count(npc_id)
+    local before = _get_item_count(npc_id)
     local res = ag_inventory_guard.apply_policy(npc)
     if not res then return 0, false end
     return res.dt_ms, before > INV_SCAN_CAP
 end
 
 -- One tick of inventory pressure: flood + trim every online eligible stalker, sampling the worst trim cost and cap hits.
-local function _torture_flood()
-    local ids = _pick_npcs(TORTURE_TARGETS)
+local function _run_flood()
+    local ids = _select_npcs(TORTURE_TARGETS)
     local max_dt, capped = 0, 0
     for i = 1, #ids do
-        local dt, hit = _torture_flood_one(ids[i])
+        local dt, hit = _run_flood_npc(ids[i])
         if dt > max_dt then max_dt = dt end
         if hit then capped = capped + 1 end
     end
@@ -407,17 +408,17 @@ local function _torture_flood()
 end
 
 -- One tick of density pressure: spawn a batch at the online and offline smarts, under the cap.
-local function _torture_spawn_batch()
+local function _spawn_batch()
     if #_torture_squads >= TORTURE_CAP then return end
     local on_smart = _torture_on and SIMBOARD.smarts_by_names[_torture_on]
     local off_smart = _torture_off and SIMBOARD.smarts_by_names[_torture_off]
-    if on_smart then _torture_spawn(on_smart, _torture_on, TORTURE_BATCH) end
-    if off_smart then _torture_spawn(off_smart, _torture_off, TORTURE_BATCH) end
+    if on_smart then _spawn_squads(on_smart, _torture_on, TORTURE_BATCH) end
+    if off_smart then _spawn_squads(off_smart, _torture_off, TORTURE_BATCH) end
 end
 
 -- Log the sim load (total squads + bodies) so the spike is visible next to the guards' own log lines.
 -- Those [DENSITY] / [OFFLINE-CULL] / [VISIT] lines already break down online vs offline per cell.
-local function _torture_snapshot()
+local function _log_snapshot()
     local squads, bodies = 0, 0
     for squad_id in pairs(SIMBOARD.squads) do
         local squad = alife_object(squad_id)
@@ -431,7 +432,7 @@ end
 
 -- Despawn every squad we spawned that survived (the guards may have culled some).
 -- Release every item we injected that survived (the Inventory Guard may have trimmed some).
-local function _torture_teardown()
+local function _clear_load()
     local spawned_total, items_total = #_torture_squads, #_torture_items
     local removed = 0
     for i = 1, spawned_total do
@@ -448,18 +449,18 @@ local function _torture_teardown()
     _torture_squads, _torture_items = {}, {}
     log.info("[TORTURE] teardown spawned=%d removed=%d guard_culled=%d | items=%d released=%d guard_trimmed=%d",
         spawned_total, removed, spawned_total - removed, items_total, released, items_total - released)
-    _tip(string_format("[TORTURE] done: %d/%d squads survived to teardown, %d/%d items survived (rest handled by guards)",
+    _show_tip(string_format("[TORTURE] done: %d/%d squads survived to teardown, %d/%d items survived (rest handled by guards)",
         removed, spawned_total, released, items_total))
 end
 
 -- One torture tick: spawn a batch, flood + trim online stalkers, log the load + worst trim cost.
 -- Reschedules itself while active; drops the event once toggled off.
-local function _torture_tick()
+local function _update_torture()
     ResetTimeEvent(TIME_EVENT_ID, "torture", TORTURE_TICK_SEC)
     if not _torture_active then return true end
-    _torture_spawn_batch()
-    local max_dt, capped = _torture_flood()
-    _torture_snapshot()
+    _spawn_batch()
+    local max_dt, capped = _run_flood()
+    _log_snapshot()
     log.info("[TORTURE] tick spawned_ledger=%d items_ledger=%d trim_max=%.3fms capped=%d",
         #_torture_squads, #_torture_items, max_dt, capped)
     return false
@@ -470,33 +471,32 @@ function run()
     if _active then
         _active = false
         RemoveTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION)
-        _tip(string_format("ag_test: stopped, spawned %d squads at %s", _spawned, tostring(_target_name)))
+        _show_tip(string_format("ag_test: stopped, spawned %d squads at %s", _spawned, tostring(_target_name)))
         return
     end
     local sim = alife()
     local graph = game_graph()
-    if not (sim and graph) then _tip("ag_test: alife not ready") return end
+    if not (sim and graph) then _show_tip("ag_test: alife not ready") return end
     local actor_level = xlevel.get_actor_level()
-    local name = _pick_offline_smart(graph, actor_level)
-    if not name then _tip("ag_test: no smart on another level (need a non-actor level)") return end
+    local name = _select_offline_smart(graph, actor_level)
+    if not name then _show_tip("ag_test: no smart on another level (need a non-actor level)") return end
     _active = true
     _target_name = name
     RemoveTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION)
-    CreateTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, TICK_SEC, _driver_tick)
-    _tip(string_format("ag_test: running, feeding %s every %ds (set density_trigger/target low to force a cull)", name, TICK_SEC))
+    CreateTimeEvent(TIME_EVENT_ID, TIME_EVENT_ACTION, TICK_SEC, _update_driver)
+    _show_tip(string_format("ag_test: running, feeding %s every %ds (set density_trigger/target low to force a cull)", name, TICK_SEC))
 end
 
 --- Inventory sanitization end-to-end: inject 20 medkits + 1 mismatched-ammo stack into the nearest eligible NPC.
 --- Run apply_policy, assert per-category releases match ag_inventory_policy.ltx ceilings.
---- @novalidate(code.unused_export, reason:"console command")
-function ag_test_inventory_sanitization()
+function run_sanitization_test()
     local TEST = "inventory_sanitization"
     _log_info("[BEGIN] %s", TEST)
 
-    local npc = _pick_npc()
+    local npc = _select_npc()
     if not npc then
         _log_info("[FAIL] %s: no eligible NPC near actor", TEST)
-        _flow_tip("[FAIL] " .. TEST .. ": no eligible NPC")
+        _notify_flow("[FAIL] " .. TEST .. ": no eligible NPC")
         return
     end
     local npc_id = npc:id()
@@ -511,14 +511,14 @@ function ag_test_inventory_sanitization()
     local mismatched = _find_mismatched_ammo(opts)
     if not mismatched then
         _log_info("[FAIL] %s: no mismatched ammo section found", TEST)
-        _flow_tip("[FAIL] " .. TEST .. ": no mismatched ammo section")
+        _notify_flow("[FAIL] " .. TEST .. ": no mismatched ammo section")
         return
     end
 
     local INJECT_MEDKIT = 20
     local INJECT_AMMO = 200
-    local medkit_ids = _inject(npc, "medkit", INJECT_MEDKIT)
-    local ammo_ids = _inject(npc, mismatched, 1, INJECT_AMMO)
+    local medkit_ids = _add_items(npc, "medkit", INJECT_MEDKIT)
+    local ammo_ids = _add_items(npc, mismatched, 1, INJECT_AMMO)
     _log_info("[INJECT] medkit ids=%d (requested %d), %s ids=%d (requested 1 stack of %d rounds)",
         #medkit_ids, INJECT_MEDKIT, mismatched, #ammo_ids, INJECT_AMMO)
 
@@ -526,8 +526,8 @@ function ag_test_inventory_sanitization()
         local npc2 = level.object_by_id(npc_id)
         if not npc2 then
             _log_info("[FAIL] %s: npc went offline before phase 2", TEST)
-            _flow_tip("[FAIL] " .. TEST .. ": npc offline")
-            _cleanup(medkit_ids); _cleanup(ammo_ids)
+            _notify_flow("[FAIL] " .. TEST .. ": npc offline")
+            _release_ids(medkit_ids); _release_ids(ammo_ids)
             return true
         end
 
@@ -563,18 +563,18 @@ function ag_test_inventory_sanitization()
 
         if ok_medkit and ok_ammo then
             _log_info("[PASS] %s | %s", TEST, summary)
-            _flow_tip(string_format("[PASS] %s\n%s", TEST, summary), 30000)
+            _notify_flow(string_format("[PASS] %s\n%s", TEST, summary), 30000)
         else
             local reason = string_format(
                 "medkit released=%d expected=%d ok=%s | ammo released=%d expected>=1 (mid=%d) ok=%s",
                 actual_medkit_released, expected_medkit_released, tostring(ok_medkit),
                 actual_ammo_released, mid_ammo, tostring(ok_ammo))
             _log_info("[FAIL] %s | %s | %s", TEST, summary, reason)
-            _flow_tip(string_format("[FAIL] %s\n%s\n%s", TEST, summary, reason), 30000)
+            _notify_flow(string_format("[FAIL] %s\n%s\n%s", TEST, summary, reason), 30000)
         end
 
-        local m_cleaned = _cleanup(medkit_ids)
-        local a_cleaned = _cleanup(ammo_ids)
+        local m_cleaned = _release_ids(medkit_ids)
+        local a_cleaned = _release_ids(ammo_ids)
         _log_info("[TEARDOWN] released %d/%d medkit ids, %d/%d ammo ids (others already gone via trim)",
             m_cleaned, #medkit_ids, a_cleaned, #ammo_ids)
         return true
@@ -583,25 +583,24 @@ end
 
 --- Inventory scan cap: inject 2x the walk cap, trim twice, assert the first pass truncates and the second releases more.
 --- Convergence proof for the frame-cost bound the cap guarantees.
---- @novalidate(code.unused_export, reason:"console command")
-function ag_test_inventory_cap()
+function run_cap_test()
     local TEST = "inventory_cap"
     _log_info("[BEGIN] %s", TEST)
 
-    local npc = _pick_npc()
+    local npc = _select_npc()
     if not npc then
         _log_info("[FAIL] %s: no eligible NPC near actor", TEST)
-        _flow_tip("[FAIL] " .. TEST .. ": no eligible NPC")
+        _notify_flow("[FAIL] " .. TEST .. ": no eligible NPC")
         return
     end
     local npc_id = npc:id()
     _log_info("[SETUP] npc=%d name=%s cap=%d", npc_id, npc:name() or "?", INV_SCAN_CAP)
 
     local INJECT = INV_SCAN_CAP * 2
-    local ids = _inject(npc, "medkit", INJECT)
+    local ids = _add_items(npc, "medkit", INJECT)
     if #ids == 0 then
         _log_info("[FAIL] %s: medkit inject produced no items", TEST)
-        _flow_tip("[FAIL] " .. TEST .. ": inject failed")
+        _notify_flow("[FAIL] " .. TEST .. ": inject failed")
         return
     end
     _log_info("[INJECT] medkit x%d (ids=%d)", INJECT, #ids)
@@ -610,19 +609,19 @@ function ag_test_inventory_cap()
         local npc2 = level.object_by_id(npc_id)
         if not npc2 then
             _log_info("[FAIL] %s: npc offline before phase 2", TEST)
-            _flow_tip("[FAIL] " .. TEST .. ": npc offline")
-            _cleanup(ids)
+            _notify_flow("[FAIL] " .. TEST .. ": npc offline")
+            _release_ids(ids)
             return true
         end
 
-        local before = _item_count(npc_id)
+        local before = _get_item_count(npc_id)
         local r1 = ag_inventory_guard.apply_policy(npc2)
-        local mid = _item_count(npc_id)
+        local mid = _get_item_count(npc_id)
         local r2 = ag_inventory_guard.apply_policy(npc2)
-        local after = _item_count(npc_id)
-        _report_inventory_cap(before, mid, after, r1, r2)
+        local after = _get_item_count(npc_id)
+        _log_inventory_cap(before, mid, after, r1, r2)
 
-        local cleaned = _cleanup(ids)
+        local cleaned = _release_ids(ids)
         _log_info("[TEARDOWN] released %d/%d injected ids (others already gone via trim)", cleaned, #ids)
         return true
     end)
@@ -630,15 +629,14 @@ end
 
 --- Surplus-walk parity: assert xinventory.collect_surplus matches classify + iterate_surplus on the same inventory.
 --- Read-only proof of the identical released stream, counts, and hit_cap.
---- @novalidate(code.unused_export, reason:"console command")
-function ag_test_surplus_parity()
+function run_parity_test()
     local TEST = "surplus_parity"
     _log_info("[BEGIN] %s", TEST)
 
-    local npc = _pick_npc()
+    local npc = _select_npc()
     if not npc then
         _log_info("[FAIL] %s: no eligible NPC near actor", TEST)
-        _flow_tip("[FAIL] " .. TEST .. ": no eligible NPC")
+        _notify_flow("[FAIL] " .. TEST .. ": no eligible NPC")
         return
     end
     local npc_id = npc:id()
@@ -648,12 +646,12 @@ function ag_test_surplus_parity()
     local mismatched = _find_mismatched_ammo(opts0)
     if not mismatched then
         _log_info("[FAIL] %s: no mismatched ammo section found", TEST)
-        _flow_tip("[FAIL] " .. TEST .. ": no mismatched ammo section")
+        _notify_flow("[FAIL] " .. TEST .. ": no mismatched ammo section")
         return
     end
 
-    local medkit_ids = _inject(npc, "medkit", 20)
-    local ammo_ids = _inject(npc, mismatched, 4, 60)
+    local medkit_ids = _add_items(npc, "medkit", 20)
+    local ammo_ids = _add_items(npc, mismatched, 4, 60)
     local inject_ids = {}
     for _, id in ipairs(medkit_ids) do inject_ids[#inject_ids + 1] = id end
     for _, id in ipairs(ammo_ids) do inject_ids[#inject_ids + 1] = id end
@@ -664,8 +662,8 @@ function ag_test_surplus_parity()
         local npc2 = level.object_by_id(npc_id)
         if not npc2 then
             _log_info("[FAIL] %s: npc offline before phase 2", TEST)
-            _flow_tip("[FAIL] " .. TEST .. ": npc offline")
-            _cleanup(inject_ids)
+            _notify_flow("[FAIL] " .. TEST .. ": npc offline")
+            _release_ids(inject_ids)
             return true
         end
 
@@ -692,7 +690,7 @@ function ag_test_surplus_parity()
             end,
         })
 
-        local ok, reason = _compare_surplus(
+        local ok, reason = _check_surplus(
             { stream = ref_stream, counts = ref_counts, hit = ref_hit },
             { stream = new_stream, counts = new_counts, hit = new_hit, released = new_released })
         local summary = string_format("npc=%d %s | ref_stream=%d new_stream=%d hit ref=%s new=%s",
@@ -700,37 +698,36 @@ function ag_test_surplus_parity()
         _log_info("[SUMMARY] %s", summary)
         if ok then
             _log_info("[PASS] %s | %s", TEST, summary)
-            _flow_tip(string_format("[PASS] %s\n%s", TEST, summary), 30000)
+            _notify_flow(string_format("[PASS] %s\n%s", TEST, summary), 30000)
         else
             _log_info("[FAIL] %s | %s | %s", TEST, summary, reason)
-            _flow_tip(string_format("[FAIL] %s\n%s", TEST, reason), 30000)
+            _notify_flow(string_format("[FAIL] %s\n%s", TEST, reason), 30000)
         end
 
-        _cleanup(inject_ids)
+        _release_ids(inject_ids)
         return true
     end)
 end
 
 --- Continuous multi-system torture LOOP (toggle): each tick spawns squads and floods/trims stalkers under sustained load.
 --- Run again to tear down.
---- @novalidate(code.unused_export, reason:"console command")
-function ag_test_torture()
+function run_torture()
     if _torture_active then
         _torture_active = false
         RemoveTimeEvent(TIME_EVENT_ID, "torture")
-        _torture_teardown()
+        _clear_load()
         return
     end
     local sim, graph = alife(), game_graph()
-    if not (sim and graph) then _flow_tip("[FAIL] torture: alife not ready"); return end
+    if not (sim and graph) then _notify_flow("[FAIL] torture: alife not ready"); return end
     local actor_level = xlevel.get_actor_level()
-    _torture_on = _pick_online_smart(graph, actor_level)
-    _torture_off = _pick_offline_smart(graph, actor_level)
-    if not (_torture_on or _torture_off) then _flow_tip("[FAIL] torture: no smarts found"); return end
+    _torture_on = _select_online_smart(graph, actor_level)
+    _torture_off = _select_offline_smart(graph, actor_level)
+    if not (_torture_on or _torture_off) then _notify_flow("[FAIL] torture: no smarts found"); return end
     _torture_active = true
     _torture_squads, _torture_items = {}, {}
     RemoveTimeEvent(TIME_EVENT_ID, "torture")
-    CreateTimeEvent(TIME_EVENT_ID, "torture", TORTURE_TICK_SEC, _torture_tick)
-    _tip(string_format("[TORTURE] LOOP on (online=%s offline=%s, every %ds). Run again to stop and clean up.",
+    CreateTimeEvent(TIME_EVENT_ID, "torture", TORTURE_TICK_SEC, _update_torture)
+    _show_tip(string_format("[TORTURE] LOOP on (online=%s offline=%s, every %ds). Run again to stop and clean up.",
         tostring(_torture_on), tostring(_torture_off), TORTURE_TICK_SEC))
 end
