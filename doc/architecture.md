@@ -512,7 +512,8 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 | ag_smart_sanitizer.script | 107 | Smart Sanitizer: clamps corrupted already_spawned respawn counters |
 | ag_inventory_guard.script | 265 | Inventory Guard: online inventory scanner, public `apply_policy`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
 | ag_mcm.script | 210 | MCM defaults, UI definition, button handlers |
-| _ag_deps.script | 110 | Version string, xlibs + modded-exes/AOEngine dependency gate, platform status footer |
+| _ag_manifest.script | 7 | Identity data: name, version, xlibs pin |
+| _ag_init.script | 108 | xlibs + modded-exes/AOEngine dependency gate, platform status footer |
 | ag_test.script | 739 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and run_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds, exercising every guard under sustained load. Toggle off to tear down) |
 
 Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventory Guard per-category ceilings (DLTX-overridable).
