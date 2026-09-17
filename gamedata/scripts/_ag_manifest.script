@@ -1,0 +1,7 @@
+--- _ag_manifest: AlifeGuard identity. Pure data, no logic. Read by _ag_init (the gate) and the validator (deps.manifest_structure).
+
+MANIFEST = {
+    name    = "AlifeGuard",
+    version = "next",
+    xlibs   = "1.8.3",
+}
