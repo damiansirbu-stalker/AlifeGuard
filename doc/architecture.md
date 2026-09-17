@@ -1,8 +1,8 @@
 # AlifeGuard Architecture
 
-A-Life performance and stability for STALKER Anomaly.
+AlifeGuard guards A-Life performance and stability in STALKER Anomaly.
 It keeps the online entity count under a configurable threshold by releasing NPCs back to offline simulation, and it bounds NPC item inventories against the engine's alife-ID cap.
-It is squad-aware: it thins squad members before touching commanders and spreads removals evenly across factions and mutant types through round-robin. Hysteresis prevents oscillation.
+It is squad-aware. It thins squad members before touching commanders, and spreads removals evenly across factions and mutant types through round-robin. Hysteresis prevents oscillation.
 Releases are frame-spread, 1 per frame through xslice, to bound the per-frame work of `safe_release_manager` and keep cleanup smooth.
 
 Built on xlibs (xsquad, xcreature, xslice, xprofiler, xtable, xlog, xinventory, xsmart, xtime).
@@ -68,9 +68,9 @@ FRAMES 1..N: xslice "ag_despawn", step=1
 
 ### Why
 
-Releasing individual NPCs by distance destroys entire squads. `alife_release_id(npc)` routes through `_g.script:alife_release` -> `squad:remove_npc(id, true)`.
+A per-NPC release by distance destroys entire squads. `alife_release_id(npc)` routes through `_g.script:alife_release` -> `squad:remove_npc(id, true)`.
 When `npc_count()` hits 0 the squad is deleted and `already_spawned` is decremented. The originating smart terrain then gets a free respawn slot.
-This creates a feedback loop: AG culls, the smart terrain respawns, and AG culls again.
+This creates a feedback loop. AG culls, the smart terrain respawns, and AG culls again.
 
 ### How
 
@@ -84,7 +84,7 @@ Collection groups entities by squad. Each squad record tracks:
 | category | `squad.player_id` | Faction or mutant type (0 luabind, Lua field) |
 | removable | collected | Non-commander, non-protected members eligible for release |
 
-Keeping the commander alive means the squad survives. `already_spawned` stays unchanged. All spawn paths are blocked:
+A live commander means the squad survives. `already_spawned` stays unchanged. All spawn paths stay blocked:
 
 | Spawn path | Gate | Blocked by lone commander? |
 |---|---|---|
@@ -124,7 +124,7 @@ It uses a weak-key cache for the session lifetime and costs 0 luabind on a hit.
 
 ## Priority Tiers (ag_queue)
 
-Entities are sorted into 4 tiers. Each tier is fully exhausted before the next is touched.
+Entities are sorted into 4 tiers. Each tier is exhausted before the next is touched.
 
 | Tier | Contents | Rationale |
 |---|---|---|
@@ -156,7 +156,7 @@ Categories with fewer members exhaust first and are skipped in subsequent rounds
 
 ## Hysteresis
 
-Prevents oscillation between cull cycles.
+Hysteresis prevents oscillation between cull cycles.
 
 - **Trigger**: `total > max` (e.g., 121 > 120)
 - **Target**: `max - buffer` (e.g., 120 - 10 = 110)
@@ -171,11 +171,12 @@ Without hysteresis: cull to 80, 2 NPCs respawn, cull again next cycle. With buff
 xslice (xlibs) processes the release queue at 1 entity per frame through `AddUniqueCall`. This is cooperative time-slicing on X-Ray's single Lua thread, not multithreading.
 
 Why 1 per frame: `safe_release_manager` (Alundaio, `safe_release_manager.script:4-7`) handles the binder-still-alive race between `release` and `net_destroy`.
-It defers each entity's actual release across several frames (`set_switch_online(false)` + `set_switch_offline(true)` + `switch_offline()`, then `sim:release` once the binder is gone).
+It defers each entity's actual release across several frames.
+It calls `set_switch_online(false)`, `set_switch_offline(true)`, and `switch_offline()`, then releases the server object once the binder is gone.
 It drains its `objects_to_release` dict through `AddUniqueCall` once per frame and walks all pending entries on each pass.
 A synchronous N-entity release loop pushes N entries in one frame, so every later drain pass does N `switch_offline` calls until the binders finish.
 xslice's 1-per-frame pacing keeps `objects_to_release` at depth 1, so per-frame cost stays flat.
-Intra-slice deaths fail the `alife_object(id)` verify and are skipped at zero cost.
+Intra-slice deaths fail the `alife_object(id)` verify and are skipped at no cost.
 
 Release path per entity:
 ```
@@ -251,7 +252,7 @@ A `[DENSITY]` line is logged at DEBUG per completed pass.
 At pass end, cells with `count > density_trigger` on non-actor levels are thinned by `count - density_target` members.
 A third gate `count > #squads` requires at least one removable non-commander body. The drain keeps every commander, so a cell already at its one-per-squad floor can never drop under trigger.
 Without this gate it re-flags every pass and drains to release nothing, which is offline hysteresis.
-The synchronous step is only a pure-Lua work list: each over-trigger cell contributes a shared budget table (`count - target`) and one `{squad_id, budget}` item per squad, with zero luabind.
+The synchronous step is only a pure-Lua work list. Each over-trigger cell contributes a shared budget table (`count - target`) and one `{squad_id, budget}` item per squad, with no luabind.
 All squad resolution, protection, and release is deferred into the shared xslice `"ag_despawn"` job, one squad per frame.
 No single frame examines more than one squad, so the build stays flat regardless of cull size.
 
@@ -262,11 +263,12 @@ That variant reads the story-id registry, the `xdata.unscriptable_npcs` section 
 Task-giver and bounty/hostage protection is squad-level through `is_protected`, gated by the offline guard's own `density_check_tasks`.
 
 No round-robin across factions, which would need the whole member set built at once and defeat frame-spreading.
-It is unnecessary offline: every squad keeps its commander and survives. No faction is wiped, and nothing needs spreading.
+It is unnecessary offline. Every squad keeps its commander and survives. No faction is wiped, and nothing needs spreading.
 Cells are processed in scan order. The `xslice.is_active` guard means the offline and online culls never run despawn jobs concurrently.
-A cull that outlasts the next scan pass simply defers the next cull until it finishes.
+A cull that outlasts the next scan pass defers the next cull until it finishes.
 
-Fully decoupled from the online guard. `density_trigger` (when a region is overcrowded) and `density_target` (what to thin it to) are absolute body counts, not derived from the online `max`.
+The offline guard is decoupled from the online guard.
+`density_trigger` (when a region is overcrowded) and `density_target` (what to thin it to) are absolute body counts, not derived from the online `max`.
 Target can go as low as 0 to strip a region to lone commanders, so offline can be culled harder than the online cap if wanted.
 A target above the trigger is clamped to the trigger. The offline pass reads none of the online guard's keys.
 
@@ -288,7 +290,7 @@ One squad per frame keeps per-frame work bounded and the synchronous build off t
 Direct `alife():release()` on a squad member is forbidden.
 The group's `update()` writes through raw `m_members` pointers and the engine has no member auto-detach on release (use-after-free).
 
-Keeping the commander keeps `npc_count() > 0`, so `remove_npc` never reaches its squad-deletion branch.
+A kept commander keeps `npc_count() > 0`, so `remove_npc` never reaches its squad-deletion branch.
 The squad stays in SIMBOARD, `already_spawned` stays untouched, and there is no respawn feedback.
 
 Full design record with engine citations: `stalker-dev/doc/todo/todo-alifeguard-offline-density.md`.
@@ -314,7 +316,7 @@ Total: ~9-10 luabind per entity (production), ~1-6 per squad. Sub-millisecond fo
 
 ### Why the all-objects walk, not a creature-only iterator
 
-Iterating only creatures is tempting: stalkers are free from `db.OnlineStalkers`, so only monsters would need tracking. It was tried (n12) and reverted.
+A creature-only walk is tempting. Stalkers are free from `db.OnlineStalkers`, so only monsters would need tracking. It was tried (n12) and reverted.
 Monsters have no engine-maintained list, so it needs a script-maintained online-monster set, and that set has no reliable removal.
 Neither `monster_on_net_destroy` nor `server_entity_on_unregister` fires on the guard's own script cull, so it accumulates ids of already-deleted monsters without bound.
 Under load `skipped` reached 117 with the monsters confirmed deleted.
@@ -326,7 +328,7 @@ The saving is one sub-2ms frame every 10-30s, already inside budget. A stateless
 
 ### Benchmarks
 
-Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frames. Per-release 0.05ms avg. Zero stutter. See `doc/img/benchmark_despawn_spread.jpg`.
+Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frames. Per-release 0.05ms avg. No stutter. See `doc/img/benchmark_despawn_spread.jpg`.
 
 ---
 
@@ -414,10 +416,10 @@ Probes, MCM "trim now" buttons, TestZone probes, and console diagnostics call `a
 
 Service NPCs (traders, mechanics, medics, barmen) are detected by section, community, or clsid through `xsmart.get_npc_roles`.
 Hub traders also fail the `IsStalker` admit by `script_trader` clsid. They are skipped entirely at the scheduler.
-Their inventory is trade stock, not a lootable hoard, and it is already bounded by the trade flow.
+Their inventory is trade stock, already bounded by the trade flow.
 The engine destroys a trader's unslotted stock at each restock (`CInventoryOwner::buy_supplies` -> `CPurchaseList::process` -> `sell_useless_items`).
 The Trader Destockifier caps weapon, outfit, and helmet count per trader on every trade-open.
-Trimming a trader with the stalker policy would gut the shelf, so the guard never touches one.
+A stalker-policy trim would gut a trader's shelf, so the guard never touches one.
 
 ### Frame-cost cap
 
@@ -429,7 +431,7 @@ A trim that shed surplus leaves the NPC eligible to re-trim next cycle, so a hoa
 A stalker past the cap is a fat corpse-hoarder.
 The surplus beyond the window is trimmed on the next cooldown pass as releases shrink the inventory and the tail shifts into the first-`MAX_SCAN_ITEMS` slots.
 `m_all` iteration order is stable across the two walks, so both walks cover the identical items. Truncation is logged as `capped=true` on the `[VISIT]` line when DEBUG is on.
-Capping only ever under-releases and never touches a legitimate item.
+The cap only ever under-releases, and never touches a legitimate item.
 
 ### Policy
 
