@@ -1,23 +1,15 @@
 AlifeGuard: A-Life performance and stability for STALKER Anomaly, by Damian
 Version: next (xlibs 1.8.3, demonized 20250908)
-GitHub: https://github.com/damiansirbu-stalker/AlifeGuard
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
-Bugs, suggestions: https://github.com/damiansirbu-stalker/AlifeGuard/issues
 
-Alife Collection:
-AlifeAmbience: https://github.com/damiansirbu-stalker/AlifeAmbience
-AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
-AlifeCompanions: https://github.com/damiansirbu-stalker/AlifeCompanions
-AlifeDiegetic: https://www.moddb.com/mods/stalker-anomaly/addons/diegetic-audio-control-100
-AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
-AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
-AlifeSpooks: https://github.com/damiansirbu-stalker/AlifeSpooks
-AlifeTactics: https://www.moddb.com/mods/stalker-anomaly/addons/alifetactics
-FurnitureFuel: https://github.com/damiansirbu-stalker/FurnitureFuel
-JitProfiler: https://github.com/damiansirbu-stalker/JitProfiler
-TestZone: https://github.com/damiansirbu-stalker/TestZone
-xlibs: https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001
+My work:
+GitHub: https://github.com/orgs/damiansirbu-stalker/repositories
+ModDB: https://www.moddb.com/members/damian-sirbu/addons
+Nexus: https://www.nexusmods.com/profile/damiansirbu/mods
+
+My contributions:
+X-Ray Monolith: https://github.com/themrdemonized/xray-monolith
 
 ! Reset MCM settings to defaults after updating !
 
@@ -67,18 +59,23 @@ Coexists with AlifePlus, Warfare, ZCP, Guards Spawner, AlifeBalance, and any mod
 Known issue:
 A rare crash on entity release (Perform_reject assertion). This is an engine-level fault in X-Ray inventory parent tracking, present in all population mods, with no script-side fix.
 
-Performance and Infrastructure:
-Performance comes first, ahead of any feature.
-When a feature cannot fit the budget it is reworked or removed, even with an X-Ray engine modification. It is never allowed to slow the game.
-Collection is a single pass over a native C++ iterator with cached protection lookups, sub-millisecond for 200 entities.
-Release costs 0.05ms, and debug work drops to nothing when the log level is below DEBUG.
-Built from the X-Ray engine source by reverse engineering, with targeted engine changes of my own for performance, precision, and accuracy.
-Heavy work spreads across frames, paced by rate limiters and staggered, deferred queues, with the math to keep cost bounded at any entity count.
-A layered validator runs on every change, locally and in CI, and blocks the build on any crash, unsafe engine call, performance regression, style break, failed smoke load, or leaked secret.
-Profiled with JitProfiler, an engine-native, scientific profiler.
-Timings are worst-case, from a build with no multithreading or optimizations, so yours runs faster.
+How It's Built:
+
+Although it started from work by Demonized, Alundaio, and Tronex, the current code and patterns are original, learned through reverse-engineering X-Ray, load testing, and custom X-Ray changes.
+The design favors the engine's own mechanisms and minimal intervention, with event-native pub/sub over polling.
+Work spreads across frames through deferred queues and rate limiters, while per-level caches replace world scans.
+The raycasting and range math are hand-written and tested live, and the code follows the engine's own standards and flags.
+Performance is the first invariant. Every flow stays under 2ms, and the build rewrites or drops anything that misses.
+Profiled continuously with JitProfiler, an engine-native scientific tool. Manual tests run on unoptimized, single-threaded exes.
+The code carries tracing and monitoring from the ground up, with every flow timed off the log level.
+Every commit runs the full pipeline locally and in CI: luacheck, a Selene build compiled for STALKER with flags the public build lacks, and a load test that runs every script against engine stubs.
+Rule layers then check crash safety, hotpath cost, engine correctness, complexity, architecture contracts, security, and the docs.
+Every mod is configurable through MCM or LTX, down to each rate, threshold, and toggle, with nothing tunable left hard-coded.
+The mod avoids writing engine values, holding its own state in parallel. Any value it must change stays inside the engine's own bounds, so save corruption is impossible.
+It depends on no other mod, not even my own. The only shared layers are X-Ray and xlibs.
+
+[Screenshot: AlifeGuard under JitProfiler, a live CPU and allocation capture]
 Project Health: https://damiansirbu-stalker.github.io/AlifeGuard/
-[JitProfiler: AlifeGuard under CPU and allocation capture]
 
 Credits:
 Altogolik - support, ideas, source materials
