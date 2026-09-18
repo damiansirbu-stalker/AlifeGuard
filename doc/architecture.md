@@ -11,8 +11,7 @@ Runtime split into five modules. **ag_online_guard** does online culling and **a
 **ag_smart_sanitizer** keeps respawn-counter hygiene, and **ag_inventory_guard** bounds NPC item inventories. **ag_queue** is the online guard's pure release-queue strategy.
 File and MCM-tab names share one vocabulary: Online Guard, Offline Guard, Smart Sanitizer, Inventory Guard.
 
-Part of a three-mod alife family. **AlifePlus** extends A-Life with new behaviors, and **AlifeBalance** modulates rates and counts the engine already owns without releasing anything.
-**AlifeGuard**, this mod, owns all release work for entities and items and repairs alife state.
+AlifeGuard owns all release work for entities and items, and repairs alife state.
 
 ---
 
@@ -89,8 +88,8 @@ A live commander means the squad survives. `already_spawned` stays unchanged. Al
 | Spawn path | Gate | Blocked by lone commander? |
 |---|---|---|
 | `try_respawn` | `already_spawned[section].num < max_respawn_count` | Yes - counter not decremented |
-| Warfare | `squad_count(smart, faction) < totalSize` | Yes - squad still in SIMBOARD.squads |
-| ZCP | Via try_respawn gates | Yes |
+| Faction-war spawn | `squad_count(smart, faction) < totalSize` | Yes - squad still in SIMBOARD.squads |
+| Respawn-pool spawn | Via try_respawn gates | Yes |
 | SIMBOARD routing | `population >= max_population` | Yes - squad still assigned |
 
 ---
@@ -410,7 +409,7 @@ The scanner's xslice queue (`ag_inventory_guard_scan`) is independent of the des
 |---|---|---|
 | `apply_policy(npc, opts)` | Apply inventory policy to one NPC. opts: `{ dry_run }`. Cooldown table NOT touched. Both walks capped at `MAX_SCAN_ITEMS` (40). | `{ released, released_by_category, dt_ms }` |
 
-Probes, MCM "trim now" buttons, TestZone probes, and console diagnostics call `apply_policy` directly without scheduler involvement.
+Probes, MCM "trim now" buttons, and console diagnostics call `apply_policy` directly without scheduler involvement.
 
 ### Traders skipped
 
