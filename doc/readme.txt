@@ -84,9 +84,10 @@ Credits:
 Altogolik - support, ideas, source materials
 
 Usage and License:
-Modpacks are allowed and encouraged. Keep the readme and license files.
-Addons, patches, and integrations are allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.
-Reproducing the implementation in other software is not allowed, even with credit. The full license lives in the LICENSE file and on GitHub.
+Modpacks: allowed and encouraged. Keep the readme and license files.
+Addons, patches, integrations: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.
+Reproducing the implementation in other software: not allowed, even with credit.
+Full license in LICENSE file and on GitHub.
 
 Diagnostics and reporting:
 Development > Log level: set to DEBUG, reproduce, then back to WARN. Writes the debug log.
