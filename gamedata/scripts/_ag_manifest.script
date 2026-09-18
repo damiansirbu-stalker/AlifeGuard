@@ -2,6 +2,6 @@
 
 MANIFEST = {
     name    = "AlifeGuard",
-    version = "next",
+    version = "1.3.2-snapshot",
     xlibs   = "1.8.3",
 }
