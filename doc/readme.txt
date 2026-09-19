@@ -91,4 +91,4 @@ Diagnostics and reporting:
 Development > Log level: set to DEBUG, reproduce, then back to WARN. Writes the debug log.
 Report at https://github.com/damiansirbu-stalker/AlifeGuard/issues/new/choose or the EFP, Anomaly, and Zona Discord. Include repro steps, engine build, modlist, load order, xray.log, and the debug log.
 
-Tags: alife, performance, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety
+Tags: alife, performance, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety, save-safe
