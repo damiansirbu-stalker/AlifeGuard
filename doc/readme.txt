@@ -1,4 +1,3 @@
-AlifeGuard: A-Life performance and stability for STALKER Anomaly, by Damian
 Version: 1.3.2-snapshot (xlibs 1.8.3, demonized 20250908)
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
