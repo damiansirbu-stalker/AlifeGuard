@@ -1,0 +1,42 @@
+direction: down
+
+style.fill: "#1f2421"
+
+**.style.fill: "#262c27"
+**.style.stroke: "#ece7d8"
+**.style.font-color: "#ece7d8"
+**.style.stroke-width: 2
+
+title: "AlifeGuard - keep A-Life under budget, release safely" {
+  near: top-center
+  style: { stroke-width: 0; fill: "#1f2421"; font-color: "#ece7d8"; font-size: 28 }
+}
+
+sensor: "Every 30s - count online entities against the threshold" {
+  style.stroke: "#c9d8b6"
+}
+
+queue: "Over budget - build a squad-aware release queue" {
+  grid-columns: 1
+  grid-gap: 14
+  a: "thin members before commanders (a live commander keeps the squad, so no respawn loop)"
+  b: "skip the protected - story, trader, companion, quest target"
+  c: "round-robin across factions and mutants, farthest first, with hysteresis"
+}
+
+release: "Release frame-spread - xslice, 1 per frame\nentities fall back to offline simulation" {
+  style.stroke: "#c9d8b6"
+}
+
+guards: "Four guards own the work" {
+  grid-columns: 2
+  grid-gap: 16
+  og: "Online Guard\ncull to the online cap"
+  fg: "Offline Guard\ncull offline density"
+  ss: "Smart Sanitizer\nrespawn-counter hygiene"
+  ig: "Inventory Guard\nbound NPC inventories"
+}
+
+sensor -> queue: "when over" { style: { stroke: "#c9d8b6"; font-color: "#c9d8b6" } }
+queue -> release: "drain" { style: { stroke: "#c9d8b6"; font-color: "#c9d8b6" } }
+release -> guards: "" { style: { stroke: "#c9d8b6" } }
