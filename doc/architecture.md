@@ -327,7 +327,7 @@ The saving is one sub-2ms frame every 10-30s, already inside budget. A stateless
 
 ### Benchmarks
 
-Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frames. Per-release 0.05ms avg. No stutter. See `doc/img/benchmark_despawn_spread.jpg`.
+Playtested: Army Warehouses, 83 online, threshold 50, 33 removed across 40 frames. Per-release 0.05ms avg. No stutter.
 
 ---
 
