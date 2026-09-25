@@ -51,7 +51,7 @@ local _flow_log
 
 local function _show_tip(msg)
     log.info("%s", msg)
-    if db and db.actor then news_manager.send_show_tip(db.actor, msg, nil, nil, 6000) end
+    if db and db.actor then news_manager.send_tip(db.actor, msg, nil, nil, 6000) end
 end
 
 -- Pick a smart on a level other than the actor's, so spawns land offline and the guard processes them.
@@ -184,7 +184,7 @@ local function _log_info(msg, ...)
 end
 
 local function _notify_flow(msg, ms)
-    if db and db.actor then news_manager.send_show_tip(db.actor, msg, nil, nil, ms or 25000) end
+    if db and db.actor then news_manager.send_tip(db.actor, msg, nil, nil, ms or 25000) end
 end
 
 -- Pick the nearest online stalker that passes xcreature.is_unscriptable.
