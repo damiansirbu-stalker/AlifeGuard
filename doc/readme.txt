@@ -28,14 +28,16 @@ Systems:
 - Online Guard - caps the online population near you: when the count crosses the trigger it culls back to the target, squad by squad.
 - Offline Guard - a staggered scan bins offline squads by region and thins the crowded ones, so a hub full of offline squads cannot spike the count when it wakes. Commanders always survive.
 - Smart Sanitizer - clamps corrupted respawn counters on smart terrains, the kind that cause save crashes and infinite spawn loops.
-- Inventory Guard - bounds what NPCs hoard from looting. Vanilla looting stays on, but a long-lived stalker carries a believable load instead of a trader run, and looted items stop drifting toward the engine's ~65000-object cap that crashes long saves.
+- Inventory Guard - bounds what NPCs hoard from looting. Vanilla looting stays on, but a long-lived stalker carries a believable load instead of a trader run.
+  Looted items stop drifting toward the engine's ~65000-object cap that crashes long saves.
 
 Mechanisms (how the culling stays safe):
 - Squad-aware - thins non-commanders first, commanders last, so squads stay valid in SIMBOARD and no respawn loop starts. Mod-owned squads (AlifePlus, Warfare, Guards Spawner) go last.
 - Round-robin - removals spread across factions and mutant types, one per category per round, so no group is thinned disproportionately.
 - Hysteresis - separate trigger and target thresholds (default 80 down to 70), so cleanup runs in cycles, not on every small change.
 - Frame-spread - entities released one per frame via xslice, so a cleanup spreads over frames and never hitches the game.
-- Protection - story squads, traders, named NPCs, companions, task givers, quest/bounty/hostage targets, and scripted squads are never touched. Toggle scripted protection off for the most aggressive culling.
+- Protection - story squads, traders, named NPCs, companions, task givers, quest/bounty/hostage targets, and scripted squads are never touched.
+  Toggle scripted protection off for the most aggressive culling.
 
 Requirements:
 Anomaly 1.5.3
@@ -85,7 +87,7 @@ It depends on no other mod, not even the author's own. The only shared layers ar
 That pipeline runs on every commit and publishes what it finds. The header links a live health page and a JitProfiler capture of the mod's real CPU and allocation cost.
 
 Credits:
-Altogolik - support, ideas, source materials
+Altogolik provided support, ideas, and source materials.
 
 Usage and License:
   Modpacks: allowed and encouraged. Keep the readme and license files.
