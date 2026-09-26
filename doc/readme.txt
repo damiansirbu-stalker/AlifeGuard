@@ -1,6 +1,5 @@
 Version: 1.3.2-snapshot (xlibs 1.8.3, demonized 20250908)
-Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
-Russian / Na russkom: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
+Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog | Health: https://damiansirbu-stalker.github.io/AlifeGuard/health/ | JitProfiler: https://damiansirbu-stalker.github.io/AlifeGuard/jitprofiler/ | Bugs: https://github.com/damiansirbu-stalker/AlifeGuard/issues | Russian / На русском: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
 
 My work:
 GitHub: https://github.com/orgs/damiansirbu-stalker/repositories
@@ -50,10 +49,15 @@ Uninstall (MO2):
 Disable or remove in MO2.
 
 Compatibility:
-Coexists with AlifePlus, Warfare, ZCP, Guards Spawner, AlifeBalance, and any mod using scripted_target. Scripted squads are protected by default.
-- Supersedes: Grok's Dynamic Despawner.
-- Redundant: anti-loot addons (NPC Stop Looting Dead Bodies, BoltBeGone) - AlifeGuard bounds looting while keeping it on.
-- Conflicts: any other despawn or population-release mod; extended sim-distance mods (Living Zone 2000m, Extended Offline, ROAD range) that push population up while AlifeGuard pulls it down.
+Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.
+Disable (conflict, superseded, problematic):
+- Grok's Dynamic Despawner, and any other despawn or population-release mod - release the same population AlifeGuard owns, so the two fight over the count.
+- Squad Filler - injects offline squads back to size, undoing the cull.
+- Cypret's SafeSpawn - force-toggles online switching and sweeps alife every level change, against the release path.
+- NPC Stop Looting Dead Bodies, NPC Loot Claim Remade, and any anti-loot mod - hard-block the looting Inventory Guard keeps on and bounds instead.
+Coexists:
+- AlifePlus, Warfare, Guards Spawner - their scripted squads are protected, so AlifeGuard thins them last and never breaks a mod-owned squad.
+It coexists with everything else.
 
 Known issue:
 A rare crash on entity release (Perform_reject assertion). This is an engine-level fault in X-Ray inventory parent tracking, present in all population mods, with no script-side fix.
@@ -74,8 +78,7 @@ The mod avoids writing engine values, holding its own state in parallel. Any val
 The family runs on one rulebook through xlibs. Every rule, policy, and check is one shared implementation, the same protection, distances, faction logic, and combat reads in every mod.
 It depends on no other mod, not even my own. The only shared layers are X-Ray and xlibs.
 
-[Screenshot: AlifeGuard under JitProfiler, a live CPU and allocation capture]
-Project Health: https://damiansirbu-stalker.github.io/AlifeGuard/
+That pipeline runs on every commit and publishes what it finds. The header links a live health page and a JitProfiler capture of the mod's real CPU and allocation cost.
 
 Credits:
 Altogolik - support, ideas, source materials
