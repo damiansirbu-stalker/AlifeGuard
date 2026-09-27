@@ -1,110 +1,75 @@
-<h3>Version: next (xlibs 1.8.3, demonized 20250908)</h3>
-<h3>GitHub: <a href="https://github.com/damiansirbu-stalker/AlifeGuard">https://github.com/damiansirbu-stalker/AlifeGuard</a></h3>
-<h3>Changelog: <a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog">doc/changelog</a> | <a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt">Na russkom</a> | <a href="https://github.com/damiansirbu-stalker/AlifeGuard/issues">Bugs, suggestions</a></h3>
-<h2>Alife Collection</h2>
-<ul>
-<li><a href="https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01">AlifePlus</a></li>
-<li><a href="https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance">AlifeBalance</a></li>
-<li><a href="https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001">AlifeGuard</a></li>
-<li><a href="https://www.moddb.com/mods/stalker-anomaly/addons/alifetactics">AlifeTactics</a></li>
-</ul>
-<p><b>! Reset MCM settings to defaults after updating !</b></p>
-<p>Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all run on the same thread. Performance degrades as the count grows. Population mods like ZCP and Redone amplify the problem by increasing spawn rates. Zombie entities from broken releases, orphaned squad members, and engine-level memory leaks make it worse over time.</p>
-<p>AlifeGuard keeps the online population under control while preserving how A-Life works. Squads remain valid, smart terrains behave correctly, no respawn loops. It reduces load without breaking the simulation.</p>
-<p>Simple despawners remove individual NPCs without considering squad structure. This can delete entire squads, open respawn slots, leave smart terrains in a malformed state where they stop spawning, and interfere with mods that script squads. AlifeGuard works at the squad level and accounts for the engine's spawn bookkeeping.</p>
-<h2>Squad-aware culling</h2>
-<p>Entities are processed as part of their squad, not individually. Non-commander members are thinned first. Commanders are removed only as a last resort.<br />This preserves squads in SIMBOARD, keeps already_spawned counters intact, and prevents the repeated respawns that individual-NPC despawners cause.<br />Squads controlled by other mods (AlifePlus, Warfare, Guards Spawner) are deprioritized: their members go after unscripted members, their commanders last of all.</p>
-<h2>Round-robin fairness</h2>
-<p>Removals are spread across factions and mutant types. One entity per category per round. No single group is disproportionately affected.</p>
-<h2>Hysteresis</h2>
-<p>Separate trigger and target thresholds (default: trigger at 80, cull to 70). Cleanup runs in cycles, not constantly reacting to small population changes.</p>
-<h2>Frame-spread release</h2>
-<p>Entities are released one per frame via xslice (cooperative time-slicing). 30 excess entities = 30 frames to clear. No spikes, no freezes.</p>
-<h2>Protection</h2>
-<p>Story squads, traders, named NPCs, companions, task givers, bounty and hostage targets are never removed. Squad-level checks with positive-only TTL cache. Per-member fallback catches named NPCs who are not squad commanders.</p>
-<h2>Offline Guard</h2>
-<p>The online guard only sees entities near you. A hub on another level can hold dozens of offline squads that all come online at once and spike the count. The Offline Guard runs a staggered scan that bins offline squads into regions by position and thins any region over the trigger down to the target. Commanders and protected squads are never removed, so every squad survives. Independent of the online guard, with its own trigger, target, and task protection. Target down to 0 strips a region to lone commanders. Toggle, cull trigger, cull target, task protection, and scan tick in MCM.</p>
-<h2>Smart Sanitizer</h2>
-<p>Defensive pass that clamps corrupted respawn counters on smart terrains. Negative or non-numeric already_spawned values cause save crashes (u8 write overflow at STATE_Write) and infinite spawn loops (max &gt; num respawn gate always true). The sanitizer runs on actor_on_reinit before the load-time alife burst, then every 300 seconds during play. Lua table walk over SIMBOARD.smarts. Sub-millisecond on 50-200 smarts. Toggle and interval in MCM.</p>
-<h2>Inventory Guard</h2>
-<p>Vanilla NPCs loot corpses, and over a long session this builds up two costs. A long-lived stalker carries a trader run of gear, so killing them becomes a jackpot. Every looted item is also a permanent alife server object, and the engine tracks at most around 65000 of those. Long saves drift toward the cap and the game eventually slows, then crashes.</p>
-<h3>Why not just disable NPC looting?</h3>
-<p>Mods like NPC Stop Looting Dead Bodies and BoltBeGone sidestep the problem by blocking the engine's loot path. That fixes the symptom but stalkers no longer loot their kills, which is one of the things that makes A-Life feel alive. Inventory Guard keeps vanilla looting on and bounds the cause instead. A lightweight scanner walks online stalkers in small batches and releases anything above each category's limit. Killing a stalker still yields what they actually need to carry, not what they have accumulated over 50 game-days.</p>
-<h3>What you'll notice</h3>
-<ul>
-<li>Long-lived stalkers carry a believable loadout instead of a trader-sized hoard.</li>
-<li>Killing a random stalker yields reasonable loot, not a vendor run.</li>
-<li>Saves stay performant across long sessions.</li>
-<li>Companions, story characters, and named NPCs are never touched.</li>
-<li>Traders, mechanics, and medics are matched by role, so even ones spawned at runtime (Warfare and similar) skip the per-category trim; only the trader stock purge below applies to them.</li>
-<li>Vanilla looting still works. Stalkers loot their kills.</li>
-</ul>
-<h3>Important</h3>
-<p>Inventory Guard never spawns items. It releases what NPCs already accumulated above the per-category limits. Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are always preserved.</p>
-<h3>Example</h3>
-<p>An online stalker on Cordon has been alive for 50 game-days. They have picked up 47 medkits, 23 bandages, 18 grenades, and 600 rounds of mismatched ammo. The scanner's next visit releases 42 medkits (cap 5), 18 bandages (cap 5), 15 grenades (cap 3), and the 600 mismatched rounds (cap 0). The NPC walks around with a believable load: a few medkits, a stack of bandages, three grenades, and ammo for the gun they actually carry.</p>
-<h3>Policy</h3>
-<p>Per-category limits live in <i>configs/alifeguard/ag_inventory_policy.ltx</i> (DLTX-overridable). Defaults cover equipped ammo (in rounds, per tier), grenades, and consumables: medkit, bandage, antirad, stim, pill, food, drink. Gear coverage: weapons, outfits, helmets, artefacts, crafting items, devices. Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are protected by xlibs and never touched.</p>
-<h3>Trader stock purge</h3>
-<p>Selling to a trader piles your junk into their inventory, and each item there is a permanent alife server object. The engine clears trader stock at restock, but between restocks a heavy selling session walks the object count toward the cap. The same scanner visits traders, mechanics, medics, and barmen and releases weapons, outfits, and helmets below a condition threshold (default 0.75). Stock at or above the threshold stays for sale; the trader's own equipped gear and quest items are never touched. Consumables, ammo, and money are never touched: only wear-bearing gear is judged by condition. Toggle and threshold in MCM.</p>
-<p>Moved from AlifeBalance (where it was called Inventory Balance). Same behavior, new home. If updating both mods, configure it here; the AlifeBalance tab is gone.</p>
-<h2>Performance</h2>
-<p>Single-pass collection (native C++ iterator). Cached protection lookups. Sub-millisecond scan for 200 entities. 0.05ms per release. Zero debug overhead when log level &lt; DEBUG.</p>
-<h2>Mod compatibility</h2>
-<p>Most population mods conflict with A-Life mods. AlifeGuard is designed to coexist with AlifePlus, Warfare, ZCP, GAMMA, Guards Spawner, and any mod that uses scripted_target.<br />Scripted squads are preserved as long as possible. Commanders remain, so squad assignments continue. Spawn counters stay consistent. Warfare population tracking stays accurate. AlifePlus cause/consequence chains complete because target squads persist.<br />Other mods direct the world. AlifeGuard keeps it performant.</p>
-<h2>MCM</h2>
-<p>Online Guard: population limits, hysteresis buffer, check interval, protection rules (task NPCs, farthest-first, per-squad culling, round-robin), PDA notifications.<br />Offline Guard: toggle, cull trigger, cull target, task protection, scan tick.<br />Smart Sanitizer: toggle, interval.<br />Inventory Guard: toggle, NPCs per frame, rescan cooldown, trader purge toggle, trader condition threshold.<br />Development: log level (ERROR/WARN/INFO/DEBUG), diagnostics, population reset.</p>
-<h2>Requirements</h2>
-<p>Anomaly 1.5.3<br /><a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a><br />MCM</p>
-<h2>Install (MO2)</h2>
-<p>1. Install xlibs<br />2. Install AlifeGuard<br />3. Load order does not matter<br />4. Configure via MCM</p>
-<h2>Uninstall (MO2)</h2>
-<p>Disable or remove in MO2.</p>
-<h2>Compatibility</h2>
-<ul>
-<li>Requires xlibs.</li>
-<li>Runs on themrdemonized modded exes 20250908 or newer, or AOEngine v0.55 or newer.</li>
-<li>The full feature set needs the latest demonized build. A feature that needs a newer build stays inactive on older exes.</li>
-</ul>
-<p>Does not modify base scripts. Uses the standard engine API (alife_release).</p>
-<p><b>Superseded (AlifeGuard does this - drop the other):</b><br />Grok's Dynamic Despawner: same job, but leaks memory (table.remove during iteration) and drops squad commanders, forcing repeated respawns.<br />Anti-loot addons (NPC Stop Looting Dead Bodies, BoltBeGone): Inventory Guard handles NPC looting at the source.</p>
-<p><b>Conflicts (pick one - two governors fight):</b><br />Any other despawn / population-release mod: conflicting releases, repeated respawns, entity leaks.<br />Extended sim-distance / offline-range mods (Living Zone 2000m, Extended Offline, ROAD alife range 666): expand the population while AlifeGuard contracts it; they oscillate.</p>
-<p><b>Affects / coexists:</b><br />A-Life config tweaks (alife.ltx, smart max_population, Redone Alife Performance, x3 perf): engine-parameter layer, no overlap.<br />AlifeBalance: different axis (respawn acceleration vs release work); composes.<br />Weapons Drop on Bodies: only moves the dying NPC's weapon (corpse vs floor); doesn't block looting.</p>
-<h2>Known issue</h2>
-<p>Rare crash on entity release (Perform_reject assertion). Engine-level issue in X-Ray's inventory parent tracking, present in all population mods. No script-side fix exists.</p>
-<h2>Architecture</h2>
-<ul>
-<li>AlifeGuard runs on xlibs, a reverse-engineered API that wraps the X-Ray engine source. Squad lifecycle, protection checks, and spawn bookkeeping were traced through the C++ source. Core patterns were studied from the most accomplished mods in the Anomaly ecosystem.</li>
-<li>No base script edits, no engine patches. Runtime callbacks only.</li>
-<li>Two-phase pipeline: synchronous collection (frame 0), frame-spread release (frames 1-N). See doc/architecture.md for full design documentation.</li>
-</ul>
-<h2>Performance</h2>
-<ul>
-<li>Performance was a design constraint from the start. Collection: sub-millisecond for 200 entities. Release: 0.05ms per frame.</li>
-<li>Cooperative time-slicing (xslice) bounds per-frame release work and prevents frame stutter under heavy cleanup.</li>
-<li>Structured tracing with trace IDs, per-phase timing, null object singletons for zero debug overhead when log level &lt; DEBUG.</li>
-</ul>
-<h3>Multi-stage validation pipeline</h3>
-<ul>
-<li>luacheck, selene (static analysis)</li>
-<li>tree-sitter AST analysis, ast-grep structural patterns</li>
-<li>Contract rules (API safety, cross-file dependencies, cyclomatic complexity, coding standards)</li>
-<li>lua54 integration testing with X-Ray engine stubs</li>
-<li>gitleaks (secret scanning)</li>
-</ul>
-<p>Full report in doc/test-report.log.</p>
-<h2>FAQ</h2>
-<p><b>Do I need modded exes?</b><br />Yes. AlifeGuard needs themrdemonized modded exes (20250908 or newer) or AOEngine (v0.55 or newer). Vanilla Anomaly does not expose the APIs it relies on.</p>
-<p>Credits:<br />Altogolik - support, ideas, source materials</p>
-<h2>Usage and License</h2>
-<p>Modpacks: allowed and encouraged. Keep the readme and license files.<br />Addons, patches, integrations: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.<br />Reproducing the implementation in other software: not allowed, even with credit.<br />Full license in LICENSE file and on GitHub.</p>
+<p>Version 1.3.2&nbsp; | &nbsp;xlibs 1.8.3&nbsp; | &nbsp;demonized 20250908</p>
+<p><a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog">Changelog</a>&nbsp; | &nbsp;<a href="https://damiansirbu-stalker.github.io/AlifeGuard/health/">Health</a>&nbsp; | &nbsp;<a href="https://damiansirbu-stalker.github.io/AlifeGuard/jitprofiler/">JitProfiler</a>&nbsp; | &nbsp;<a href="https://github.com/damiansirbu-stalker/AlifeGuard/issues">Bugs</a>&nbsp; | &nbsp;<a href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt">На русском</a></p>
+<p><b>My work:</b> <a href="https://github.com/orgs/damiansirbu-stalker/repositories">GitHub</a>&nbsp; | &nbsp;<a href="https://www.moddb.com/members/damian-sirbu/addons">ModDB</a>&nbsp; | &nbsp;<a href="https://www.nexusmods.com/profile/damiansirbu/mods">Nexus</a>&nbsp; &nbsp; <b>Contributions:</b> <a href="https://github.com/themrdemonized/xray-monolith">X-Ray Monolith</a></p>
 
-<h2>Reporting issues and suggestions</h2>
-<p>Open a <a href="https://github.com/damiansirbu-stalker/AlifeGuard/issues/new/choose">bug report or a suggestion on GitHub</a>.<br />Also discussed on the GAMMA, EFP, Anomaly, and Zona Discord servers.</p>
-<p>Before posting, read this readme and the MCM options.</p>
-<p>Include:</p>
+<p><b>! Reset MCM settings to defaults after updating !</b></p>
+
+<p>Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all run on the same thread, so performance degrades as the count grows. Population mods like ZCP and Redone amplify the problem by raising spawn rates. Zombie entities from broken releases, orphaned squad members, and engine memory leaks make it worse over time.</p>
+<p>AlifeGuard keeps the world's NPCs, creatures, and items in check, catching what would corrupt a save, break data, or drag performance before it does. Squads stay valid and smart terrains behave correctly, with no respawn loops. It reduces load without breaking the simulation.</p>
+<p>Simple despawners remove individual NPCs without considering squad structure. This deletes entire squads and opens respawn slots. It leaves smart terrains unable to spawn and interferes with mods that script squads. AlifeGuard works at the squad level and accounts for the engine's spawn bookkeeping.</p>
+
+<h2>Systems</h2>
 <ul>
-<li>Exact steps to reproduce, from a new game or a named save, with expected and actual result.</li>
-<li>xray.log and the mod debug log (MCM log level DEBUG), plus engine build, modlist, load order.</li>
-<li>Describe the behavior. With hundreds of mods and overrides, only the log shows whether this mod was involved and what caused it.</li>
+<li><b>Online Guard</b> - caps the online population near you: when the count crosses the trigger it culls back to the target, squad by squad.</li>
+<li><b>Offline Guard</b> - a staggered scan bins offline squads by region and thins the crowded ones, so a hub full of offline squads cannot spike the count when it wakes. Commanders always survive.</li>
+<li><b>Smart Sanitizer</b> - clamps corrupted respawn counters on smart terrains, the kind that cause save crashes and infinite spawn loops.</li>
+<li><b>Inventory Guard</b> - bounds what NPCs hoard from looting. Vanilla looting stays on, but a long-lived stalker carries a believable load instead of a trader run. Looted items stop drifting toward the engine's ~65000-object cap that crashes long saves.</li>
 </ul>
+
+<h2>Mechanisms (how the culling stays safe)</h2>
+<ul>
+<li><b>Squad-aware</b> - thins non-commanders first, commanders last, so squads stay valid in SIMBOARD and no respawn loop starts. Mod-owned squads (AlifePlus, Warfare, Guards Spawner) go last.</li>
+<li><b>Round-robin</b> - removals spread across factions and mutant types, one per category per round, so no group is thinned disproportionately.</li>
+<li><b>Hysteresis</b> - separate trigger and target thresholds (default 80 down to 70), so cleanup runs in cycles, not on every small change.</li>
+<li><b>Frame-spread</b> - entities released one per frame via xslice, so a cleanup spreads over frames and never hitches the game.</li>
+<li><b>Protection</b> - story squads, traders, named NPCs, companions, task givers, quest/bounty/hostage targets, and scripted squads are never touched. Toggle scripted protection off for the most aggressive culling.</li>
+</ul>
+
+<h2>Requirements</h2>
+<ul>
+<li>Anomaly 1.5.3</li>
+<li>Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.55 or newer. The full feature set needs the latest demonized build. A feature that needs a newer one stays inactive on older exes.</li>
+<li>xlibs (<a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">moddb.com/mods/stalker-anomaly/addons/xlibs-1001</a>)</li>
+<li>MCM</li>
+</ul>
+
+<h2>Compatibility</h2>
+<p>Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.</p>
+<p><b>Disable (conflict, superseded, problematic):</b></p>
+<ul>
+<li>Grok's Dynamic Despawner, and any other despawn or population-release mod - release the same population AlifeGuard owns, so the two fight over the count.</li>
+<li>Squad Filler - injects offline squads back to size, undoing the cull.</li>
+<li>Cypret's SafeSpawn - force-toggles online switching and sweeps alife every level change, against the release path.</li>
+<li>NPC Stop Looting Dead Bodies, NPC Loot Claim Remade, and any anti-loot mod - hard-block the looting Inventory Guard keeps on and bounds instead.</li>
+</ul>
+<p><b>Coexists:</b></p>
+<ul>
+<li>AlifePlus, Warfare, Guards Spawner - their scripted squads are protected, so AlifeGuard thins them last and never breaks a mod-owned squad.</li>
+</ul>
+<p>It coexists with everything else.</p>
+
+<h2>Known issue</h2>
+<p>A rare crash on entity release (Perform_reject assertion). This is an engine-level fault in X-Ray inventory parent tracking, present in all population mods, with no script-side fix.</p>
+
+<h2>How It's Built</h2>
+<p>The code and patterns are original, built on best practices from the best STALKER modders and hands-on reverse-engineering of X-Ray. The design stays engine-native and minimal, with event-native pub/sub over polling, work spread across frames through deferred queues and rate limiters, and per-level caches that replace world scans. The raycasting and range math are hand-written and load-tested live, following the engine's own standards and flags. Where scripting hits an engine limit, the fix is made in X-Ray itself, in the modded exes.</p>
+<p>Performance is the first invariant, so every flow stays under 2ms or the build rewrites or drops it, profiled continuously with JitProfiler and hand-tested on unoptimized, single-threaded exes. Every mod carries OpenTelemetry-style tracing and performance monitoring, spanning world events and every flow, gated by the log level so it costs nothing when off.</p>
+<p>Every commit runs the full pipeline locally and in CI, with luacheck, a custom STALKER selene build, and a load test on engine stubs. Rule layers then check Lua practice, engine truth, conventions, contracts, release, security, and docs.</p>
+<p>Every rate, threshold, and toggle is exposed through MCM or LTX with nothing left hard-coded, and it writes no engine values, keeping its state within engine bounds so a save can never corrupt. It runs on one xlibs rulebook shared across the whole mod family, the same protection, distances, faction logic, and combat reads in every mod. It depends on no other mod, not even the author's own, and needs only X-Ray and xlibs beneath it.</p>
+<p>See the Health and JitProfiler links up top for every test and smoke result, and the mod's real CPU and allocation cost.</p>
+
+<h2>Credits</h2>
+<p>Altogolik provided support, ideas, and source materials.</p>
+
+<h2>Usage and License</h2>
+<ul>
+<li>Modpacks: allowed and encouraged. Keep the readme and license files.</li>
+<li>Addons, patches, integrations: allowed. Credit "AlifeGuard by Damian Sirbu" visibly on your mod page.</li>
+<li>Reproducing the implementation in other software: not allowed, even with credit.</li>
+<li>The full license is in the LICENSE file and on GitHub.</li>
+</ul>
+
+<h2>Diagnostics and reporting</h2>
+<p>Every release goes through careful engineering and testing, but bugs can still slip through. To report one, reproduce with debug logging on, and the world log where the mod has one. First rule this mod out: reproduce with it off, then on. The cleanest test is this mod alone on vanilla and xlibs. Send the traces on the Anomaly Discord, or file a defect on GitHub with the same information. Attach xray.log, the mod log, the engine build, the modlist, and the load order. For deep technical details and mechanisms, check the architecture docs on GitHub.</p>
+
+<p>Tags: alife, performance, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety, save-safe, reverse-engineering</p>
