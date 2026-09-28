@@ -13,6 +13,8 @@ Nexus: https://www.nexusmods.com/profile/damiansirbu/mods
 My contributions:
 X-Ray Monolith: https://github.com/themrdemonized/xray-monolith
 
+[ Hero image: alifeguard-hero.gif - the population stays in check ]
+
 ! Reset MCM settings to defaults after updating !
 
 Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all run on the same thread, so performance degrades as the count grows.
@@ -62,7 +64,7 @@ A rare crash on entity release (Perform_reject assertion). This is an engine-lev
 How It's Built:
 
 The code and patterns are original, built on best practices from the best STALKER modders and hands-on reverse-engineering of X-Ray.
-The design stays engine-native and minimal, with event-native pub/sub over polling, work spread across frames through deferred queues and rate limiters, and per-level caches that replace world scans.
+The design stays engine-native and minimal, with event-native pub/sub not polling, work spread across frames via deferred queues and rate limiters, and per-level caches replacing world scans.
 The raycasting and range math are hand-written and load-tested live, following the engine's own standards and flags.
 Where scripting hits an engine limit, the fix is made in X-Ray itself, in the modded exes.
 Performance is the first invariant, so every flow stays under 2ms or the build rewrites or drops it, profiled continuously with JitProfiler and hand-tested on unoptimized, single-threaded exes.
