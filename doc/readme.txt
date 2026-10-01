@@ -15,6 +15,10 @@ X-Ray Monolith: https://github.com/themrdemonized/xray-monolith
 
 [ Hero image: alifeguard-hero.gif - the population stays in check ]
 
+Thank you for the support, I do not need donations. Reviews, ratings, and proper bug reports help.
+An organized group plagiarizes my work, posts daily lies and mass-downvotes my mods everywhere.
+Most modpacks use my work, established projects integrate with it, and downloads near 1 million.
+
 ! Reset MCM settings to defaults after updating !
 
 Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all run on the same thread, so performance degrades as the count grows.
