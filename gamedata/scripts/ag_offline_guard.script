@@ -133,7 +133,7 @@ end
 local function _find_cullable_squad(squad_id)
     local stats = _cull_stats
     local squad = xobject.get_se(squad_id)
-    if not squad then stats.gone = stats.gone + 1; return nil end
+    if not xsquad.is_squad(squad) then stats.gone = stats.gone + 1; return nil end
     if squad.online then stats.online = stats.online + 1; return nil end
     if squad:npc_count() <= 1 then stats.lone = stats.lone + 1; return nil end
     if xsquad.is_companion(squad) then stats.protected = stats.protected + 1; return nil end

@@ -77,7 +77,7 @@ end
 
 local function _collect_offline_cell(squad_id, graph, actor_level, cell_size, counts)
     local squad = alife_object(squad_id)
-    if not squad or squad.online then return end
+    if not xsquad.is_squad(squad) or squad.online then return end
     local body_count = squad:npc_count()
     if body_count == 0 then return end
     local gvid = squad.m_game_vertex_id
@@ -111,7 +111,7 @@ end
 
 local function _collect_hub(squad_id, smart_pos, max_dist_sqr, totals)
     local squad = alife_object(squad_id)
-    if not squad or not squad.position then return end
+    if not xsquad.is_squad(squad) or not squad.position then return end
     if smart_pos:distance_to_sqr(squad.position) > max_dist_sqr then return end
     totals.bodies = totals.bodies + squad:npc_count()
     totals.cmd = totals.cmd + 1
@@ -422,7 +422,7 @@ local function _log_snapshot()
     local squads, bodies = 0, 0
     for squad_id in pairs(SIMBOARD.squads) do
         local squad = alife_object(squad_id)
-        if squad then
+        if xsquad.is_squad(squad) then
             squads = squads + 1
             bodies = bodies + (squad:npc_count() or 0)
         end
