@@ -46,14 +46,14 @@ MCM<br />
 <br />
 <h3>Compatibility</h3>
 Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.<br />
-<span style="font-weight:bold;">Disable (conflict, superseded, problematic):</span><br />
-- Grok's Dynamic Despawner, and any other despawn or population-release mod - release the same population AlifeGuard owns, so the two fight over the count.<br />
+<span style="font-weight:bold;">Drop:</span><br />
+- Grok's Dynamic Despawner, and any other despawn or population-release mod - release the same population AlifeGuard owns, so the two fight over the count; the Despawner also deletes task NPCs, leaves stale objects, and crashes.<br />
 - Squad Filler - injects offline squads back to size, undoing the cull.<br />
 - Cypret's SafeSpawn - force-toggles online switching and sweeps alife every level change, against the release path.<br />
 - NPC Stop Looting Dead Bodies, NPC Loot Claim Remade, and any anti-loot mod - hard-block the looting Inventory Guard keeps on and bounds instead.<br />
 <span style="font-weight:bold;">Coexists:</span><br />
 - AlifePlus, Warfare, Guards Spawner - their scripted squads are protected, so AlifeGuard thins them last and never breaks a mod-owned squad.<br />
-It coexists with everything else.<br />
+Everything else coexists, as long as it extends X-Ray and Anomaly and never overrides them.<br />
 <br />
 <h3>Known issue</h3>
 A rare crash on entity release (Perform_reject assertion). This is an engine-level fault in X-Ray inventory parent tracking, present in all population mods, with no script-side fix.<br />
