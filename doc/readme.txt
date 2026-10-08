@@ -1,25 +1,42 @@
-Version: 1.3.3-snapshot (xlibs 1.9.0, demonized 20250908)
+Version: 1.3.3-snapshot (xlibs 1.9.0, demonized latest)
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Health: https://damiansirbu-stalker.github.io/AlifeGuard/health/
 JitProfiler: https://damiansirbu-stalker.github.io/AlifeGuard/jitprofiler/
 Bugs: https://github.com/damiansirbu-stalker/AlifeGuard/issues
 Russian / На русском: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt
 
-My work:
-GitHub: https://github.com/orgs/damiansirbu-stalker/repositories
-ModDB: https://www.moddb.com/members/damian-sirbu/addons
-Nexus: https://www.nexusmods.com/profile/damiansirbu/mods
-
-My contributions:
-X-Ray Monolith: https://github.com/themrdemonized/xray-monolith
+---
+Alife mods:
+  AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
+  AlifeTactics: https://www.moddb.com/mods/stalker-anomaly/addons/alifetactics
+  AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
+  AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
+Diegetic mods:
+  DiegeticControl: https://www.moddb.com/mods/stalker-anomaly/addons/diegeticcontrol
+  DiegeticAmbience
+  DiegeticDread
+Tools:
+  JitProfiler: https://www.moddb.com/mods/stalker-anomaly/addons/jitprofiler
+Libraries:
+  xlibs: https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001
+Engines:
+  X-Ray Monolith: https://github.com/themrdemonized/xray-monolith/pulls?q=is%3Apr+author%3Adamiansirbu+is%3Amerged
+  OpenXRay: https://github.com/OpenXRay/xray-16/pulls?q=is%3Apr+author%3Adamiansirbu+is%3Amerged
+Integrations:
+  Word of Mouth: https://github.com/joshcoppola/word_of_mouth
+  Warfare (erepb): https://www.moddb.com/mods/stalker-anomaly/addons/warfare-alife-overhaul-new
+  Stealth Overhaul: https://github.com/Alex-leon1594/Stealth_Overhaul_Reworked
+  COMPASS: https://github.com/Crimento/COMPASS
+Collaborations:
+  xAGNA: https://www.moddb.com/mods/stalker-anomaly/addons/xagna
 
 [ Hero image: alifeguard-hero.gif - the population stays in check ]
 
 Thanks for the support, but I don't need donations. Reviews, ratings, and proper reports help more.
 An organized group copies my work, spreads daily lies, and mass-downvotes my mods across platforms.
-My work is open source, works with most modpacks, and integrates with established projects.
+My work is open source, present in most modpacks, and integrates with established projects.
 
-! Reset MCM settings to defaults after updating !
+! After updating: MCM > Development > Reset ALL to Defaults !
 
 Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all run on the same thread, so performance degrades as the count grows.
 Population mods like ZCP and Redone amplify the problem by raising spawn rates. Zombie entities from broken releases, orphaned squad members, and engine memory leaks make it worse over time.
