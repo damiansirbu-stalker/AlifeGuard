@@ -1,25 +1,42 @@
-Версия: 1.3.3-snapshot (xlibs 1.9.0, demonized 20250908)
+Версия: 1.3.3-snapshot (xlibs 1.9.0, demonized latest)
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Health: https://damiansirbu-stalker.github.io/AlifeGuard/health/
 JitProfiler: https://damiansirbu-stalker.github.io/AlifeGuard/jitprofiler/
 Bugs: https://github.com/damiansirbu-stalker/AlifeGuard/issues
 English / По-английски: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme.txt
 
-Моя работа:
-GitHub: https://github.com/orgs/damiansirbu-stalker/repositories
-ModDB: https://www.moddb.com/members/damian-sirbu/addons
-Nexus: https://www.nexusmods.com/profile/damiansirbu/mods
-
-Мой вклад:
-X-Ray Monolith: https://github.com/themrdemonized/xray-monolith
+---
+Моды Alife:
+  AlifePlus: https://www.moddb.com/mods/stalker-anomaly/addons/alifeplus-v1-0-01
+  AlifeTactics: https://www.moddb.com/mods/stalker-anomaly/addons/alifetactics
+  AlifeBalance: https://www.moddb.com/mods/stalker-anomaly/addons/alifebalance
+  AlifeGuard: https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001
+Моды Diegetic:
+  DiegeticControl: https://www.moddb.com/mods/stalker-anomaly/addons/diegeticcontrol
+  DiegeticAmbience
+  DiegeticDread
+Инструменты:
+  JitProfiler: https://www.moddb.com/mods/stalker-anomaly/addons/jitprofiler
+Библиотеки:
+  xlibs: https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001
+Движки:
+  X-Ray Monolith: https://github.com/themrdemonized/xray-monolith/pulls?q=is%3Apr+author%3Adamiansirbu+is%3Amerged
+  OpenXRay: https://github.com/OpenXRay/xray-16/pulls?q=is%3Apr+author%3Adamiansirbu+is%3Amerged
+Интеграции:
+  Word of Mouth: https://github.com/joshcoppola/word_of_mouth
+  Warfare (erepb): https://www.moddb.com/mods/stalker-anomaly/addons/warfare-alife-overhaul-new
+  Stealth Overhaul: https://github.com/Alex-leon1594/Stealth_Overhaul_Reworked
+  COMPASS: https://github.com/Crimento/COMPASS
+Сотрудничество:
+  xAGNA: https://www.moddb.com/mods/stalker-anomaly/addons/xagna
 
 [ Hero image: alifeguard-hero.gif - популяция держится под контролем ]
 
 Спасибо за поддержку, но донаты мне не нужны. Куда полезнее отзывы, оценки и грамотные баг-репорты.
 Организованная группа копирует мои работы, ежедневно распространяет ложь и массово занижает оценки моим модам.
-Мой код открыт, работает с большинством модпаков и интегрируется с известными проектами.
+Мой код открыт, присутствует в большинстве модпаков и интегрируется с известными проектами.
 
-! Сбросьте настройки MCM к значениям по умолчанию после обновления !
+! После обновления: MCM > Development > Reset ALL to Defaults !
 
 К позднему этапу игры A-Life накапливает слишком много активных сущностей. ИИ, физика и поиск пути работают в одном потоке, поэтому производительность падает по мере роста числа.
 Моды на население вроде ZCP и Redone усугубляют проблему, повышая частоту спавна. Зомби-сущности от сломанных релизов, осиротевшие члены отрядов и утечки памяти на уровне движка со временем делают только хуже.
