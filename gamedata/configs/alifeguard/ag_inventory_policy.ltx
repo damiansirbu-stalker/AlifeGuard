@@ -1,15 +1,9 @@
-; AlifeGuard inventory policy. Per-category ceilings for the Inventory Guard scanner
-; (ag_inventory_guard.script). Cull releases items above max in each category. Single-value
-; rows: "<category> = <max>". DLTX-overridable. Shape parsed by xinventory.load_policy.
-; A row keyed by an item section (e.g. grenade_smoke) overrides the category for that section:
-; it counts and caps on its own, so grenade_smoke = 0 culls all smoke while grenade = 3 still
-; caps other grenades at 3.
+; AlifeGuard inventory policy. Per-category ceilings for the Inventory Guard scanner (ag_inventory_guard.script); the cull releases items above max in each category. DLTX-overridable.
+; Row: category = max, parsed by xinventory.load_policy. A row keyed by an item section (e.g. grenade_smoke) overrides its category and caps on its own, so grenade_smoke = 0 culls all
+; smoke while grenade = 3 still caps other grenades at 3.
 ;
-; Ammo categories count in ROUNDS; other categories count in items. Combat ammo caps at the
-; 3-box CAP (45 rifle / 48 pistol; box_size 15 / 16). Sentinel categories (untouchable,
-; equipped) are pre-filtered by xinventory and never reach this policy. Item-level runtime
-; protections (story_id, companion-gifted, player-strapped) also gate via
-; xinventory.get_category.
+; Ammo categories count in rounds, others in items. Combat ammo caps at the 3-box total (45 rifle / 48 pistol, box_size 15 / 16). Untouchable and equipped categories are pre-filtered by
+; xinventory and never reach this policy; item-level protections (story_id, companion-gifted, player-strapped) also gate via xinventory.get_category.
 
 [ag_inventory_policy]
 medkit            = 5
