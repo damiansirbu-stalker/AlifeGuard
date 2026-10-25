@@ -151,7 +151,7 @@
 
     <!-- ==================== SMART SANITIZER TAB ==================== -->
     <string id="ui_mcm_ag_smart_sanitizer_info">
-        <text>Clamps corrupted already_spawned counters on smart terrains. Prevents save crashes and infinite spawn loops caused by spawner and despawner mods racing with the engine on_unregister decrement.</text>
+        <text>Repairs corrupted already_spawned counters on smart terrains to the real live squad count. Prevents save crashes and infinite spawn loops caused by spawner and despawner mods racing with the engine on_unregister decrement.</text>
     </string>
     <string id="ui_mcm_ag_hdr_sanitize">
         <text>Smart Sanitizer</text>
@@ -160,13 +160,13 @@
         <text>Sanitize smart terrains</text>
     </string>
     <string id="ui_mcm_ag_smart_sanitizer_sanitize_smarts_desc">
-        <text>Clamps corrupted already_spawned counters on smart terrains. Negative or non-numeric values cause save crashes (u8 write at smart_terrain.script:955) and infinite spawn loops (max &gt; num always true). Common when running per-NPC despawners that race with the engine's on_unregister decrement. Sanitize runs once on game/level load (before alife pump) and periodically during play. Safe to leave on. Default: on.</text>
+        <text>Repairs corrupted already_spawned counters on smart terrains to the real live squad count. Negative or non-numeric values cause save crashes (u8 write at smart_terrain.script:955) and infinite spawn loops (max &gt; num always true). Common when running per-NPC despawners that race with the engine's on_unregister decrement. Repairing to the live count, not zero, keeps a corrupted smart from re-corrupting on the next squad death. Sanitize runs once on game/level load (before alife pump) and periodically during play. Safe to leave on. Default: on.</text>
     </string>
     <string id="ui_mcm_ag_smart_sanitizer_sanitize_interval">
         <text>Sanitize interval (s)</text>
     </string>
     <string id="ui_mcm_ag_smart_sanitizer_sanitize_interval_desc">
-        <text>Real-time seconds between periodic sanitize passes. Sub-millisecond cost regardless of interval (pure Lua table walk over SIMBOARD.smarts). 300s is a sensible default; lower it only if you observe rapid corruption from another mod. Default: 300.</text>
+        <text>Real-time seconds between periodic sanitize passes. Sub-millisecond cost regardless of interval (a pure Lua walk over SIMBOARD.smarts plus one squad-count pass). 300s is a sensible default; lower it only if you observe rapid corruption from another mod. Default: 300.</text>
     </string>
 
     <!-- ==================== INVENTORY GUARD TAB ==================== -->

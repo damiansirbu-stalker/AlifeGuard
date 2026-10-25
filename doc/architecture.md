@@ -206,13 +206,24 @@ Two consequences:
 
 ### How
 
-Periodic walk over `SIMBOARD.smarts` clamping three invariant violations on each entry of `smart.already_spawned`:
+A periodic pass first builds a live-count map, then repairs three invariant violations on each entry of every `smart.already_spawned`.
+
+The live count `live[respawn_point_id][prop]` is one walk over `xsquad.iterate_squads()`, counting squads by their `respawn_point_id` and `respawn_point_prop_section`.
+That pair identifies exactly the squads `already_spawned[prop].num` is meant to count, set by `try_respawn` in `smart_terrain.script` and never cleared.
+It is saved across reload, so it is the counter's intended value for a corrupt entry.
 
 | Case | Detection | Fix |
 |---|---|---|
-| A | `type(v) ~= "table"` | `smart.already_spawned[k] = { num = 0 }` |
-| B | `type(v.num) ~= "number"` | `v.num = 0` |
-| C | `v.num < 0` | `v.num = 0` |
+| A | `type(v) ~= "table"` | `smart.already_spawned[k] = { num = live }` |
+| B | `type(v.num) ~= "number"` | `v.num = live` |
+| C | `v.num < 0` | `v.num = live` |
+
+The repair target is the live count, not 0.
+Clamp-to-0 leaves the remaining stragglers to decrement below 0 again on their next death, so the same smart re-corrupts every few minutes.
+The true count lets those stragglers decrement cleanly to 0.
+Healthy positive counts are never touched (conservative scope).
+A foreign mod that tags a squad with a `respawn_point_id` the engine never counted must not drive the sanitizer to inflate a counter and suppress legitimate respawns.
+The `(live=N)` suffix on each `[SANITIZE]` warn line records stored value, repair target, and the live count behind it, so a drift report names the key and its magnitude.
 
 Hooks:
 - `actor_on_reinit` fires after STATE_Read (data live) and before `bind_stalker.script:200` runs `set_objects_per_update(65534)` (engine load burst).
@@ -222,7 +233,7 @@ Hooks:
 
 ### Cost
 
-A pure Lua walk with 0 luabind in the inner loop. `smart:name()` is lazy, called once per smart only if a fix fires on that smart.
+A pure Lua walk with 0 luabind in the inner loop, plus one `xsquad.iterate_squads()` pass that resolves each squad server entity once to tally the live counts. `smart:name()` is lazy, called once per smart only if a fix fires on that smart.
 It stays sub-millisecond for 50-200 smarts in a healthy save with no fixes. The worst case, every smart corrupted across 200 smarts, is about 2ms.
 
 ---

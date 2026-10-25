@@ -30,22 +30,41 @@ local function load_config()
         tostring(cfg.sanitize_smarts), cfg.sanitize_interval, cfg.log_level)
 end
 
--- Clamp already_spawned[k] corruption: non-table value, non-number num, num < 0 (architecture.md "Smart Sanitizer").
-local function _execute_smart_sanitize(smart)
+-- Live spawn count per respawn point: live[respawn_point_id][prop] = squads still carrying that pair.
+-- That pair is what already_spawned[prop].num counts (set at smart_terrain.script:1719), so it is the repair target.
+local function _collect_live_counts()
+    local live = {}
+    for squad in xsquad.iterate_squads() do
+        local rp = squad.respawn_point_id
+        local prop = squad.respawn_point_prop_section
+        if rp and prop then
+            local by_key = live[rp]
+            if not by_key then by_key = {}; live[rp] = by_key end
+            by_key[prop] = (by_key[prop] or 0) + 1
+        end
+    end
+    return live
+end
+
+-- Repair already_spawned[k] corruption to the live spawn count, not 0 which re-drifts: non-table, non-number num, or num < 0.
+-- Healthy positive counts are left untouched; rationale in architecture.md "Smart Sanitizer".
+local function _execute_smart_sanitize(smart, live)
     if not smart or not smart.already_spawned then return 0 end
     local fixed = 0
     local name
+    local by_key = live[smart.id]
     for k, v in pairs(smart.already_spawned) do
         local fix_msg
+        local target = (by_key and by_key[k]) or 0
         if type(v) ~= "table" then
-            fix_msg = string.format("value type=%s -> { num=0 }", type(v))
-            smart.already_spawned[k] = { num = 0 }
+            fix_msg = string.format("value type=%s -> { num=%d } (live=%d)", type(v), target, target)
+            smart.already_spawned[k] = { num = target }
         elseif type(v.num) ~= "number" then
-            fix_msg = string.format("num type=%s -> 0", type(v.num))
-            v.num = 0
+            fix_msg = string.format("num type=%s -> %d (live=%d)", type(v.num), target, target)
+            v.num = target
         elseif v.num < 0 then
-            fix_msg = string.format("num=%d -> 0", v.num)
-            v.num = 0
+            fix_msg = string.format("num=%d -> %d (live=%d)", v.num, target, target)
+            v.num = target
         end
         if fix_msg then
             name = name or smart:name()
@@ -62,10 +81,11 @@ local function _execute_sanitize()
         return 0, 0
     end
     local timer = xprofiler.new_if(_dbg):start()
+    local live = _collect_live_counts()
     local scanned, fixed = 0, 0
     for _, rec in pairs(SIMBOARD.smarts) do
         scanned = scanned + 1
-        fixed = fixed + _execute_smart_sanitize(rec.smrt)
+        fixed = fixed + _execute_smart_sanitize(rec.smrt, live)
     end
     timer:stop()
     log.info("[SANITIZE] scanned=%d fixed=%d [%.2fms]", scanned, fixed, timer:get_ms())

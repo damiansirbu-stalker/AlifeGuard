@@ -55,7 +55,7 @@ It leaves smart terrains unable to spawn and interferes with mods that script sq
 Systems:
 - Online Guard - caps the online population near you: when the count crosses the trigger it culls back to the target, squad by squad.
 - Offline Guard - a staggered scan bins offline squads by region and thins the crowded ones, so a hub full of offline squads cannot spike the count when it wakes. Commanders always survive.
-- Smart Sanitizer - clamps corrupted respawn counters on smart terrains, the kind that cause save crashes and infinite spawn loops.
+- Smart Sanitizer - repairs corrupted respawn counters on smart terrains to the real live squad count, the kind of corruption that causes save crashes and infinite spawn loops.
 - Inventory Guard - bounds what NPCs hoard from looting. Vanilla looting stays on, but a long-lived stalker carries a believable load instead of a trader run.
   Looted items stop drifting toward the engine's ~65000-object cap that crashes long saves.
 
