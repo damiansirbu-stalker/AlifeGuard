@@ -78,7 +78,8 @@ MCM
 Compatibility:
 Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.
 Drop:
-- Grok's Dynamic Despawner, and any other despawn or population-release mod - release the same population AlifeGuard owns, so the two fight over the count; the Despawner also deletes task NPCs, leaves stale objects, and crashes.
+- Grok's Dynamic Despawner, and any despawn or population-release mod - release the same population AlifeGuard owns, and the two fight over the count.
+  The Despawner also deletes task NPCs, leaves stale objects, miscounts smart-terrain population and breaks some smarts for good, and crashes.
 - Squad Filler - injects offline squads back to size, undoing the cull.
 - Cypret's SafeSpawn - force-toggles online switching and sweeps alife every level change, against the release path.
 - NPC Stop Looting Dead Bodies, and any anti-loot mod - hard-block the looting Inventory Guard keeps on and bounds instead.
