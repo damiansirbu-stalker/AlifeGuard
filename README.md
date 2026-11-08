@@ -3,7 +3,7 @@
 A population limiter and alife state repair layer, for performance and save health.
 It caps online entities, thins overcrowded regions before you arrive, bounds NPC inventory hoarding, and repairs the respawn counters that corrupt saves. Story characters, companions and quest targets are excluded.
 
-[ModDB](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001) | [Nexus](https://www.nexusmods.com/stalkeranomaly/mods/104) | [Releases](https://github.com/damiansirbu-stalker/AlifeGuard/releases) | [Bugs, suggestions](https://github.com/damiansirbu-stalker/AlifeGuard/issues)
+[![ModDB](https://img.shields.io/badge/ModDB-c8102e)](https://www.moddb.com/mods/stalker-anomaly/addons/alifeguard-1001) [![Nexus Mods](https://img.shields.io/badge/Nexus_Mods-da8e35)](https://www.nexusmods.com/stalkeranomaly/mods/104) [![Releases](https://img.shields.io/badge/Releases-24292f?logo=github&logoColor=white)](https://github.com/damiansirbu-stalker/AlifeGuard/releases) [![Bugs, suggestions](https://img.shields.io/badge/Bugs%2C_suggestions-24292f?logo=github&logoColor=white)](https://github.com/damiansirbu-stalker/AlifeGuard/issues) [![Ko-fi](https://img.shields.io/badge/Ko--fi-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/damiansirbu)
 
 [![ci](https://github.com/damiansirbu-stalker/AlifeGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/damiansirbu-stalker/AlifeGuard/actions/workflows/ci.yml) [![Project Health](https://img.shields.io/badge/project_health-dashboard-00ced1)](https://damiansirbu-stalker.github.io/AlifeGuard/)
 
