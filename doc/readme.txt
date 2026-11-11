@@ -61,6 +61,7 @@ Systems:
 - Smart Sanitizer - repairs corrupted respawn counters on smart terrains to the real live squad count, the kind of corruption that causes save crashes and infinite spawn loops.
 - Inventory Guard - bounds what NPCs hoard from looting. Vanilla looting stays on, but a long-lived stalker carries a believable load instead of a trader run.
   Looted items stop drifting toward the engine's ~65000-object cap that crashes long saves.
+  He keeps the scope or silencer that fits his own pistol or rifle, plus 2 spare attachments.
 
 Mechanisms (how the culling stays safe):
 - Squad-aware - thins non-commanders first, commanders last, so squads stay valid in SIMBOARD and no respawn loop starts. Mod-owned squads (AlifePlus, Warfare, Guards Spawner) go last.
