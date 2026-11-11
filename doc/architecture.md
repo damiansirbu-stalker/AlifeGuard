@@ -464,7 +464,8 @@ Each walk is capped at `MAX_SCAN_ITEMS` (see Frame-cost cap).
 | drink | 3 | NPCs rarely benefit |
 | weapon | 1 | One spare for trading (equipped pre-filtered) |
 | outfit, helmet, device | 1 | One spare each (equipped pre-filtered) |
-| attachment | 2 | Loose scopes, silencers, launchers. A mounted one is a weapon flag, never counted |
+| attachment_slot_2, attachment_slot_3 | 1 | A loose attachment that fits the stalker's own pistol / rifle now (xlibs `resolve_attachment_category`), kept apart from the spares |
+| attachment | 2 | Spare loose scopes, silencers, launchers. A mounted one is a weapon flag, never counted |
 | artefact, crafting | 3 | Harvested artefacts / tools-parts-upgrades for traders |
 | other | 3 | Fallthrough sentinel, a small cap to bound unknown items |
 
