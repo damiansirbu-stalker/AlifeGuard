@@ -22,11 +22,11 @@ AlifeGuard owns all release work for entities and items, and repairs alife state
   Frame-spreading a bounded one-off batch (xslice, 1 item per frame) to avoid a single-frame spike is the one allowed use of the frame.
   It completes and stops. Full rule: `doc/standards/stalker-code.md` "No Per-Frame Work".
 - **Performance first.** Performance is the top priority and outranks features.
-  A feature that cannot meet the budget is reworked or removed, even with an X-Ray engine modification. It is never kept at the cost of the budget.
+  A feature that cannot meet the budget moves its cost into the engine where the engine can carry it, otherwise we rework or remove it. It is never kept at the cost of the budget.
   Only correctness and "never break base gameplay" rank above it. See `doc/standards/stalker-code.md` "Performance is the priority".
 - **Use the engine, don't work around it.** Every capability comes from the engine and the Anomaly layer first, always through xlibs.
   Our own code enters only where stock behavior falls short.
-  It escalates from a nudge to a correction, and as a last resort changes the layer itself with an engine modification or a full-file override.
+  It escalates from a nudge to a correction. We fix a defect in the engine or a performance cost in the engine, seam first. A full-file override is the last resort.
   Never reimplement in script what the engine already does. See `doc/standards/stalker-code.md` "Use the engine, don't work around it".
 
 ---
