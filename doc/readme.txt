@@ -80,13 +80,16 @@ MCM
 Compatibility:
 Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.
 Drop:
-- Grok's Dynamic Despawner, and any despawn or population-release mod - release the same population AlifeGuard owns, and the two fight over the count.
-  The Despawner also deletes task NPCs, leaves stale objects, miscounts smart-terrain population and breaks some smarts for good, and crashes.
+- Grok's Dynamic Despawner - it releases the population AlifeGuard owns and deletes task stalkers.
+  Its releases can push a smart terrain's spawn count below zero, which crashes the save.
+- Cypret's SafeSpawn - it force-toggles online switching and sweeps alife on every level change.
+  A save while it hides stalkers leaves them 200m under the map.
+Avoid:
+- Any other despawn or population-release mod - it releases the population AlifeGuard owns.
 - Squad Filler - injects offline squads back to size, undoing the cull.
-- Cypret's SafeSpawn - force-toggles online switching and sweeps alife every level change, against the release path.
-- NPC Stop Looting Dead Bodies, and any anti-loot mod - hard-block the looting Inventory Guard keeps on and bounds instead.
+- NPC Stop Looting Dead Bodies, and any anti-loot mod - they block NPC looting.
 Coexists:
-- AlifePlus, Warfare, Guards Spawner - their scripted squads are protected, so AlifeGuard thins them last and never breaks a mod-owned squad.
+- AlifePlus, Warfare, Guards Spawner - their scripted squads are protected, so AlifeGuard thins them last and never breaks up a squad that another mod owns.
 Everything else coexists, as long as it extends X-Ray and Anomaly and never overrides them.
 
 Known issue:
