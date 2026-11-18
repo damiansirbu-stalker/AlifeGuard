@@ -1,6 +1,6 @@
 <div style="border-top:1px solid #555555;width:40%;margin:20px auto;">&#8203;</div>
 <div style="text-align:center;padding:0 30px;">
-<div style="font-size:18px;font-weight:bold;">Version 1.3.2 (xlibs 1.9.0, demonized <a style="text-decoration:underline;" href="https://github.com/themrdemonized/xray-monolith/releases">latest</a>)</div>
+<div style="font-size:18px;font-weight:bold;">Version 1.3.3 (xlibs 1.9.0, demonized <a style="text-decoration:underline;" href="https://github.com/themrdemonized/xray-monolith/releases">latest</a>)</div>
 <h3><a style="text-decoration:underline;" href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog">Changelog</a>&nbsp;&middot;&nbsp;<a style="text-decoration:underline;" href="https://damiansirbu-stalker.github.io/AlifeGuard/health/">Health</a>&nbsp;&middot;&nbsp;<a style="text-decoration:underline;" href="https://damiansirbu-stalker.github.io/AlifeGuard/jitprofiler/">JitProfiler</a>&nbsp;&middot;&nbsp;<a style="text-decoration:underline;" href="https://github.com/damiansirbu-stalker/AlifeGuard/issues">Bugs</a>&nbsp;&middot;&nbsp;<a style="text-decoration:underline;" href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt">Russian</a></h3>
 <div style="border-top:1px solid #555555;width:40%;margin:20px auto;">&#8203;</div>
 <div style="font-size:14px;text-align:left;display:inline-block;">
@@ -32,15 +32,14 @@ Simple despawners remove individual NPCs without considering squad structure. Th
 It leaves smart terrains unable to spawn and interferes with mods that script squads. AlifeGuard works at the squad level and accounts for the engine's spawn bookkeeping.<br />
 <div style="border-top:1px solid #555555;width:40%;margin:20px auto;">&#8203;</div>
 <h3>Systems</h3>
-<br />
 - Online Guard - caps the online population near you: when the count crosses the trigger it culls back to the target, squad by squad.<br />
 - Offline Guard - a staggered scan bins offline squads by region and thins the crowded ones, so a hub full of offline squads cannot spike the count when it wakes. Commanders always survive.<br />
 - Smart Sanitizer - repairs corrupted respawn counters on smart terrains to the real live squad count, the kind of corruption that causes save crashes and infinite spawn loops.<br />
 - Inventory Guard - bounds what NPCs hoard from looting. Vanilla looting stays on, but a long-lived stalker carries a believable load instead of a trader run.<br />
   Looted items stop drifting toward the engine's ~65000-object cap that crashes long saves.<br />
+  He keeps the scope or silencer that fits his own pistol or rifle, plus 2 spare attachments.<br />
 <br />
 <h3>Mechanisms (how the culling stays safe)</h3>
-<br />
 - Squad-aware - thins non-commanders first, commanders last, so squads stay valid in SIMBOARD and no respawn loop starts. Mod-owned squads (AlifePlus, Warfare, Guards Spawner) go last.<br />
 - Round-robin - removals spread across factions and mutant types, one per category per round, so no group is thinned disproportionately.<br />
 - Hysteresis - separate trigger and target thresholds (default 80 down to 70), so cleanup runs in cycles, not on every small change.<br />
@@ -57,13 +56,16 @@ MCM<br />
 <h3>Compatibility</h3>
 Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.<br />
 <span style="font-weight:bold;">Drop:</span><br />
-- Grok's Dynamic Despawner, and any despawn or population-release mod - release the same population AlifeGuard owns, and the two fight over the count.<br />
-  The Despawner also deletes task NPCs, leaves stale objects, miscounts smart-terrain population and breaks some smarts for good, and crashes.<br />
+- Grok's Dynamic Despawner - it releases the population AlifeGuard owns and deletes task stalkers.<br />
+  Its releases can push a smart terrain's spawn count below zero, which crashes the save.<br />
+- Cypret's SafeSpawn - it force-toggles online switching and sweeps alife on every level change.<br />
+  A save while it hides stalkers leaves them 200m under the map.<br />
+<span style="font-weight:bold;">Avoid:</span><br />
+- Any other despawn or population-release mod - it releases the population AlifeGuard owns.<br />
 - Squad Filler - injects offline squads back to size, undoing the cull.<br />
-- Cypret's SafeSpawn - force-toggles online switching and sweeps alife every level change, against the release path.<br />
-- NPC Stop Looting Dead Bodies, and any anti-loot mod - hard-block the looting Inventory Guard keeps on and bounds instead.<br />
+- NPC Stop Looting Dead Bodies, and any anti-loot mod - they block NPC looting.<br />
 <span style="font-weight:bold;">Coexists:</span><br />
-- AlifePlus, Warfare, Guards Spawner - their scripted squads are protected, so AlifeGuard thins them last and never breaks a mod-owned squad.<br />
+- AlifePlus, Warfare, Guards Spawner - their scripted squads are protected, so AlifeGuard thins them last and never breaks up a squad that another mod owns.<br />
 Everything else coexists, as long as it extends X-Ray and Anomaly and never overrides them.<br />
 <br />
 <h3>Known issue</h3>
