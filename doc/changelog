@@ -1,229 +1,249 @@
 1.3.3-snapshot
-  Summary: offline cull crash fix, respawn counter repair, attachment cap
+  An offline cull crash fix, respawn counters repaired to the live count, attachment caps
+    Smart Sanitizer now repairs a corrupted respawn counter to the number of squads alive, which ends the runaway respawn at that smart terrain on the next pass.
+    Inventory Guard gives loose attachments a separate cap and keeps the one that fits a stalker's gun, and a rare offline cull crash is gone.
 
   Offline Guard
-    - Fixed a rare crash caused by the engine recycling a dead squad's id to another object while a cull pass was still running.
+    - Fixed a rare crash when X-Ray gave a wiped squad's id to another object while a cull pass was still running.
 
   Smart Sanitizer
-    - A corrupted respawn counter now repairs to the smart's real live squad count instead of resetting to 0.
-      The old reset to 0 let the surviving squads drive the counter negative again on their next death, so a corrupted smart kept spawning squads without limit every few minutes.
-      Repairing to the true count ends that runaway respawn in a single pass. It does not remove squads already spawned, which the population guards cull over time.
+    - Changed the repair of a corrupted respawn counter from 0 to the smart terrain's real count of live squads.
+      A reset to 0 let the surviving squads drive the counter negative again on their next death, and the smart kept spawning squads without limit every few minutes.
+      The repair ends that runaway on the next pass. Squads already spawned stay, and the population guards cull them over time.
 
   Inventory Guard
-    - Fixed a scope or silencer handed to a stalker vanishing when he carried a spare gun.
-      Attachments counted against the single spare-weapon cap. They now have a cap of 2 of their own.
-    - Changed the cull to keep the scope or silencer that fits a stalker's own pistol or rifle, apart from his 2 spares.
+    - Fixed a scope or silencer you handed to a stalker vanishing when he carried a spare gun. Attachments counted against the spare weapon cap, and now have a separate cap of 2.
+    - Changed the cull to keep the scope or silencer that fits a stalker's pistol or rifle, apart from his 2 spares.
 
 1.3.2
-  Summary: scripted NPC protection, quest-target protection, online limit default, kept gear, trader purge removed, hoard clearing, trim performance, performance and infrastructure
+  Scripted and quest-target protection, a higher online limit, kept gear, lighter trims
+    Online Guard protects squads another script steers and the target of your current quest, and the default online limit rises from 80 to 120 NPCs.
+    Inventory Guard keeps binoculars, night vision and armour plates, no longer touches traders, and trims a heavy hoarder in a single walk.
+    Other things you will notice. A hoarder clears over the next cycles, the platform line prints to the engine log, and the mod needs xlibs 1.9.0.
 
   Online Guard
-    - Added a Protect scripted NPCs option, on by default.
-      A squad another script is steering (an outpost service holding its post, a chase target, a mod-spawned guard) is no longer removed by either guard,
-      so an outpost trader survives population pressure. Turn it off for the most aggressive culling, which then deletes script-managed squads.
+    - Added Protect scripted NPCs, on by default. A squad another script steers, such as an outpost service at his post, a chase target or a mod-spawned guard, is no longer culled by either guard.
+      An outpost trader survives population pressure. Turn it off for the hardest culling, which then removes script-managed squads too.
     - Fixed the guards culling an active quest target, which failed the quest as soon as the cleanup ran.
-      A quest's current objective (the NPC, mutant, or squad marked on your map) is now protected wherever the task tracks it, alongside the existing task-giver and bounty/hostage protection.
-    - Raised the default online population limit from 80 to 120 NPCs. Custom settings are unaffected.
+      The NPC, mutant or squad marked on your map for the current objective is now protected, beside the task-giver and bounty or hostage protection.
+    - Changed the default online population limit from 80 to 120 NPCs. Custom settings stay as they are.
 
   Inventory Guard
-    - Fixed the trim taking gear an NPC should keep. Binoculars count as a weapon and night-vision as a device, so the one-spare caps released them,
-      and armour plates fell outside every kept category. Each now keeps one.
-    - Improved inventory trim performance. The scan does a single inventory pass instead of two, capped at 40 items,
-      so even a heavily looted NPC stays within the frame budget.
-    - Removed the trader stock purge. Trader, mechanic, medic, and barman stock is left to the trade flow that already bounds it, so the guard no longer scans a trader at all.
-    - Fixed a heavily looted NPC clearing only part of its surplus, then waiting a full cooldown. It now rescans each cycle until clean.
+    - Fixed the trim taking gear an NPC should keep. Binoculars counted as a weapon and night vision as a device, and armour plates fell outside every kept category. Each now keeps one.
+    - Improved inventory trim performance. The trim walks an inventory once instead of twice, with a cap on the items it reads.
+    - Removed the trader stock purge. The trade flow bounds trader, mechanic, medic and barman stock, and the guard no longer scans a trader at all.
+    - Fixed a heavy hoarder clearing only part of his surplus, then waiting a full cooldown. He now rescans each cycle until clean.
 
-  Performance and Infrastructure
-    - Rebuilt the validator into layered rules for crashes, unsafe engine usage, performance, best practices, smoke load, and secret leaks.
-    - The validator runs on every change, locally and in CI, and a grade gate fails the build on any finding.
-    - Profiled and tuned with JitProfiler, an engine-native, scientific profiler.
-    - Consolidated the whole engine layer into xlibs and standardized naming and structure across every mod.
+  General
+    - Added the platform status line to the engine log at startup.
+    - Changed the xlibs requirement to 1.9.0.
 
 1.3.1
-  Summary: Inventory Guard, trader stock purge, sanitizer setting, offline culling fix
+  Inventory Guard, the trader stock purge, a separate sanitizer toggle
+    Inventory Guard is a new tab. It bounds what NPCs hoard so anti-loot addons are no longer needed, moved from AlifeBalance with the same behavior.
+    The trader stock purge releases worn-out stock from traders, and Smart Sanitizer runs on a separate toggle, apart from the Online Guard.
 
   Offline Guard
-    - Fixed re-processing an over-crowded region it could not thin any further, doing background work each pass with nothing to remove.
+    - Fixed the guard re-processing a crowded region it could not thin any further, which ran background work each pass with nothing to remove.
 
   Smart Sanitizer
-    - Changed the sanitizer to run on its own setting, so save-crash protection stays active even when the Online Guard is turned off.
+    - Changed the sanitizer to run on a separate setting. Save-crash protection stays on when the Online Guard is off.
 
   Inventory Guard
-    - Added Inventory Guard: bounds NPC inventory hoarding so anti-loot addons are no longer needed. Moved from AlifeBalance, where it was called Inventory Balance, with identical behavior.
-      A lightweight scanner walks online stalkers one per frame, releasing the surplus above per-category limits and rescanning each NPC at most twice per game-day.
-      Companions, story characters, and named NPCs are never touched.
-      Service NPCs matched by role (including runtime-spawned traders, mechanics, medics, and barmen) are excluded from the per-category trim.
-      Per-category limits live in configs/alifeguard/ag_inventory_policy.ltx, moved from AlifeBalance's ab_inventory_policy.ltx (DLTX-overridable).
-    - Added a trader stock condition purge: worn-out weapons, outfits, and helmets below a condition threshold are released from trader inventories,
-      so a long selling session no longer piles junk stock toward the engine's alife object cap.
-      Covers traders, mechanics, medics, and barmen (including runtime-spawned ones) on the same scanner cadence. Stock at or above the threshold stays for sale,
-      and the trader's equipped gear, quest items, consumables, ammo, and money are never touched. Toggle and threshold in MCM under Inventory Guard.
+    - Added Inventory Guard, moved from AlifeBalance, where it was Inventory Balance, with the same behavior.
+      A scanner walks online stalkers one per frame, releases the surplus above each category's limit, and rescans each NPC at most twice per game day.
+      Companions, story characters and named NPCs are never touched, and service NPCs matched by role skip the trim, runtime-spawned ones included.
+      The limits live in ag_inventory_policy.ltx, overridable through DLTX, which replaces ab_inventory_policy.ltx.
+    - Added the trader stock purge. Weapons, outfits and helmets below a condition threshold leave the stock of traders, mechanics, medics and barmen.
+      A long selling session no longer piles junk stock toward the engine's object cap. Equipped gear, quest items, consumables, ammo and money stay.
+
+  General
+    - Changed the xlibs requirement to 1.8.3.
 
 1.3.0
-  Summary: Offline guard, companion protection, platform status, localization, fixes
+  Offline Guard, companions always protected, platform status, Russian strings
+    Offline Guard is a new tab that caps A-Life density on the other maps. A crowded hub no longer floods the online count when you arrive.
+    Companions are always protected from culling, online and offline, and the MCM footer shows a live xlibs and exe compatibility status.
 
-  - Added Offline Guard: caps A-Life density on other levels so a hub no longer spikes the count.
-    A lightweight scan constantly checks offline squads by position and thins any region over its trigger to its target. Named NPCs, commanders, and protected squads are never removed.
-  - Companions are now always protected from culling, online and offline, whatever the task toggle.
-  - Added a platform status line in MCM with a live xlibs and engine compatibility verdict.
-  - Fixed a load crash when xlibs is outdated, showing an update-xlibs message instead of an error.
-  - Added Russian localization for the Offline Guard tab, cleanup tips, and MCM reset confirmation.
+  Online Guard
+    - Changed companions to stay protected from culling whatever the task toggle says.
+
+  Offline Guard
+    - Added Offline Guard. A light scan checks offline squads by position and thins any region over its trigger to its target.
+      Named NPCs, commanders and protected squads are never removed, and every squad keeps its commander.
+
+  General
+    - Added the platform status line to the MCM, with a live xlibs and exe compatibility result.
+    - Fixed an outdated xlibs raising an error at load. The dependency check now shows the update-xlibs message.
+    - Added Russian strings for the Offline Guard tab, the cleanup tips and the MCM reset confirmation.
+    - Changed the xlibs requirement to 1.8.2.
 
 1.2.7
-  Summary: AOEngine compatibility, fewer engine warnings, MCM reset moved
+  AOEngine support, the modded exes check, fewer engine warnings
+    AOEngine is supported, and the load check now stops the game with a message when it finds neither demonized 20250908 or newer nor AOEngine.
+    A creature despawning during a cleanup no longer floods the log with warnings, and the MCM reset button sits at the bottom of Development.
 
-  - Added AOEngine v0.55+ support.
-  - Fixed a burst of "trying to use a destroyed object" warnings logged when a creature despawns during a cleanup cycle.
-  - Moved the Reset button to the bottom of the Development tab in MCM.
+  Online Guard
+    - Fixed a burst of "trying to use a destroyed object" warnings when a creature despawned during a cleanup cycle.
+
+  Development
+    - Changed the Reset button to sit at the bottom of the Development tab.
+
+  General
+    - Added AOEngine support and the modded exes check.
+    - Changed the xlibs requirement to 1.7.7.
 
 1.2.6
-  Summary: MCM reset crash fix, reset warning
+  A fix for the MCM reset crash
+    Reset to defaults no longer crashes on some exes, and a warning above the button asks you to save or discard pending changes first.
 
-  - Reset to defaults no longer crashes on click on certain executables
-  - Added warning above reset button to save or discard pending MCM changes first.
+  Development
+    - Fixed Reset to defaults crashing on some exes.
+    - Added a warning above the reset button to save or discard pending MCM changes first.
 
 1.2.5
-  Summary: Task giver protection, crash hardening, MCM tab restructure, Reset button, notification sound, button cleanup
+  Task-giver protection, the MCM tab split, the reset button and the cleanup sound
+    Task givers are no longer culled, and PDA Taskboard tasks no longer fail when a cleanup runs. The MCM splits into Online Guard, Smart Sanitizer and Development.
+    Cleanup messages read as the Zone itself, with a sound cue. The manual buttons are gone, because the cycles run by themselves.
 
-  Protection
-    - Task givers no longer released by cleanup (no more "Mission Failed" on PDA Taskboard tasks).
-      Covers PDA Taskboard task members via xlibs squad-members iteration.
-      Covers orphan NPCs that are active task givers via xcreature.is_task_giver.
-    - Crash hardening around stale squad references and recycled server-entity ids during release.
+  Online Guard
+    - Fixed cleanup releasing task givers, which failed PDA Taskboard tasks. Taskboard squad members and lone task givers are both protected.
+    - Fixed crashes around stale squad references and recycled server ids during a release.
+    - Changed the PDA cleanup messages to 3 lines in the voice of the Zone.
+    - Added Notification sound, a short ambient cue when cleanup fires.
+    - Removed the Show status, Delete common, Delete all squads and Force cleanup buttons. The cycles run by themselves.
 
-  Notifications
-    - PDA cleanup messages now show 3 lore-flavoured Zone-as-actor lines.
+  Smart Sanitizer
+    - Changed the sanitizer settings into a separate tab.
+    - Removed the Sanitize now button. The periodic pass handles it.
 
-  MCM
-    - MCM now has three tabs: Online Guard (entity limits, protection), Smart Sanitizer, Development.
-      Reset to defaults button on Development tab restores all settings to factory state in one click.
-      Migration path for the restructure: old keys orphan in MCM storage but no longer apply.
-    - Added Notification sound toggle on Online Guard for a brief ambient cue when cleanup fires.
-    - Removed Show status, Delete common, Delete all squads buttons (cycles run automatically).
-    - Removed Sanitize now, Force cleanup buttons (periodic cycles handle these).
+  Development
+    - Added Reset to defaults, which restores every setting in one click.
 
-  Compatibility
-    - xlibs 1.7.1 dependency (xsquad task-giver iteration, xsound one-shot play).
+  General
+    - Changed the MCM tabs to Online Guard, Smart Sanitizer and Development. Old settings no longer apply.
+    - Changed the xlibs requirement to 1.7.1.
 
 1.2.0
-  Summary: Smart Sanitizer clamps corrupted respawn counters on smart terrains. Prevents save crashes, starvations and infinite spawn loops or spawn caused by spawner and despawner mods.
-  Core:
-    Added: Smart Sanitizer. Clamps negative or non-numeric values in smart.already_spawned[k] counters.
-    Runs once on game load after STATE_Read but before the alife pump, and every 300 seconds during play. Pure Lua table walk over SIMBOARD.smarts. Sub-millisecond on 50-200 smarts.
-    Added: Post-load sanitize via actor_on_reinit. Cleans counters restored from save before try_respawn reads them.
-    Runs before the 65534-objects-per-update boot burst would feed corrupted counters into the respawn loop.
-    Fixed: Save crash from negative already_spawned counter. The packet writer at smart_terrain.script:955 casts to unsigned 8-bit. Negative values produced CTD.
-    Sanitizer clamps to 0 before next save.
-    Fixed: Infinite respawn loop from negative already_spawned counter. The respawn gate at smart_terrain.script:1696 reads max > num. Negative num made the comparison always true.
-    Sanitizer clamps to 0.
-  MCM:
-    Added: Smart Sanitizer subsection on the Development tab. Toggle (default on), interval slider (60 to 1800 seconds, default 300), and immediate-sanitize diagnostic button.
-  Localization:
-    Added: 7 EN + 7 RU strings for the Smart Sanitizer subsection.
+  Smart Sanitizer, against save crashes and endless respawns
+    Corrupted respawn counters on smart terrains get repaired by Smart Sanitizer. They cause save crashes and endless spawn loops, usually after a spawner or despawner mod.
+
+  Development
+    - Added Smart Sanitizer. It clamps negative or non-numeric respawn counters, once on load and periodically during play.
+      A negative counter crashed the game on save, and made its smart terrain spawn squads without end.
+      The load pass runs before the respawn loop reads the counters restored from the save.
+    - Added the Smart Sanitizer toggle, its interval slider and a sanitize button, with English and Russian strings.
+
+  General
+    - Changed the xlibs requirement to 1.4.0.
 
 1.1.1
-  Core:
-    Changed: population scan uses xcreature.online_iter() instead of game_objects_iter (no longer crashes without Demonized exes)
-  Compatibility:
-    Removed: modded exes requirement. Works with vanilla Anomaly 1.5.3, Demonized, Demonized MT, AOEngine. Tested with GAMMA, EFP, Zona.
+  Vanilla exe support
+    The population scan no longer needs the demonized exes. AlifeGuard runs on vanilla Anomaly 1.5.3, demonized, demonized MT and AOEngine.
+
+  General
+    - Fixed the population scan crashing without the demonized exes. It now walks online objects through xlibs.
+    - Changed the xlibs requirement to 1.3.0.
 
 1.1.0
-  Summary: Squad-aware culling, round-robin fairness, hysteresis, 4-tier priority, structured tracing
+  Squad-aware culling, fair removals across factions, and a hysteresis buffer
+    The guard now thins squads member by member, commanders last, and spreads removals evenly across factions and mutant types.
+    A buffer between the trigger and the target stops it from culling again at once, and every protection works at squad level.
+    Other things you will notice. Scripted squads go last, companion squads are protected, and the MCM gains a Development tab.
 
-  Core:
-    Changed: culling redesigned around squads, not individual entities
-    Changed: entities grouped by squad, non-commanders thinned first, commanders last
-    Changed: removals distributed evenly across factions and mutant types via round-robin
-    Changed: 4-tier priority: unscripted members -> scripted members -> unscripted commanders -> scripted commanders
-    Added: hysteresis buffer separates trigger threshold from cull target (default: trigger 80, cull to 70)
-    Added: scripted squads (AlifePlus, warfare, Guards Spawner) deprioritized across both member and commander tiers
+  General
+    - Changed culling to work on squads. Members go first and commanders last, and a squad survives a cleanup.
+    - Added round-robin removal across factions and mutant types. No single faction loses everything first.
+    - Added 4 priority tiers, from unscripted members to scripted commanders. Squads that AlifePlus, Warfare or Guards Spawner steer go last.
+    - Added the hysteresis buffer, a gap between the trigger and the cull target.
+    - Changed protection to work on the whole squad: story, trader, task giver, companion, and bounty or hostage.
+    - Added protection for companion squads, where only individual companions were protected before.
+    - Fixed named NPCs who are not their squad's commander being culled.
+    - Added toggles for squad culling and round-robin fairness, and a buffer slider.
+    - Improved performance. Squad-level checks replace the per-NPC scans.
+    - Changed the xlibs requirement to 1.2.7.
 
-  Protection:
-    Changed: protection unified at squad level via xsquad.is_protected (story, trader, task giver, companion, bounty/hostage)
-    Changed: duplicate per-NPC bounty/hostage scan removed, covered by squad-level is_task_target
-    Added: companion squads protected (previously only individual companion NPCs caught)
-    Added: positive-only TTL cache on squad protection (120s, no false negatives, cleared on config change)
-    Fixed: named NPCs as non-commander squad members now caught by per-member is_unscriptable fallback
-
-  Performance:
-    Changed: squad-level checks replace per-NPC scans, fewer bridge calls per entity
-    Changed: uncached per-entity task_giver O(t) scan eliminated, replaced by cached squad-level check
-
-  MCM:
-    Changed: two-tab layout (General + Development)
-    Changed: log level dropdown (ERROR/WARN/INFO/DEBUG) replaces debug_log toggle
-    Changed: diagnostics and population reset moved to Development tab
-    Added: hysteresis buffer slider (0-50, step 5, default 10)
-    Added: per-squad culling toggle (default on, disabling reverts to v1.0 flat behavior)
-    Added: round-robin fairness toggle (default on, disabling allows one faction to lose everything first)
-
-  Internal:
-    Added: xtrace IDs per cycle for structured log correlation
-    Added: per-phase timing in log output (collect, queue build, release spread)
-    Changed: log format standardized to [PHASE] [tid=N] key=value [Xms]
+  Development
+    - Added the Development tab, with the diagnostics, the population reset and a log level list in place of the debug toggle.
 
 1.0.10
-  Changed: xlibs 1.2.5 dependency.
+  The xlibs 1.2.5 requirement
+    This release runs on xlibs 1.2.5, and the load check accepts any newer compatible version.
+
+  - Changed the xlibs requirement to 1.2.5.
 
 1.0.9
-  Gameplay:
-    Changed: default online guard threshold from 70 to 80
-  Diagnostics:
-    Added: per-operation timing traces (collect, sort, per-release) when debug_log enabled
-  Compatibility:
-    Added: task target squad protection (assault, bounty, hostage, delivery squads never released)
-    Fixed: task target squad check running on monsters (wasted luabind calls)
-    Fixed: delete_common_squads removing bounty/hostage quest targets
-  MCM:
-    Added: version displayed at startup (mod + xlibs)
-    Changed: MCM visual refresh
-    Fixed: Russian MCM encoding restored (windows-1251)
-  X-Ray & xlibs:
-    Added: xsquad.is_task_target for O(1) task squad detection (replaces per-entity bounty scan)
-    Added: log deadbanding reduces repeated lines in busy areas
-    Fixed: release_squads crash on stale SIMBOARD IDs after repopulate
-    Fixed: find_online_squads no longer re-evaluates rejected squads
-  Performance:
-    Changed: entity removal spread across frames via xslice (zero stutter, 0.05ms average per release)
+  Frame-spread cleanup, a higher default limit, and task target protection
+    The cleanup now releases one NPC per frame, and assault, bounty, hostage and delivery squads are never culled.
+    Other things you will notice. The default limit rises from 70 to 80, the MCM shows a banner, and the Russian MCM reads correctly again.
+
+  - Changed entity removal to spread across frames, one per frame, with no stutter.
+  - Added protection for task target squads. Assault, bounty, hostage and delivery squads are never released.
+  - Fixed Delete common squads removing bounty and hostage quest targets.
+  - Fixed a crash in the squad release on stale ids after a repopulate.
+  - Changed the default online limit from 70 to 80.
+  - Added the MCM banner, and the mod and xlibs versions to the log at startup.
+  - Fixed the Russian MCM text, which showed broken characters.
+  - Changed the xlibs requirement to 1.2.4.
 
 1.0.8
-  xlibs 1.2.3 dependency.
+  The xlibs 1.2.3 requirement
+    This release runs on xlibs 1.2.3, and the load check accepts any newer compatible version.
+
+  - Changed the xlibs requirement to 1.2.3.
 
 1.0.7
-  Changed: xlibs dependency updated to 1.2.1
+  The xlibs 1.2.1 requirement
+    This release runs on xlibs 1.2.1, and the load check asks for that exact version.
+
+  - Changed the xlibs requirement to 1.2.1.
 
 1.0.6
-  Changed: default online guard threshold from 40 to 70
-  Changed: MCM config access performance optimization
-  Added: MCM reset button support
-  Added: MCM label cleanup
-  Fixed: smaller performance optimizations
+  A higher default limit, faster settings reads, and the MCM reset button
+    The default online limit rises from 40 to 70, and the MCM reset button restores every setting.
+
+  - Changed the default online limit from 40 to 70.
+  - Improved settings performance.
+  - Added support for the MCM reset button, and cleaned up the MCM labels.
 
 1.0.5
-  Fixed: dependency gate uses exact version match instead of string comparison
+  An exact xlibs version check
+    The load check now matches the xlibs version exactly, where it used to compare the version as text.
+
+  - Fixed the xlibs check comparing versions as text. It now asks for the exact version.
 
 1.0.4
-  Task giver protection fix and debug tracing.
-  Fixed: sim task givers unprotected (task_giver_id is squad ID, not NPC ID)
-  Added: debug log traces for all protection decisions and released entity sections
+  The task-giver protection fix
+    Task givers from the A-Life simulation are protected again, and the debug log names every protection decision.
+
+  - Fixed task givers from the A-Life simulation going unprotected. The task giver id belongs to the squad, not the NPC.
+  - Added debug traces for every protection decision and every released section.
 
 1.0.3
-  Dependency gate and Russian translation.
-  Added: dependency gate - clear error message if xlibs is missing or outdated
-  Added: Russian translation
+  The xlibs check and the Russian translation
+    From this release the mod checks the xlibs version at load, and the MCM reads in Russian.
+
+  - Added the xlibs check at load, with a message when xlibs is missing or outdated.
+  - Added the Russian translation.
 
 1.0.2
-  Fixed: bounty and hostage task targets protected from release
+  Bounty and hostage protection
+    Bounty and hostage task targets are no longer released.
+
+  - Fixed bounty and hostage task targets being released.
 
 1.0.1
-  Fixed console log spam during entity iteration and release.
-  Fixed: alive() and release callstack spam on non-creature objects
-  Fixed: missing check_interval default
+  A fix for console log spam
+    The guard no longer floods the console while it walks and releases entities.
+
+  - Fixed log spam from alive() and release calls on objects that are not creatures.
+  - Fixed a missing default for the check interval.
 
 1.0.0
-  First release. Online entity limiter with MCM configuration.
-  Added: online guard with distance-based removal
-  Added: entity protection (traders, companions, story, tasks)
-  Added: MCM buttons (status, cleanup, delete common, delete all)
-  Added: immersive PDA notifications
-  Added: debug logging
+  An online entity limiter
+    The first release keeps the number of online NPCs under a limit by releasing the farthest ones back to offline simulation.
+
+  - Added the online guard, which removes NPCs by distance once the online count passes the limit.
+  - Added protection for traders, companions, story characters and task NPCs.
+  - Added MCM buttons for status, cleanup, delete common squads and delete all squads.
+  - Added PDA notifications for each cleanup, and debug logging.
