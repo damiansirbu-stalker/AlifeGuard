@@ -326,7 +326,7 @@ Total: ~9-10 luabind per entity (production), ~1-6 per squad. Sub-millisecond fo
 
 ### Why the all-objects walk, not a creature-only iterator
 
-A creature-only walk is tempting. Stalkers are free from `db.OnlineStalkers`, so only monsters would need tracking. It was tried (n12) and reverted.
+A creature-only walk is tempting. Stalkers are free from `db.OnlineStalkers`, so only monsters would need tracking.
 Monsters have no engine-maintained list, so it needs a script-maintained online-monster set, and that set has no reliable removal.
 Neither `monster_on_net_destroy` nor `server_entity_on_unregister` fires on the guard's own script cull, so it accumulates ids of already-deleted monsters without bound.
 Under load `skipped` reached 117 with the monsters confirmed deleted.
