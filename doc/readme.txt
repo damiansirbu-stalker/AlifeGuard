@@ -43,8 +43,8 @@ My work is free and open source, ships in most modpacks, and integrates with est
 An organized group copies my work, defames, impersonates and review-bombs me across platforms.
 You can help with a review, a rating, a proper bug report, or a coffee on Ko-fi: https://ko-fi.com/damiansirbu
 
-Every release is stable, and a new one can add whole systems or move the settings that drive them.
-After every update, open Development in the mod's MCM and reset every setting to its default.
+Every release is stable, and a new one can add whole systems or move their settings.
+After every update, open Development in MCM and reset every setting to its default.
 
 Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all run on the same thread, so performance degrades as the count grows.
 Population mods like ZCP and Redone amplify the problem by raising spawn rates. Zombie entities from broken releases, orphaned squad members, and engine memory leaks make it worse over time.
