@@ -205,7 +205,7 @@
         <text>Restore all AlifeGuard MCM settings to factory defaults. Use after upgrading from a version with different MCM structure (the old settings remain as orphaned keys in the MCM storage file but no longer apply).</text>
     </string>
     <string id="ui_mcm_ag_development_reset_warning">
-        <text>Warning: save or discard pending MCM changes first; otherwise they override the reset on the next Accept.</text>
+        <text>Warning: save or discard pending MCM changes first; otherwise they override the reset on the next Apply.</text>
     </string>
 
     <!-- Development - Logging -->
