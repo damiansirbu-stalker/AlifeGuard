@@ -29,6 +29,8 @@ local _dbg = false
 
 -- Per-NPC last-scan timestamp, game-seconds. Session only.
 local _last_scan_game_sec = {}
+-- Never-scanned default: clears any cooldown, including the first scan_cooldown_h of a new game when game-seconds are still small.
+local NEVER_SCANNED = -math.huge
 
 -- Cycle state. Reset per cycle in _start_cycle.
 local _cycle_id = 0
@@ -68,7 +70,7 @@ end
 -- @param id from xcreature.iterate_online() — avoids obj:id() call on destroyed game objects
 local function _is_eligible(obj, id, actor_id, now, cooldown_sec)
     if id == actor_id then return nil, "actor" end
-    local last = _last_scan_game_sec[id] or 0
+    local last = _last_scan_game_sec[id] or NEVER_SCANNED
     if now - last < cooldown_sec then return nil, "cooldown" end
     if not IsStalker(obj) then return nil, "nonstalker" end
     if not obj:alive() then return nil, "dead" end
@@ -84,7 +86,7 @@ local function _select_eligible(cooldown_sec)
     local timer = xprofiler.new_if(_dbg):start()
     local stats = {
         total = 0, eligible = 0, dt_ms = 0,
-        actor = 0, nonstalker = 0, dead = 0, unscriptable = 0, service_npc = 0, cooldown = 0,
+        actor = 0, nonstalker = 0, dead = 0, unscriptable = 0, service_npc = 0, cooldown = 0, no_se = 0,
     }
     if not (db and db.actor) then
         timer:stop(); stats.dt_ms = timer:get_ms()
@@ -96,16 +98,14 @@ local function _select_eligible(cooldown_sec)
     local eligible = {}
 
     for id, obj in xcreature.iterate_online() do
-        local se = xobject.get_se(id)
-        if not se then goto continue end
         stats.total = stats.total + 1
         local got_id, last_or_reason = _is_eligible(obj, id, actor_id, now, cooldown_sec)
+        if got_id and not xobject.get_se(id) then got_id, last_or_reason = nil, "no_se" end
         if got_id then
             eligible[#eligible + 1] = { id = got_id, last = last_or_reason }
         else
             stats[last_or_reason] = stats[last_or_reason] + 1
         end
-        ::continue::
     end
 
     table_sort(eligible, function(a, b) return a.last < b.last end)
@@ -156,9 +156,9 @@ local function _start_cycle()
     local picks, ps = _select_eligible(_get_cooldown_sec())
 
     if _dbg then
-        log.debug("[PICK] online=%d eligible=%d picked=%d (skip: actor=%d nonstalker=%d dead=%d unscriptable=%d service_npc=%d cooldown=%d) dt=%.2fms",
+        log.debug("[PICK] online=%d eligible=%d picked=%d (skip: actor=%d nonstalker=%d dead=%d unscriptable=%d service_npc=%d cooldown=%d no_se=%d) dt=%.2fms",
             ps.total, ps.eligible, #picks,
-            ps.actor, ps.nonstalker, ps.dead, ps.unscriptable, ps.service_npc, ps.cooldown, ps.dt_ms)
+            ps.actor, ps.nonstalker, ps.dead, ps.unscriptable, ps.service_npc, ps.cooldown, ps.no_se, ps.dt_ms)
     end
 
     if #picks == 0 then return end

@@ -41,7 +41,7 @@ actor_on_update (every frame)
   |
   v
 FRAME 0: _collect_online
-  |-- xcreature.online_iter_with_id() -> _collect_entity per obj
+  |-- xcreature.iterate_online() -> _collect_entity per obj
   |     classify (stalker/mutant/skip)
   |     distance_to_sqr from actor
   |     resolve squad via alife_object(id) -> se_obj.group_id -> alife_object(group_id)
@@ -290,7 +290,8 @@ Per member, skip if it is the commander, gone, online, or named/story (`is_unscr
 
 1. `smart:unregister_npc(se)` with the NPC when `smart_terrain_id() ~= 65535`.
    This clears the smart's `npc_info[npc_id]` and `arriving_npc[npc_id]` by the correct key and sets `m_smart_terrain_id = 0xffff`.
-   Vanilla `remove_npc` passes the squad instead, which would leave a stale `npc_info` entry holding a destroyed server-object reference.
+   Vanilla `remove_npc` passes the squad instead (`sim_squad_scripted.script:445-455`), a call keyed on the squad id that clears nothing of the NPC's.
+   The NPC's own entry still clears when the release completes, in `se_stalker:on_unregister()` / `se_monster:on_unregister()` (`se_stalker.script:104-118`, `se_monster.script:83-93`), so the explicit call only clears it a few frames earlier.
 2. `alife_release(se)` routes to `squad:remove_npc(id, true)`. `unregister_member` detaches the engine-side member pointer before `safe_release_manager` destroys the entity.
    Offline entities have no binder, so the release completes on the manager's next pass.
 
@@ -313,7 +314,8 @@ Full design record with engine citations: `stalker-dev/doc/todo/todo-alifeguard-
 
 | Operation | Cost per entity | Notes |
 |---|---|---|
-| obj:id(), IsStalker/IsMonster, alive(), position() | 5 luabind trivial | Unavoidable |
+| IsStalker/IsMonster | 1 luabind trivial | Runs first for every online object; non-creatures stop here |
+| alive(), position() | 2 luabind trivial | Creatures only |
 | distance_to_sqr | 1 luabind trivial | Squared distances, no sqrt |
 | alife_object(id) | 1 luabind medium | For group_id lookup |
 | se_obj.group_id | 1 luabind trivial | def_readonly on CSE_ALifeMonsterAbstract |
@@ -322,7 +324,9 @@ Full design record with engine citations: `stalker-dev/doc/todo/todo-alifeguard-
 | xsquad.is_protected | 0 luabind (TTL cached) | Per squad, not per member |
 | obj:section() | 1 luabind heavy | Per collected entry, stored for the release-time id-recycle check |
 
-Total: ~9-10 luabind per entity (production), ~1-6 per squad. Sub-millisecond for 100-200 entities.
+Total: ~8 luabind per creature, ~1-6 per squad, 1 per non-creature.
+The walk covers every online object with a script binder, from `db.storage` (`xcreature.iterate_online()`), not the full `gameobjects_registry`.
+On anomaly-pc (2026-11-24) that was 474 objects against 1591 in the registry, and every creature is in it through its binder's `db.add_obj`. Most of the 474 are not creatures (physics objects, restrictors, anomalies), so classifying before the `alife_object` call saves that call on each.
 
 ### Why the all-objects walk, not a creature-only iterator
 
@@ -382,12 +386,12 @@ _start_cycle()
   - if not enabled_inventory: return
   - if xslice.is_active("ag_inventory_guard_scan"): return
   - now = xtime.game_sec()
-  - eligible = [ npc_id for id, npc in xcreature.online_iter_with_id()
-                 if alife_object(id)
+  - eligible = [ npc_id for id, npc in xcreature.iterate_online()
+                 if now - _last_scan_game_sec[npc_id] >= scan_cooldown_h * 3600   (never scanned = -inf, always passes)
                     and IsStalker(npc) and npc:alive()
                     and xsmart.get_npc_roles(npc) empty        (service NPCs skipped, hub traders fail IsStalker)
                     and not xcreature.is_unscriptable(npc)      (companions / story / named skipped)
-                    and now - _last_scan_game_sec[npc_id] >= scan_cooldown_h * 3600 ]
+                    and alife_object(id) ]                      (last, so online items never pay the bridge call)
   - sort eligible by oldest scan first
   - picks = all eligible (xslice paces the actual trim at npcs_per_frame)
   - if #picks == 0: return
@@ -506,7 +510,7 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 
 | Operation | Cost |
 |---|---|
-| `_start_cycle`, eligible-set walk | O(N online) with N ~ 200 typical. 1 `xtime.game_sec()` + per-NPC `alife_object(id)` existence check + `IsStalker` + `alive()` + `xcreature.is_unscriptable` (weak-keyed cache, 0 luabind on hit) + hash read. |
+| `_start_cycle`, eligible-set walk | O(N online), N ~500 objects with a script binder (`db.storage`), mostly not stalkers. 1 `xtime.game_sec()` + per object a cooldown hash read and `IsStalker`; per stalker `alive()` + `xcreature.is_unscriptable` (weak-keyed cache, 0 luabind on hit) + one `alife_object(id)` existence check for admitted NPCs only. |
 | `_pick_eligible` sort | O(K log K) where K = eligible count. `table.sort` over an array of tables. |
 | Per NPC visit | O(items) inventory walk. 12 `item_in_slot` (one per main slot) + ~2 `parse_list` (ammo_class for slots 2 and 3) for state, plus per-item policy (hashes + clsid + IsItem/IsWeapon/IsOutfit/IsHeadgear/IsArtefact bridges). |
 | Per trader visit | O(items), single walk. Per item: `xinventory.get_category` (cached kind/class) + 1 `condition()` field read for wear-category items only. |

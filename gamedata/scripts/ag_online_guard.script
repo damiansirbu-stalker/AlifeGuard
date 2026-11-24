@@ -160,15 +160,16 @@ local function _get_class(obj)
 end
 
 -- Route one classified online entity into ctx._squads or ctx.orphans.
+-- Class before server object: the walk holds only net-alive objects, so non-creatures skip the alife_object call.
 -- @param id from xcreature.iterate_online() — avoids obj:id() call on destroyed game objects
 local function _collect_entity(obj, id, ctx)
     local stats = ctx.stats
-    local se_obj = xobject.get_se(id)
-    if not se_obj then stats.skipped = stats.skipped + 1; return end
     if id == ctx.actor_id then return end
 
     local obj_is_stalker = _get_class(obj)
     if obj_is_stalker == nil then stats.skipped = stats.skipped + 1; return end
+    local se_obj = xobject.get_se(id)
+    if not se_obj then stats.skipped = stats.skipped + 1; return end
     if not obj:alive() then return end
 
     if obj_is_stalker then stats.stalkers = stats.stalkers + 1
