@@ -51,6 +51,7 @@ local _key_to_tab = {
     scan_cooldown_h = "inventory_guard",
     log_level = "development",
     btn_reset_all = "development",
+    btn_update_check = "development",
 }
 
 local function build_path(key)
@@ -190,6 +191,7 @@ function on_mcm_load()
                     { id = "div_reset", type = "line" },
                     { id = "warn_reset", type = "desc", text = "ui_mcm_ag_development_reset_warning", clr = {255, 240, 200, 80} },
                     { id = "btn_reset_all", type = "button", functor_ui = { btn_reset_all } },
+                    { id = "btn_update_check", type = "button", functor_ui = { _ag_init.show_update_check } },
 
                 },
             },
