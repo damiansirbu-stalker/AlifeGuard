@@ -385,7 +385,7 @@ TICK (every 30 wall-seconds via actor_on_update)
 _start_cycle()
   - if not enabled_inventory: return
   - if xslice.is_active("ag_inventory_guard_scan"): return
-  - now = xtime.game_sec()
+  - now = xtime.get_game_sec()
   - eligible = [ npc_id for id, npc in xcreature.iterate_online()
                  if now - _last_scan_game_sec[npc_id] >= scan_cooldown_h * 3600   (never scanned = -inf, always passes)
                     and IsStalker(npc) and npc:alive()
@@ -405,7 +405,7 @@ _visit(npc_id)
   - npc = level.object_by_id(npc_id)
   - if not npc or not npc:alive(): return true  (drain; went offline)
   - r = apply_policy(npc)
-  - _last_scan_game_sec[npc_id] = xtime.game_sec()
+  - _last_scan_game_sec[npc_id] = xtime.get_game_sec()
   - cycle counters += r
   - return true  (drain)
 
@@ -510,7 +510,7 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 
 | Operation | Cost |
 |---|---|
-| `_start_cycle`, eligible-set walk | O(N online), N ~500 objects with a script binder (`db.storage`), mostly not stalkers. 1 `xtime.game_sec()` + per object a cooldown hash read and `IsStalker`; per stalker `alive()` + `xcreature.is_unscriptable` (weak-keyed cache, 0 luabind on hit) + one `alife_object(id)` existence check for admitted NPCs only. |
+| `_start_cycle`, eligible-set walk | O(N online), N ~500 objects with a script binder (`db.storage`), mostly not stalkers. 1 `xtime.get_game_sec()` + per object a cooldown hash read and `IsStalker`; per stalker `alive()` + `xcreature.is_unscriptable` (weak-keyed cache, 0 luabind on hit) + one `alife_object(id)` existence check for admitted NPCs only. |
 | `_pick_eligible` sort | O(K log K) where K = eligible count. `table.sort` over an array of tables. |
 | Per NPC visit | O(items) inventory walk. 12 `item_in_slot` (one per main slot) + ~2 `parse_list` (ammo_class for slots 2 and 3) for state, plus per-item policy (hashes + clsid + IsItem/IsWeapon/IsOutfit/IsHeadgear/IsArtefact bridges). |
 | Per trader visit | O(items), single walk. Per item: `xinventory.get_category` (cached kind/class) + 1 `condition()` field read for wear-category items only. |
