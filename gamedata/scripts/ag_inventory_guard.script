@@ -193,6 +193,7 @@ local function _update_log_level()
     local mcm = _get_cfg()
     if not mcm then return end
     log.set_level(mcm.log_level or "WARN")
+    xlog.get_logger(_ag_manifest.MANIFEST.name).set_level(mcm.log_level or "WARN")
     _dbg = log.get_level() >= 5
 end
 
