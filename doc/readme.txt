@@ -1,4 +1,4 @@
-Version: 1.3.3-snapshot (xlibs 1.9.0, demonized latest)
+Version: 1.3.3-snapshot (xlibs 1.10.1, demonized latest)
 Changelog: https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog
 Health: https://damiansirbu-stalker.github.io/AlifeGuard/health/
 JitProfiler: https://damiansirbu-stalker.github.io/AlifeGuard/jitprofiler/
