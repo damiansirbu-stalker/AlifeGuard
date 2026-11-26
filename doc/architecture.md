@@ -422,7 +422,7 @@ The scanner's xslice queue (`ag_inventory_guard_scan`) is independent of the des
 
 | Function | Purpose | Returns |
 |---|---|---|
-| `apply_policy(npc, opts)` | Apply inventory policy to one NPC. opts: `{ dry_run }`. Cooldown table NOT touched. Both walks capped at `MAX_SCAN_ITEMS` (40). | `{ released, released_by_category, dt_ms }` |
+| `apply_policy(npc, opts)` | Apply inventory policy to one NPC. opts: `{ dry_run }`. Cooldown table NOT touched. One walk up to `MAX_SCAN_ITEMS` (400), at most `MAX_RELEASES` (25) releases. | `{ released, released_by_category, dt_ms }` |
 
 Probes, MCM "trim now" buttons, and console diagnostics call `apply_policy` directly without scheduler involvement.
 
@@ -437,15 +437,15 @@ A stalker-policy trim would gut a trader's shelf, so the guard never touches one
 
 ### Frame-cost cap
 
-`apply_policy` bounds each walk to `MAX_SCAN_ITEMS` (40).
-`classify` and `iterate_surplus` each forward the cap to `xinventory.iterate_inventory`, which stops the engine walk after that many items and reports the truncation as its second return value.
-This holds a single trim under the ~2ms frame ceiling (`code-standards` Performance budget) even on a pathological inventory.
-`_run_npc` stamps the cooldown only when a trim released nothing.
-A trim that shed surplus leaves the NPC eligible to re-trim next cycle, so a hoarder keeps converging over the next cycles. A clean NPC stamps and benches normally.
-A stalker past the cap is a fat corpse-hoarder.
-The surplus beyond the window is trimmed on the next cooldown pass as releases shrink the inventory and the tail shifts into the first-`MAX_SCAN_ITEMS` slots.
-`m_all` iteration order is stable across the two walks, so both walks cover the identical items. Truncation is logged as `capped=true` on the `[VISIT]` line when DEBUG is on.
-The cap only ever under-releases, and never touches a legitimate item.
+An item in the walk costs a few microseconds, and each release is one engine call.
+`apply_policy` counts the whole bag and caps the releases.
+- One `xinventory.collect_surplus` walk counts every item up to `MAX_SCAN_ITEMS` (400), a bound only a broken inventory reaches.
+- `on_surplus` returns true after `MAX_RELEASES` (25) releases, and `collect_surplus` stops there.
+- `_run_npc` stamps the cooldown only when a visit released nothing. A visit that hit the release budget leaves the NPC eligible, and the next cycle carries on until he sits at policy.
+
+A full count keeps the counts true. New items append to the end of the walk, and a window over the first items never sees the loot behind them.
+A stalker carrying more than `HOARD_WARN_ITEMS` (100) items, past every policy cap together plus equipped and untouchable items, logs one `[HOARD]` warning per session.
+Truncation at `MAX_SCAN_ITEMS` logs as `capped=true` on the `[VISIT]` line at DEBUG. A cap only ever under-releases, and never touches a legitimate item.
 
 ### Policy
 

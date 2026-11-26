@@ -14,6 +14,9 @@
   Inventory Guard
     - Fixed a scope or silencer you handed to a stalker vanishing when he carried a spare gun. Attachments counted against the spare weapon cap, and now have a separate cap of 2.
     - Changed the cull to keep the scope or silencer that fits a stalker's pistol or rifle, apart from his 2 spares.
+    - Fixed a stalker hoarding without limit once he carried 40 items. The cull only looked at his first 40 items, and loot he picked up after them was never counted.
+      Each visit now counts his whole inventory and removes up to 25 surplus items, and the next visit carries on until he is down to the policy.
+    - Added a warning in the log for a stalker carrying more than 100 items.
 
   Update check
     - Added an update check. On the first save load of each launch the mod looks for a newer version, during the loading screen.

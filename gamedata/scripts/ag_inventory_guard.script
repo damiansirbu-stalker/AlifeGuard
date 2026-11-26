@@ -14,8 +14,11 @@ local SCAN_QUEUE = "ag_inventory_guard_scan"
 local DEFAULT_NPCS_PER_FRAME = 1
 local UPDATE_INTERVAL_SEC = 30
 
--- Per-NPC per-trim item cap; single-frame cost ceiling. Rationale: architecture.md "Frame-cost cap".
-local MAX_SCAN_ITEMS = 40
+-- Walk bound and per-visit release budget, the two halves of the single-frame cost ceiling. Rationale: architecture.md "Frame-cost cap".
+local MAX_SCAN_ITEMS = 400
+local MAX_RELEASES = 25
+-- Past every policy cap together plus equipped and untouchable items; logged once per NPC per session.
+local HOARD_WARN_ITEMS = 100
 
 local CALLBACK = {
     ACTOR_ON_FIRST_UPDATE = "actor_on_first_update",
@@ -31,6 +34,8 @@ local _dbg = false
 local _last_scan_game_sec = {}
 -- Never-scanned default: clears any cooldown, including the first scan_cooldown_h of a new game when game-seconds are still small.
 local NEVER_SCANNED = -math.huge
+-- NPCs already reported over HOARD_WARN_ITEMS this session.
+local _hoard_warned = {}
 
 -- Cycle state. Reset per cycle in _start_cycle.
 local _cycle_id = 0
@@ -197,16 +202,18 @@ local function _update_log_level()
     _dbg = log.get_level() >= 5
 end
 
--- Prune the per-NPC cooldown row when an NPC despawns. Cheap: one hash erase.
+-- Prune the per-NPC cooldown and hoard-warning rows when an NPC despawns. Cheap: two hash erases.
 local function _on_npc_net_destroy(npc)
     if not npc then return end
-    _last_scan_game_sec[npc:id()] = nil
+    local id = npc:id()
+    _last_scan_game_sec[id] = nil
+    _hoard_warned[id] = nil
 end
 
 --- Apply inventory policy to one NPC; callers (scheduler, probes, MCM buttons) may call it directly.
 --- The cooldown table is the scheduler's concern; this never touches it.
 --- @safety SAFE - returns nil on nil npc / nil policy; iterate tolerates nil items
---- @cost O(min(items, MAX_SCAN_ITEMS)) | one xinventory.collect_surplus walk (capped at MAX_SCAN_ITEMS) + 0-N xinventory.release_item per surplus
+--- @cost O(min(items, MAX_SCAN_ITEMS)) | 1 object_count + one collect_surplus walk + up to MAX_RELEASES release_item
 --- @param npc game_object Online stalker
 --- @param opts table|nil { dry_run = false }
 --- @return table|nil { released, released_by_category = {[cat]=n}, dt_ms }
@@ -226,6 +233,14 @@ function apply_policy(npc, opts)
         dt_ms = 0,
     }
 
+    local item_count = npc:object_count()
+    if item_count > HOARD_WARN_ITEMS and not _hoard_warned[npc_id] then
+        _hoard_warned[npc_id] = true
+        local section = npc:section()
+        log.warn("[HOARD] npc=%d section=%s items=%d", npc_id, section, item_count)
+    end
+
+    local budget = MAX_RELEASES
     local released, _, hit_cap = xinventory.collect_surplus(npc, cat_opts, {
         rules = INVENTORY_POLICY.rules,
         max_items = MAX_SCAN_ITEMS,
@@ -233,13 +248,15 @@ function apply_policy(npc, opts)
             if not dry_run then xinventory.release_item(item) end
             result.released_by_category[cat] = (result.released_by_category[cat] or 0) + 1
             if _dbg then log.debug("[RELEASE] npc=%d section=%s category=%s", npc_id, sec, cat) end
+            budget = budget - 1
+            return budget <= 0
         end,
     })
     result.released = released
 
     timer:stop()
     result.dt_ms = timer:get_ms()
-    if _dbg then log.debug("[VISIT] npc=%d released=%d capped=%s dt=%.3fms", npc_id, result.released, tostring(hit_cap), result.dt_ms) end
+    if _dbg then log.debug("[VISIT] npc=%d items=%d released=%d capped=%s dt=%.3fms", npc_id, item_count, result.released, tostring(hit_cap), result.dt_ms) end
 
     return result
 end
@@ -247,6 +264,7 @@ end
 function on_game_start()
     _last_update = 0
     _last_scan_game_sec = {}
+    _hoard_warned = {}
     _load_policy()
     log.info("[INSTALL] ag_inventory_guard scanner armed")
     RegisterScriptCallback(CALLBACK.ACTOR_ON_FIRST_UPDATE, _update_log_level)
