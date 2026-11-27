@@ -130,4 +130,4 @@ Altogolik помог поддержкой, идеями и исходными м
 Приложите xray.log, лог мода, сборку движка, модлист и порядок загрузки.
 Для глубоких технических деталей и механизмов смотрите документацию по архитектуре на GitHub.
 
-Tags: alife, performance, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety, save-safe, reverse-engineering
+Tags: alife, performance, fps, crash-prevention, id-limit, stability, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety, save-safe, reverse-engineering

@@ -179,12 +179,6 @@
     <string id="ui_mcm_ag_inventory_guard_enabled_inventory_desc">
         <text>Master toggle for Inventory Guard. The scanner walks the eligible online set in small batches spread across frames, rescanning each NPC at most twice per game-day. Per-category limits load from configs/alifeguard/ag_inventory_policy.ltx (DLTX-overridable). Coverage: equipped-tier ammo (counted in rounds), grenades, consumables (medkit, bandage, antirad, stim, pill, food, drink), and gear (weapons, outfits, helmets, artefacts, crafting, devices). Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are always preserved. Companions, story characters, and named NPCs are filtered out at the scheduler and never scanned; traders and other service NPCs are skipped entirely, their stock left to the trade flow. When off, vanilla trim still applies but online inventories accumulate without bound.</text>
     </string>
-    <string id="ui_mcm_ag_inventory_guard_npcs_per_frame">
-        <text>NPCs per frame</text>
-    </string>
-    <string id="ui_mcm_ag_inventory_guard_npcs_per_frame_desc">
-        <text>How many NPCs the scanner trims per frame inside a cycle. The default of 1 keeps every frame cheap, with one inventory walk at a time. Raise only if the scanner struggles to keep up with the eligible set on very large saves. The per-NPC rescan cooldown already paces total work across long stretches of game-time, so this slider rarely needs changing.</text>
-    </string>
     <string id="ui_mcm_ag_inventory_guard_scan_cooldown_h">
         <text>Per-NPC rescan cooldown (game hours)</text>
     </string>

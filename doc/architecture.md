@@ -393,10 +393,10 @@ _start_cycle()
                     and not xcreature.is_unscriptable(npc)      (companions / story / named skipped)
                     and alife_object(id) ]                      (last, so online items never pay the bridge call)
   - sort eligible by oldest scan first
-  - picks = all eligible (xslice paces the actual trim at npcs_per_frame)
+  - picks = all eligible (xslice paces the actual trim at NPCS_PER_FRAME = 1)
   - if #picks == 0: return
   - cycle_id += 1; open xprofiler
-  - xslice.start("ag_inventory_guard_scan", picks, { step = npcs_per_frame, func = _visit, on_done = _on_cycle_done })
+  - xslice.start("ag_inventory_guard_scan", picks, { step = NPCS_PER_FRAME, func = _visit, on_done = _on_cycle_done })
 
 FRAME (each frame while queue active)
   |
@@ -452,7 +452,7 @@ Truncation at `MAX_SCAN_ITEMS` logs as `capped=true` on the `[VISIT]` line at DE
 Policy values live in `gamedata/configs/alifeguard/ag_inventory_policy.ltx` (DLTX-overridable).
 A single uniform block `[ag_inventory_policy]` holds single-value `<category> = <max>` rows, loaded once at on_game_start through `xinventory.load_policy`.
 It is applied per-NPC through `xinventory.classify` for counts and `xinventory.iterate_surplus` for the release pass (`on_surplus = xinventory.release_item`).
-Each walk is capped at `MAX_SCAN_ITEMS` (see Frame-cost cap).
+The walk and the releases are bounded (see Frame-cost cap).
 
 | Category | max | Effect |
 |---|---|---|
@@ -524,15 +524,15 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 
 | File | Lines | Purpose |
 |---|---|---|
-| ag_online_guard.script | 349 | Online Guard: collection, squad grouping, protection, frame-spread release, PDA notify, orchestration |
+| ag_online_guard.script | 350 | Online Guard: collection, squad grouping, protection, frame-spread release, PDA notify, orchestration |
 | ag_offline_guard.script | 291 | Offline Guard: offline density scan per switch_distance cell, per-cell offline cull |
-| ag_queue.script | 135 | Release-queue strategy: 4 priority tiers, round-robin/linear fairness fill (pure Lua) |
-| ag_smart_sanitizer.script | 107 | Smart Sanitizer: clamps corrupted already_spawned respawn counters |
-| ag_inventory_guard.script | 265 | Inventory Guard: online inventory scanner, public `apply_policy`, xslice scheduler with per-NPC cooldown, MAX_SCAN_ITEMS walk cap |
-| ag_mcm.script | 210 | MCM defaults, UI definition, button handlers |
-| _ag_manifest.script | 7 | Identity data: name, version, required xlibs |
-| _ag_init.script | 108 | xlibs + modded-exes/AOEngine dependency gate, platform status footer |
-| ag_test.script | 739 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + walk-cap tests, and run_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds, exercising every guard under sustained load. Toggle off to tear down) |
+| ag_queue.script | 133 | Release-queue strategy: 4 priority tiers, round-robin/linear fairness fill (pure Lua) |
+| ag_smart_sanitizer.script | 121 | Smart Sanitizer: repairs corrupted already_spawned respawn counters to the live count |
+| ag_inventory_guard.script | 274 | Inventory Guard: online inventory scanner, public `apply_policy`, xslice scheduler with per-NPC cooldown, full-bag walk with a per-visit release budget |
+| ag_mcm.script | 207 | MCM defaults, UI definition, button handlers |
+| _ag_manifest.script | 8 | Identity data: name, version, required xlibs, moddb page |
+| _ag_init.script | 193 | xlibs + modded-exes/AOEngine dependency gate, platform status footer, update check |
+| ag_test.script | 755 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + release-budget tests, and run_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds under a 50,000-object ceiling, exercising every guard under sustained load. Toggle off to tear down) |
 
 Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventory Guard per-category ceilings (DLTX-overridable).
 
@@ -560,6 +560,5 @@ Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventor
 | sanitize_smarts | true | Periodic walk that clamps corrupted already_spawned counters |
 | sanitize_interval | 300 | Seconds between periodic sanitizer passes (60-1800) |
 | enabled_inventory | true | Inventory Guard scanner toggle. When off, no scheduler and no trims. |
-| npcs_per_frame | 1 | xslice step: NPCs trimmed per frame inside a cycle (1-10) |
 | scan_cooldown_h | 12 | Per-NPC rescan cooldown in game-hours (1-72) |
 | log_level | WARN | Logger verbosity (ERROR/WARN/INFO/DEBUG) |

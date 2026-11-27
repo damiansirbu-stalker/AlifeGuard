@@ -11,7 +11,8 @@ local INVENTORY_POLICY = nil
 
 -- Scheduler.
 local SCAN_QUEUE = "ag_inventory_guard_scan"
-local DEFAULT_NPCS_PER_FRAME = 1
+-- One NPC per frame: a cycle of 53 picks drains in under a second, and a larger step only stacks trim cost in one frame.
+local NPCS_PER_FRAME = 1
 local UPDATE_INTERVAL_SEC = 30
 
 -- Walk bound and per-visit release budget, the two halves of the single-frame cost ceiling. Rationale: architecture.md "Frame-cost cap".
@@ -59,11 +60,6 @@ local function _is_enabled()
     return mcm and mcm.enabled_inventory ~= false
 end
 
-local function _get_step()
-    local mcm = _get_cfg()
-    return (mcm and mcm.npcs_per_frame) or DEFAULT_NPCS_PER_FRAME
-end
-
 local function _get_cooldown_sec()
     local mcm = _get_cfg()
     local hours = mcm and mcm.scan_cooldown_h or 12
@@ -85,7 +81,7 @@ local function _is_eligible(obj, id, actor_id, now, cooldown_sec)
 end
 
 -- Walk online stalkers, pick every NPC whose last_scan is older than cooldown, oldest-scanned first.
--- xslice paces the actual trim at npcs_per_frame.
+-- xslice paces the actual trim at NPCS_PER_FRAME.
 -- @cost O(N online + K log K) where K = eligible count; sort dominated by table.sort
 local function _select_eligible(cooldown_sec)
     local timer = xprofiler.new_if(_dbg):start()
@@ -175,11 +171,11 @@ local function _start_cycle()
 
     if _dbg then
         log.debug("[SCAN] cycle=%d open batch=%d step=%d cooldown=%dh",
-            _cycle_id, #picks, _get_step(), _get_cooldown_sec() / 3600)
+            _cycle_id, #picks, NPCS_PER_FRAME, _get_cooldown_sec() / 3600)
     end
 
     xslice.start(SCAN_QUEUE, picks, {
-        step = _get_step(),
+        step = NPCS_PER_FRAME,
         func = _run_npc,
         on_done = _on_cycle_done,
     })

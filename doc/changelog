@@ -1,7 +1,8 @@
 1.3.3-snapshot
-  An offline cull crash fix, respawn counters repaired to the live count, attachment caps
-    Smart Sanitizer now repairs a corrupted respawn counter to the number of squads alive, which ends the runaway respawn at that smart terrain on the next pass.
-    Inventory Guard gives loose attachments a separate cap and keeps the one that fits a stalker's gun, and a rare offline cull crash is gone.
+  More performance, less risk of the 65k crash, and self-repairing respawns
+    Inventory Guard now counts a stalker's whole inventory. Hoarding stays bounded, and long saves stay further from the 65k object crash.
+    Smart Sanitizer repairs a corrupted respawn counter to the number of squads alive, which ends a runaway respawn on the next pass.
+    Other things you will notice. Attachments you hand a stalker stay on him, the guards cost less on busy levels, an offline cull crash is gone, and the mod checks for updates.
 
   Offline Guard
     - Fixed a rare crash when X-Ray gave a wiped squad's id to another object while a cull pass was still running.
@@ -14,15 +15,18 @@
   Inventory Guard
     - Fixed a scope or silencer you handed to a stalker vanishing when he carried a spare gun. Attachments counted against the spare weapon cap, and now have a separate cap of 2.
     - Changed the cull to keep the scope or silencer that fits a stalker's pistol or rifle, apart from his 2 spares.
-    - Fixed a stalker hoarding without limit once he carried 40 items. The cull only looked at his first 40 items, and loot he picked up after them was never counted.
+    - Fixed a stalker hoarding without limit when his first 40 items were all within the caps. The cull only looked at those 40, and loot he picked up after them was never counted.
       Each visit now counts his whole inventory and removes up to 25 surplus items, and the next visit carries on until he is down to the policy.
     - Added a warning in the log for a stalker carrying more than 100 items.
+    - Fixed Inventory Guard skipping its first trims in a new game.
+    - Removed the NPCs per frame setting. Inventory Guard always trims one stalker per frame, and a cycle never stacks trims into one frame.
 
-  Update check
-    - Added an update check. On the first save load of each launch the mod looks for a newer version, during the loading screen.
-      A newer version on moddb shows at the foot of the MCM page, and in a PDA message once a day. It needs xlibs 1.10.1.
-    - Added Check for update to the Development page, which runs the same check right away.
-    - Added an update line under the version line at the foot of the MCM page. It shows the installed and the latest version, or the newer version on moddb.
+  Development
+    - Added an update check. On the first save load of each launch the mod looks for a newer release, and a newer one shows with its moddb link at the foot of the MCM page and in a PDA message.
+      Check for update on the Development page runs the same check at once, and the page foot shows the installed and the latest version. It needs xlibs 1.10.1.
+
+  Performance
+    - Improved Online Guard and Inventory Guard performance on busy levels. Both skip props, restrictors and anomalies before any engine lookup.
 
 1.3.2
   Scripted and quest-target protection, a higher online limit, kept gear, lighter trims

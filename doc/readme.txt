@@ -135,4 +135,4 @@ Or file a defect with the same information on GitHub: https://github.com/damians
 Attach xray.log, the mod log, the engine build, the modlist, and the load order.
 For deep technical details and mechanisms, check the architecture docs on GitHub.
 
-Tags: alife, performance, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety, save-safe, reverse-engineering
+Tags: alife, performance, fps, crash-prevention, id-limit, stability, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety, save-safe, reverse-engineering

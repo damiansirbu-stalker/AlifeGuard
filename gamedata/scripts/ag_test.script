@@ -20,8 +20,14 @@ local TIME_EVENT_ACTION = "driver"
 local SECTIONS = { "stalker_sim_squad_novice", "bandit_sim_squad_novice", "simulation_dog" }
 local MOD = "alifeguard"
 local AMMO_NOT_EQUIPPED = "ammo_not_equipped"
--- MAX_SCAN_ITEMS mirrors the per-walk cap in ag_inventory_guard.script (local constant there).
-local INV_SCAN_CAP = 40
+-- Mirrors MAX_RELEASES, the per-visit release budget in ag_inventory_guard.script (local constant there).
+local INV_RELEASE_BUDGET = 25
+-- Torture floods stop at the AlifePlus test driver's object ceiling (ap_ext_test POP_ALIFE_CEILING), below the 65535 ID limit.
+local TORTURE_ALIFE_CEILING = 50000
+-- Bound on the trim passes run_sanitization_test makes before it asserts; each pass releases at most INV_RELEASE_BUDGET.
+local INV_TRIM_PASSES = 10
+-- Window the parity test hands both xlibs walks, small enough that a flooded inventory exercises the truncated path.
+local PARITY_SCAN_CAP = 40
 local TORTURE_TARGETS  = 20
 local TORTURE_FLOOD    = 40
 local TORTURE_BATCH    = 4
@@ -293,20 +299,20 @@ local function _log_inventory_cap(before, mid, after, r1, r2)
         _notify_flow("[FAIL] " .. TEST .. ": trim nil")
         return
     end
-    local over_cap  = before > INV_SCAN_CAP
-    local truncated = mid > INV_SCAN_CAP
-    local converged = after < mid
-    local bounded   = r1.dt_ms >= 0 and r2.dt_ms >= 0
+    local budget_hit = r1.released == INV_RELEASE_BUDGET
+    local continued  = r2.released > 0
+    local converged  = after < mid
+    local bounded    = r1.dt_ms >= 0 and r2.dt_ms >= 0
     local summary = string_format(
-        "before=%d -> mid=%d (rel1=%d dt1=%.3fms) -> after=%d (rel2=%d dt2=%.3fms) cap=%d",
-        before, mid, r1.released, r1.dt_ms, after, r2.released, r2.dt_ms, INV_SCAN_CAP)
+        "before=%d -> mid=%d (rel1=%d dt1=%.3fms) -> after=%d (rel2=%d dt2=%.3fms) budget=%d",
+        before, mid, r1.released, r1.dt_ms, after, r2.released, r2.dt_ms, INV_RELEASE_BUDGET)
     _log_info("[SUMMARY] %s", summary)
-    if over_cap and truncated and converged and bounded then
+    if budget_hit and continued and converged and bounded then
         _log_info("[PASS] %s | %s", TEST, summary)
         _notify_flow(string_format("[PASS] %s\n%s", TEST, summary), 30000)
     else
-        _log_info("[FAIL] %s | %s | over_cap=%s truncated=%s converged=%s bounded=%s",
-            TEST, summary, tostring(over_cap), tostring(truncated), tostring(converged), tostring(bounded))
+        _log_info("[FAIL] %s | %s | budget_hit=%s continued=%s converged=%s bounded=%s",
+            TEST, summary, tostring(budget_hit), tostring(continued), tostring(converged), tostring(bounded))
         _notify_flow(string_format("[FAIL] %s (see log)", TEST), 30000)
     end
 end
@@ -382,21 +388,28 @@ local function _spawn_squads(smart, name, count)
     return spawned
 end
 
--- Flood and trim one online NPC; returns its trim dt and whether it hit the walk cap.
+-- Flood and trim one online NPC; returns its trim dt and whether the trim spent its whole release budget.
 local function _run_flood_npc(npc_id)
     local npc = level.object_by_id(npc_id)
     if not npc then return 0, false end
     if not npc:alive() then return 0, false end
     local got = _add_items(npc, "medkit", TORTURE_FLOOD)
     for j = 1, #got do _torture_items[#_torture_items + 1] = got[j] end
-    local before = _get_item_count(npc_id)
     local res = ag_inventory_guard.apply_policy(npc)
     if not res then return 0, false end
-    return res.dt_ms, before > INV_SCAN_CAP
+    return res.dt_ms, res.released >= INV_RELEASE_BUDGET
 end
 
--- One tick of inventory pressure: flood + trim every online eligible stalker, sampling the worst trim cost and cap hits.
+-- True while the server object count is under the flood ceiling; exes without object_count never stop the flood.
+local function _is_under_ceiling()
+    local sim = alife()
+    if type(sim.object_count) ~= "function" then return true end
+    return sim:object_count() < TORTURE_ALIFE_CEILING
+end
+
+-- One tick of inventory pressure: flood + trim every online eligible stalker, sampling the worst trim cost and budget hits.
 local function _run_flood()
+    if not _is_under_ceiling() then return 0, 0 end
     local ids = _select_npcs(TORTURE_TARGETS)
     local max_dt, capped = 0, 0
     for i = 1, #ids do
@@ -461,7 +474,7 @@ local function _update_torture()
     _spawn_batch()
     local max_dt, capped = _run_flood()
     _log_snapshot()
-    log.info("[TORTURE] tick spawned_ledger=%d items_ledger=%d trim_max=%.3fms capped=%d",
+    log.info("[TORTURE] tick spawned_ledger=%d items_ledger=%d trim_max=%.3fms budget_hit=%d",
         #_torture_squads, #_torture_items, max_dt, capped)
     return false
 end
@@ -537,8 +550,17 @@ function run_sanitization_test()
         local mid_ammo = mid.ammo_not_equipped or 0
         _log_info("[SNAPSHOT mid] medkit=%d ammo_not_equipped=%d", mid_medkit, mid_ammo)
 
-        local result = ag_inventory_guard.apply_policy(npc2)
-        _log_info("[ACTION] apply_policy released=%d dt=%.2fms", result.released, result.dt_ms)
+        local result = { released = 0, released_by_category = {}, dt_ms = 0 }
+        for _ = 1, INV_TRIM_PASSES do
+            local pass = ag_inventory_guard.apply_policy(npc2)
+            if not pass or pass.released == 0 then break end
+            result.released = result.released + pass.released
+            if pass.dt_ms > result.dt_ms then result.dt_ms = pass.dt_ms end
+            for cat, count in pairs(pass.released_by_category) do
+                result.released_by_category[cat] = (result.released_by_category[cat] or 0) + count
+            end
+        end
+        _log_info("[ACTION] apply_policy released=%d max_dt=%.2fms", result.released, result.dt_ms)
         for cat, count in pairs(result.released_by_category) do
             _log_info("[ACTION]   released %s = %d", cat, count)
         end
@@ -581,8 +603,8 @@ function run_sanitization_test()
     end)
 end
 
---- Inventory scan cap: inject 2x the walk cap, trim twice, assert the first pass truncates and the second releases more.
---- Convergence proof for the frame-cost bound the cap guarantees.
+--- Inventory release budget: inject 2x the budget, trim twice, assert the first pass spends the budget and the second continues.
+--- Convergence proof for the per-visit release bound.
 function run_cap_test()
     local TEST = "inventory_cap"
     _log_info("[BEGIN] %s", TEST)
@@ -594,9 +616,9 @@ function run_cap_test()
         return
     end
     local npc_id = npc:id()
-    _log_info("[SETUP] npc=%d name=%s cap=%d", npc_id, npc:name() or "?", INV_SCAN_CAP)
+    _log_info("[SETUP] npc=%d name=%s budget=%d", npc_id, npc:name() or "?", INV_RELEASE_BUDGET)
 
-    local INJECT = INV_SCAN_CAP * 2
+    local INJECT = INV_RELEASE_BUDGET * 2
     local ids = _add_items(npc, "medkit", INJECT)
     if #ids == 0 then
         _log_info("[FAIL] %s: medkit inject produced no items", TEST)
@@ -672,9 +694,9 @@ function run_parity_test()
         local rules = policy.ag_inventory_policy.rules
 
         local ref_stream = {}
-        local ref_counts, ref_hit = xinventory.collect_policy_counts(npc2, opts, rules, INV_SCAN_CAP)
+        local ref_counts, ref_hit = xinventory.collect_policy_counts(npc2, opts, rules, PARITY_SCAN_CAP)
         xinventory.iterate_surplus(npc2, opts, {
-            rules = rules, counts = ref_counts, max_items = INV_SCAN_CAP,
+            rules = rules, counts = ref_counts, max_items = PARITY_SCAN_CAP,
             on_surplus = function(item, cat, sec, unit)
                 ref_stream[#ref_stream + 1] = { id = item:id(), cat = cat, sec = sec, unit = unit }
                 return false
@@ -683,7 +705,7 @@ function run_parity_test()
 
         local new_stream = {}
         local new_released, new_counts, new_hit = xinventory.collect_surplus(npc2, opts, {
-            rules = rules, max_items = INV_SCAN_CAP,
+            rules = rules, max_items = PARITY_SCAN_CAP,
             on_surplus = function(item, cat, sec, unit)
                 new_stream[#new_stream + 1] = { id = item:id(), cat = cat, sec = sec, unit = unit }
                 return false
