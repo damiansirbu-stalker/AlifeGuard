@@ -1,6 +1,6 @@
 <div style="border-top:1px solid #555555;width:40%;margin:20px auto;">&#8203;</div>
 <div style="text-align:center;padding:0 30px;">
-<div style="font-size:18px;font-weight:bold;">Version 1.3.3 (xlibs 1.9.0, demonized <a style="text-decoration:underline;" href="https://github.com/themrdemonized/xray-monolith/releases">latest</a>)</div>
+<div style="font-size:18px;font-weight:bold;">Version 1.3.3 (xlibs 1.10.1, demonized <a style="text-decoration:underline;" href="https://github.com/themrdemonized/xray-monolith/releases">latest</a>)</div>
 <h3><a style="text-decoration:underline;" href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/changelog">Changelog</a>&nbsp;&middot;&nbsp;<a style="text-decoration:underline;" href="https://damiansirbu-stalker.github.io/AlifeGuard/health/">Health</a>&nbsp;&middot;&nbsp;<a style="text-decoration:underline;" href="https://damiansirbu-stalker.github.io/AlifeGuard/jitprofiler/">JitProfiler</a>&nbsp;&middot;&nbsp;<a style="text-decoration:underline;" href="https://github.com/damiansirbu-stalker/AlifeGuard/issues">Bugs</a>&nbsp;&middot;&nbsp;<a style="text-decoration:underline;" href="https://github.com/damiansirbu-stalker/AlifeGuard/blob/main/doc/readme_ru.txt">Russian</a></h3>
 <div style="border-top:1px solid #555555;width:40%;margin:20px auto;">&#8203;</div>
 <div style="font-size:14px;text-align:left;display:inline-block;">
@@ -22,36 +22,62 @@ You can help with a review, a rating, a proper bug report, or a coffee on <a hre
 <div style="text-align:center;font-size:13px;font-weight:bold;"><span style="color:#e03b2f;">Every release is stable, and a new one can add whole systems or move their settings.<br />
 After every update, open Development in MCM and reset every setting to its default.</span></div>
 <br />
-Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all run on the same thread, so performance degrades as the count grows.<br />
-Population mods like ZCP and Redone amplify the problem by raising spawn rates. Zombie entities from broken releases, orphaned squad members, and engine memory leaks make it worse over time.<br />
+AlifeGuard keeps the A-Life of Anomaly lean through a long game.<br />
+Your late game stays fast, and your save stays clear of the 65k crash.<br />
 <br />
-AlifeGuard keeps the world's NPCs, creatures, and items in check, catching what would corrupt a save, break data, or drag performance before it does.<br />
-Squads stay valid and smart terrains behave correctly, with no respawn loops. It reduces load without breaking the simulation.<br />
+<h3>Summary</h3>
 <br />
-Simple despawners remove individual NPCs without considering squad structure. This deletes entire squads and opens respawn slots.<br />
-It leaves smart terrains unable to spawn and interferes with mods that script squads. AlifeGuard works at the squad level and accounts for the engine's spawn bookkeeping.<br />
-<div style="border-top:1px solid #555555;width:40%;margin:20px auto;">&#8203;</div>
-<h3>Systems</h3>
-- Online Guard - caps the online population near you: when the count crosses the trigger it culls back to the target, squad by squad.<br />
-- Offline Guard - a staggered scan bins offline squads by region and thins the crowded ones, so a hub full of offline squads cannot spike the count when it wakes. Commanders always survive.<br />
-- Smart Sanitizer - repairs corrupted respawn counters on smart terrains to the real live squad count, the kind of corruption that causes save crashes and infinite spawn loops.<br />
-- Inventory Guard - bounds what NPCs hoard from looting. Vanilla looting stays on, but a long-lived stalker carries a believable load instead of a trader run.<br />
-  Looted items stop drifting toward the engine's ~65000-object cap that crashes long saves.<br />
-  He keeps the scope or silencer that fits his own pistol or rifle, plus 2 spare attachments.<br />
+- AlifeGuard caps the stalkers and mutants online near you and culls the surplus squad by squad.<br />
+- When a cull runs, the farthest squads go first, and every squad keeps its commander.<br />
+- Crowded parts of the map get thinned too, while they are still offline.<br />
+- Every stalker's bag is trimmed to a limit per item type, and the loot can't pile up in the save.<br />
+- If a smart terrain's respawn counter breaks, AlifeGuard sets it back to what is really alive.<br />
+- Vanilla's offline cleaner, which empties the bags of stalkers on other maps, can be switched off.<br />
+- We leave story and quest squads, companions, traders and task givers alone.<br />
+- We spread all of it over frames through X-Ray's release path, and nothing goes into your save.<br />
 <br />
-<h3>Mechanisms (how the culling stays safe)</h3>
-- Squad-aware - thins non-commanders first, commanders last, so squads stay valid in SIMBOARD and no respawn loop starts. Mod-owned squads (AlifePlus, Warfare, Guards Spawner) go last.<br />
-- Round-robin - removals spread across factions and mutant types, one per category per round, so no group is thinned disproportionately.<br />
-- Hysteresis - separate trigger and target thresholds (default 80 down to 70), so cleanup runs in cycles, not on every small change.<br />
-- Frame-spread - entities released one per frame via xslice, so a cleanup spreads over frames and never hitches the game.<br />
-- Protection - story squads, traders, named NPCs, companions, task givers, quest/bounty/hostage targets, and scripted squads are never touched.<br />
-  Toggle scripted protection off for the most aggressive culling.<br />
+<h3>Online Guard</h3>
+<br />
+Online Guard keeps the crowd of stalkers and mutants near you under a limit.<br />
+Vanilla has no such limit, which is why a late-game base can fill up without end.<br />
+- When a cull runs, members go before commanders, the farthest squads go first, and every faction and every mutant type near you then takes a turn in the cut.<br />
+  We do this because a squad that keeps its commander also keeps its spawn slot.<br />
+- We never cull story characters, traders, named NPCs, companions, task NPCs or scripted squads.<br />
+- Your PDA tells you when the Zone has thinned out.<br />
+<br />
+<h3>Offline Guard</h3>
+<br />
+Offline Guard is how AlifeGuard thins a crowded region of the map before you get there.<br />
+In vanilla a hub full of offline squads comes online all at once when you arrive.<br />
+- Offline squads are scanned region by region, and a crowded region is thinned one squad per frame.<br />
+- Every squad keeps its commander, and we take nothing from protected squads or named NPCs.<br />
+<br />
+<h3>Smart Sanitizer</h3>
+<br />
+Smart Sanitizer is how AlifeGuard repairs the respawn counter of a smart terrain.<br />
+In vanilla a respawn counter that goes negative makes its smart terrain spawn without end.<br />
+The next save that holds this counter will crash while writing it out.<br />
+- A broken counter is set back to the number of squads still alive, at load and every few minutes during play, but we never touch a counter that is healthy.<br />
+<br />
+<h3>Inventory Guard</h3>
+<br />
+Inventory Guard is how AlifeGuard keeps what a stalker carries at a believable load.<br />
+In vanilla a long-lived stalker loots every body he passes, for nothing trims his bag near you.<br />
+- We trim each nearby stalker's bag to a limit per item type, a few items at a time.<br />
+- We leave him the scope or silencer that fits his gun, and anything a quest needs.<br />
+- Traders, companions and story characters are never trimmed.<br />
+- Offline cleaner: vanilla can keep emptying bags of stalkers on other maps, or you can stop it.<br />
 <div style="border-top:1px solid #555555;width:40%;margin:20px auto;">&#8203;</div>
 <h3>Requirements</h3>
 Anomaly 1.5.3<br />
 Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.5.2 or newer. The full feature set needs the latest demonized build. A feature needing a newer one is inactive or reduced on older exes.<br />
 <a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a><br />
 MCM<br />
+<br />
+<span style="font-weight:bold;">Update check</span><br />
+On the first save load of each game launch, the mod asks GitHub during the loading screen whether a newer release is out. It needs xlibs 1.10.1 or newer.<br />
+A newer version shows at the foot of its MCM page, and in a PDA message once a day. Check for update in the Development tab asks right away, whenever you want.<br />
+GitHub sees your IP address and the names of the mods it checks. Each request carries only the mod's name and the word xlibs, with no save data, settings or player name.<br />
 <br />
 <h3>Compatibility</h3>
 Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.<br />
@@ -106,4 +132,4 @@ Or file a defect with the same information on <a href="https://github.com/damian
 Attach xray.log, the mod log, the engine build, the modlist, and the load order.<br />
 For deep technical details and mechanisms, check the architecture docs on GitHub.<br />
 <br />
-Tags: alife, performance, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety, save-safe, reverse-engineering<br />
+Tags: alife, performance, fps, crash-prevention, id-limit, stability, engine-native, despawn, population, inventory, squad-aware, offline, offline-cleaning, balanced-culling, protection, safety, save-safe, reverse-engineering<br />

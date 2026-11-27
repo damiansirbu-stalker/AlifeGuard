@@ -27,7 +27,7 @@
         <text>AlifeGuard</text>
     </string>
     <string id="ui_mcm_ag_online_guard_info">
-        <text>Late-game A-Life accumulates too many active entities. AlifeGuard governs the online population with squad-aware culling, round-robin fairness across factions, and hysteresis to prevent oscillation. Squads survive, smart terrains stay consistent.</text>
+        <text>Online Guard keeps the number of stalkers and mutants around you under a limit. When there are too many, it removes regular members before commanders, the farthest squads first, and takes from every faction in turn. Story characters, traders and companions are never removed, and your PDA tells you when the Zone thins out.</text>
     </string>
 
     <!-- Online Guard - Entity limits -->
@@ -38,25 +38,25 @@
         <text>Enable online guard</text>
     </string>
     <string id="ui_mcm_ag_online_guard_enabled_desc">
-        <text>Limit active entities around you. Farthest go offline first. Traders, companions, quest targets protected.</text>
+        <text>Removes stalkers and mutants near you when there are too many. A removed character is gone for good.</text>
     </string>
     <string id="ui_mcm_ag_online_guard_max">
         <text>Maximum online</text>
     </string>
     <string id="ui_mcm_ag_online_guard_max_desc">
-        <text>How many stalkers and mutants can be active simultaneously. Lower = better framerate in dense areas.</text>
+        <text>How many stalkers and mutants can be around you at once. A higher limit means bigger crowds but lower FPS in busy places.</text>
     </string>
     <string id="ui_mcm_ag_online_guard_buffer">
         <text>Hysteresis buffer</text>
     </string>
     <string id="ui_mcm_ag_online_guard_buffer_desc">
-        <text>Cull target is max minus buffer. Prevents oscillation: cleanup runs less often because population must rise back above max before the next cycle triggers. 0 disables.</text>
+        <text>How far under the limit each cull goes. A higher buffer means fewer culls.</text>
     </string>
     <string id="ui_mcm_ag_online_guard_check_interval">
         <text>Check interval</text>
     </string>
     <string id="ui_mcm_ag_online_guard_check_interval_desc">
-        <text>[seconds]\nHow often to check entity counts. Lower = more responsive but slight performance cost. 30 is balanced.</text>
+        <text>[seconds]\nHow often the guard counts the crowd. A higher value reacts slower but costs less.</text>
     </string>
 
     <!-- Online Guard - Protection -->
@@ -73,7 +73,7 @@
         <text>Protect scripted NPCs</text>
     </string>
     <string id="ui_mcm_ag_online_guard_protect_scripted_desc">
-        <text>Squads a script is steering (an AlifePlus outpost service pinned to its post, a chase target, a mod-spawned guard) are never culled by either guard. On by default so scripted content is not deleted under cap pressure; turn off only for the most aggressive culling.</text>
+        <text>Keeps squads that quests, tasks or other mods control, like story squads, bounty targets and Warfare squads.</text>
     </string>
     <string id="ui_mcm_ag_online_guard_prioritize_distant">
         <text>Remove farthest first</text>
@@ -85,13 +85,13 @@
         <text>Per-squad culling</text>
     </string>
     <string id="ui_mcm_ag_online_guard_squad_culling_desc">
-        <text>Thin squad members before touching commanders. Keeps squads alive, prevents repeated respawns. If disabled, all entities released individually like v1.0.</text>
+        <text>Removes regular members before the commander, so the squad survives and its smart terrain does not spawn a new one.</text>
     </string>
     <string id="ui_mcm_ag_online_guard_round_robin">
         <text>Round-robin fairness</text>
     </string>
     <string id="ui_mcm_ag_online_guard_round_robin_desc">
-        <text>Spread removals evenly across factions and mutant types. If disabled, farthest entities removed regardless of faction.</text>
+        <text>Takes from every faction and mutant type in turn, instead of only the farthest.</text>
     </string>
 
     <!-- Online Guard - Notifications -->
@@ -113,7 +113,7 @@
 
     <!-- ==================== OFFLINE GUARD TAB ==================== -->
     <string id="ui_mcm_ag_offline_guard_info">
-        <text>The online guard only sees entities near you. A hub on another level can hold dozens of offline squads that all come online at once and spike the count. This scan bins offline squads into regions by position and thins any region over the trigger down to the target. Commanders and protected squads are never removed, so every squad survives. Independent of the online guard, with its own trigger, target, and task protection.</text>
+        <text>Offline Guard thins out crowded areas on other maps before you get there. An area with more NPCs than Cull trigger is cut down to Cull target. Commanders and protected squads always stay.</text>
     </string>
     <string id="ui_mcm_ag_hdr_density">
         <text>Offline Density</text>
@@ -122,19 +122,19 @@
         <text>Enable offline guard</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_enabled_desc">
-        <text>Thin overcrowded offline regions on levels away from you. Squads survive, commanders and protected NPCs are never removed.</text>
+        <text>Thins out crowded areas on other maps. Commanders and protected NPCs always stay.</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_trigger">
         <text>Cull trigger</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_trigger_desc">
-        <text>Offline body count that flags a region as overcrowded. A region is culled only when it holds more bodies than this. Lower = culls more regions.</text>
+        <text>How many NPCs an area can hold before it gets thinned. A higher trigger thins fewer areas.</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_target">
         <text>Cull target</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_target_desc">
-        <text>Body count a flagged region is thinned down to. Lower = heavier culling. 0 strips a region to lone squad commanders. Independent of the online maximum. Clamped to the trigger if set higher.</text>
+        <text>How many NPCs a thinned area keeps. At 0 only the commanders stay.</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_check_tasks">
         <text>Protect task NPCs</text>
@@ -146,12 +146,12 @@
         <text>Scan tick</text>
     </string>
     <string id="ui_mcm_ag_offline_guard_density_interval_desc">
-        <text>[seconds]\nTime between scan steps. Each step examines a small batch of squads, so a full pass over the Zone takes several steps. Lower = fresher density data at slightly higher cost.</text>
+        <text>[seconds]\nHow often the scan runs. A higher value costs less but reacts slower.</text>
     </string>
 
     <!-- ==================== SMART SANITIZER TAB ==================== -->
     <string id="ui_mcm_ag_smart_sanitizer_info">
-        <text>Repairs corrupted already_spawned counters on smart terrains to the real live squad count. Prevents save crashes and infinite spawn loops caused by spawner and despawner mods racing with the engine on_unregister decrement.</text>
+        <text>Smart Sanitizer fixes broken respawn counters on smart terrains. A broken counter makes a smart terrain spawn squads without end, and it can crash your save.</text>
     </string>
     <string id="ui_mcm_ag_hdr_sanitize">
         <text>Smart Sanitizer</text>
@@ -160,30 +160,30 @@
         <text>Sanitize smart terrains</text>
     </string>
     <string id="ui_mcm_ag_smart_sanitizer_sanitize_smarts_desc">
-        <text>Repairs corrupted already_spawned counters on smart terrains to the real live squad count. Negative or non-numeric values cause save crashes (u8 write at smart_terrain.script:955) and infinite spawn loops (max &gt; num always true). Common when running per-NPC despawners that race with the engine's on_unregister decrement. Repairing to the live count, not zero, keeps a corrupted smart from re-corrupting on the next squad death. Sanitize runs once on game/level load (before alife pump) and periodically during play. Safe to leave on. Default: on.</text>
+        <text>Checks every smart terrain when you load and during play, and fixes only the broken ones.</text>
     </string>
     <string id="ui_mcm_ag_smart_sanitizer_sanitize_interval">
         <text>Sanitize interval (s)</text>
     </string>
     <string id="ui_mcm_ag_smart_sanitizer_sanitize_interval_desc">
-        <text>Real-time seconds between periodic sanitize passes. Sub-millisecond cost regardless of interval (a pure Lua walk over SIMBOARD.smarts plus one squad-count pass). 300s is a sensible default; lower it only if you observe rapid corruption from another mod. Default: 300.</text>
+        <text>Seconds between checks during play. A higher value checks less often.</text>
     </string>
 
     <!-- ==================== INVENTORY GUARD TAB ==================== -->
     <string id="ui_mcm_ag_inventory_guard_desc">
-        <text>Inventory Guard trims excess loot from long-lived NPCs. A lightweight scanner walks online stalkers one per frame, releasing the surplus above per-category limits and rescanning each NPC at most twice per game-day. Companions, story characters, and named NPCs are never touched; traders get a separate condition purge that releases worn-out stock. Without it, every looted item fills one of the engine's ~65000 alife slots and saves drift toward crash.</text>
+        <text>Inventory Guard trims what stalkers near you carry, to a limit for each item type. Traders, companions and story characters are never trimmed. Every item in the game takes up an ID, and a save that runs out of them crashes.</text>
     </string>
     <string id="ui_mcm_ag_inventory_guard_enabled_inventory">
         <text>Enable Inventory Guard</text>
     </string>
     <string id="ui_mcm_ag_inventory_guard_enabled_inventory_desc">
-        <text>Master toggle for Inventory Guard. The scanner walks the eligible online set in small batches spread across frames, rescanning each NPC at most twice per game-day. Per-category limits load from configs/alifeguard/ag_inventory_policy.ltx (DLTX-overridable). Coverage: equipped-tier ammo (counted in rounds), grenades, consumables (medkit, bandage, antirad, stim, pill, food, drink), and gear (weapons, outfits, helmets, artefacts, crafting, devices). Quest items, equipped gear, story_id items, companion gifts, and player-strapped weapons are always preserved. Companions, story characters, and named NPCs are filtered out at the scheduler and never scanned; traders and other service NPCs are skipped entirely, their stock left to the trade flow. When off, vanilla trim still applies but online inventories accumulate without bound.</text>
+        <text>Trims extra ammo, grenades, medicine, food and gear. Quest items, equipped gear, items you gave a companion and weapons you strapped on a stalker always stay.</text>
     </string>
     <string id="ui_mcm_ag_inventory_guard_scan_cooldown_h">
         <text>Per-NPC rescan cooldown (game hours)</text>
     </string>
     <string id="ui_mcm_ag_inventory_guard_scan_cooldown_h_desc">
-        <text>An NPC is not rescanned until this many game-hours have passed since the last visit. Default 12 (twice per game-day). Lower values trim more aggressively against fast hoarders. Higher values reduce overall work and let NPCs hold a modest stash longer between visits. This cooldown is the rate limit on the whole feature.</text>
+        <text>How many game hours before a trimmed stalker is checked again. One still carrying too much is checked again on the next pass.</text>
     </string>
     <string id="ui_mcm_ag_inventory_guard_offline_cleaner">
         <text>Offline cleaner</text>
@@ -208,7 +208,7 @@
         <text>Reset to defaults</text>
     </string>
     <string id="ui_mcm_ag_development_btn_reset_all_desc">
-        <text>Restore all AlifeGuard MCM settings to factory defaults. Use after upgrading from a version with different MCM structure (the old settings remain as orphaned keys in the MCM storage file but no longer apply).</text>
+        <text>Resets every AlifeGuard setting to its default. Use it after an update.</text>
     </string>
     <string id="ui_mcm_ag_development_reset_warning">
         <text>Warning: save or discard pending MCM changes first; otherwise they override the reset on the next Apply.</text>

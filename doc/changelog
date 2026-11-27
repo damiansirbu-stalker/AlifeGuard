@@ -25,8 +25,8 @@
       Vanilla keeps it as it was. On Off, the vanilla clean still runs when the game nears its object limit.
 
   Development
-    - Added an update check. On the first save load of each launch the mod looks for a newer release, and a newer one shows with its moddb link at the foot of the MCM page and in a PDA message.
-      Check for update on the Development page runs the same check at once, and the page foot shows the installed and the latest version. It needs xlibs 1.10.1.
+    - Added an update check. The mod asks GitHub for a newer release and shows it at the foot of the MCM page and in a daily PDA message.
+      Check for update on the Development page asks right away.
 
   Performance
     - Improved Online Guard and Inventory Guard performance on busy levels. Both skip props, restrictors and anomalies before any engine lookup.

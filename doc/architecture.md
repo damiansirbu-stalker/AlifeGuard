@@ -1,7 +1,7 @@
 # AlifeGuard Architecture
 
 AlifeGuard guards A-Life performance and stability in STALKER Anomaly.
-It keeps the online entity count under a configurable threshold by releasing NPCs back to offline simulation, and it bounds NPC item inventories against the engine's alife-ID cap.
+It keeps the online entity count under a configurable threshold by releasing the surplus NPCs, which deletes them from A-Life, and it bounds NPC item inventories against the engine's alife-ID cap.
 It is squad-aware. It thins squad members before touching commanders, and spreads removals evenly across factions and mutant types through round-robin. Hysteresis prevents oscillation.
 Releases are frame-spread, 1 per frame through xslice, to bound the per-frame work of `safe_release_manager` and keep cleanup smooth.
 
@@ -391,21 +391,21 @@ _start_cycle()
                     and IsStalker(npc) and npc:alive()
                     and xsmart.get_npc_roles(npc) empty        (service NPCs skipped, hub traders fail IsStalker)
                     and not xcreature.is_unscriptable(npc)      (companions / story / named skipped)
-                    and alife_object(id) ]                      (last, so online items never pay the bridge call)
+                    and xobject.get_se(id) ]                    (last, so online items never pay the bridge call)
   - sort eligible by oldest scan first
   - picks = all eligible (xslice paces the actual trim at NPCS_PER_FRAME = 1)
   - if #picks == 0: return
   - cycle_id += 1; open xprofiler
-  - xslice.start("ag_inventory_guard_scan", picks, { step = NPCS_PER_FRAME, func = _visit, on_done = _on_cycle_done })
+  - xslice.start("ag_inventory_guard_scan", picks, { step = NPCS_PER_FRAME, func = _run_npc, on_done = _on_cycle_done })
 
 FRAME (each frame while queue active)
   |
   v
-_visit(npc_id)
-  - npc = level.object_by_id(npc_id)
+_run_npc(npc_id)
+  - npc = xobject.get_go(npc_id)
   - if not npc or not npc:alive(): return true  (drain; went offline)
   - r = apply_policy(npc)
-  - _last_scan_game_sec[npc_id] = xtime.get_game_sec()
+  - if r.released == 0: _last_scan_game_sec[npc_id] = xtime.get_game_sec()   (a capped visit stays eligible)
   - cycle counters += r
   - return true  (drain)
 
@@ -451,7 +451,7 @@ Truncation at `MAX_SCAN_ITEMS` logs as `capped=true` on the `[VISIT]` line at DE
 
 Policy values live in `gamedata/configs/alifeguard/ag_inventory_policy.ltx` (DLTX-overridable).
 A single uniform block `[ag_inventory_policy]` holds single-value `<category> = <max>` rows, loaded once at on_game_start through `xinventory.load_policy`.
-It is applied per-NPC through `xinventory.classify` for counts and `xinventory.iterate_surplus` for the release pass (`on_surplus = xinventory.release_item`).
+It is applied per-NPC through one `xinventory.collect_surplus` walk that counts and releases in the same pass (`on_surplus` calls `xinventory.release_item`).
 The walk and the releases are bounded (see Frame-cost cap).
 
 | Category | max | Effect |
@@ -524,7 +524,7 @@ Vanilla's pass calls `clean_npc_inv` by bare name (`:58`), and a bare name resol
 | Operation | Cost |
 |---|---|
 | `_start_cycle`, eligible-set walk | O(N online), N ~500 objects with a script binder (`db.storage`), mostly not stalkers. 1 `xtime.get_game_sec()` + per object a cooldown hash read and `IsStalker`; per stalker `alive()` + `xcreature.is_unscriptable` (weak-keyed cache, 0 luabind on hit) + one `alife_object(id)` existence check for admitted NPCs only. |
-| `_pick_eligible` sort | O(K log K) where K = eligible count. `table.sort` over an array of tables. |
+| `_select_eligible` sort | O(K log K) where K = eligible count. `table.sort` over an array of tables. |
 | Per NPC visit | O(items) inventory walk. 12 `item_in_slot` (one per main slot) + ~2 `parse_list` (ammo_class for slots 2 and 3) for state, plus per-item policy (hashes + clsid + IsItem/IsWeapon/IsOutfit/IsHeadgear/IsArtefact bridges). |
 | Per trader visit | O(items), single walk. Per item: `xinventory.get_category` (cached kind/class) + 1 `condition()` field read for wear-category items only. |
 | Per release | 1 `alife_object` + 1 `alife_release`. |
@@ -545,7 +545,7 @@ Vanilla's pass calls `clean_npc_inv` by bare name (`:58`), and a bare name resol
 | ag_mcm.script | 212 | MCM defaults, UI definition, button handlers |
 | _ag_manifest.script | 8 | Identity data: name, version, required xlibs, moddb page |
 | _ag_init.script | 193 | xlibs + modded-exes/AOEngine dependency gate, platform status footer, update check |
-| ag_test.script | 755 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + release-budget tests, and run_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds under a 50,000-object ceiling, exercising every guard under sustained load. Toggle off to tear down) |
+| ag_test.script | 783 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + release-budget tests, and run_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds under a 50,000-object ceiling, exercising every guard under sustained load. Toggle off to tear down) |
 
 Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventory Guard per-category ceilings (DLTX-overridable).
 
