@@ -26,6 +26,10 @@ local INV_RELEASE_BUDGET = 25
 local TORTURE_ALIFE_CEILING = 50000
 -- Bound on the trim passes run_sanitization_test makes before it asserts; each pass releases at most INV_RELEASE_BUDGET.
 local INV_TRIM_PASSES = 10
+-- One trim per second: an online release lands as a destroy event after the frame, so a same-frame pass re-releases the last pass's items.
+local INV_PASS_SEC = 1
+local SANITIZATION_EVENT = "ag_test_inv_sanit_phase2"
+local CAP_EVENT = "ag_test_inventory_cap_phase2"
 -- Window the parity test hands both xlibs walks, small enough that a flooded inventory exercises the truncated path.
 local PARITY_SCAN_CAP = 40
 local TORTURE_TARGETS  = 20
@@ -317,6 +321,95 @@ local function _log_inventory_cap(before, mid, after, r1, r2)
     end
 end
 
+-- One cap-test step per INV_PASS_SEC: count and trim, count and trim, then count and assert.
+local function _run_cap_step(state)
+    local npc = level.object_by_id(state.npc_id)
+    if not npc then
+        _log_info("[FAIL] inventory_cap: npc offline before step %d", state.step + 1)
+        _notify_flow("[FAIL] inventory_cap: npc offline")
+        _release_ids(state.ids)
+        return true
+    end
+    state.step = state.step + 1
+    if state.step == 1 then
+        state.before = _get_item_count(state.npc_id)
+        state.r1 = ag_inventory_guard.apply_policy(npc)
+    elseif state.step == 2 then
+        state.mid = _get_item_count(state.npc_id)
+        state.r2 = ag_inventory_guard.apply_policy(npc)
+    else
+        _log_inventory_cap(state.before, state.mid, _get_item_count(state.npc_id), state.r1, state.r2)
+        local cleaned = _release_ids(state.ids)
+        _log_info("[TEARDOWN] released %d/%d injected ids (others already gone via trim)", cleaned, #state.ids)
+        return true
+    end
+    ResetTimeEvent(0, CAP_EVENT, INV_PASS_SEC)
+    return false
+end
+
+-- Evaluate and report the sanitization assertions, then release what the test injected.
+local function _log_sanitization(state)
+    local TEST = "inventory_sanitization"
+    local result = state.result
+    _log_info("[ACTION] apply_policy passes=%d released=%d max_dt=%.2fms", state.passes, result.released, result.dt_ms)
+    for cat, count in pairs(result.released_by_category) do
+        _log_info("[ACTION]   released %s = %d", cat, count)
+    end
+
+    local policy = xinventory.load_policy("alifeguard\\ag_inventory_policy.ltx", { "ag_inventory_policy" })
+    local MEDKIT_MAX = policy.ag_inventory_policy.rules.medkit.max
+    local expected_medkit_released = math_max(state.mid_medkit - MEDKIT_MAX, 0)
+    local actual_medkit_released = (result.released_by_category.medkit) or 0
+    local actual_ammo_released = (result.released_by_category.ammo_not_equipped) or 0
+    local expected_medkit_after = math_min(state.mid_medkit, MEDKIT_MAX)
+
+    local ok_medkit = (actual_medkit_released == expected_medkit_released)
+    local ok_ammo = (actual_ammo_released >= 1) and (state.mid_ammo > 0)
+
+    local summary = string_format(
+        "npc=%d %s | medkit %d->%d (released %d, cap %d) | ammo_neq %d (released %d stacks) | dt=%.2fms",
+        state.npc_id, state.npc_name,
+        state.mid_medkit, expected_medkit_after, actual_medkit_released, MEDKIT_MAX,
+        state.mid_ammo, actual_ammo_released, result.dt_ms)
+
+    _log_info("[SUMMARY] %s", summary)
+
+    if ok_medkit and ok_ammo then
+        _log_info("[PASS] %s | %s", TEST, summary)
+        _notify_flow(string_format("[PASS] %s\n%s", TEST, summary), 30000)
+    else
+        local reason = string_format(
+            "medkit released=%d expected=%d ok=%s | ammo released=%d expected>=1 (mid=%d) ok=%s",
+            actual_medkit_released, expected_medkit_released, tostring(ok_medkit),
+            actual_ammo_released, state.mid_ammo, tostring(ok_ammo))
+        _log_info("[FAIL] %s | %s | %s", TEST, summary, reason)
+        _notify_flow(string_format("[FAIL] %s\n%s\n%s", TEST, summary, reason), 30000)
+    end
+
+    local m_cleaned = _release_ids(state.medkit_ids)
+    local a_cleaned = _release_ids(state.ammo_ids)
+    _log_info("[TEARDOWN] released %d/%d medkit ids, %d/%d ammo ids (others already gone via trim)",
+        m_cleaned, #state.medkit_ids, a_cleaned, #state.ammo_ids)
+end
+
+-- One sanitization trim per INV_PASS_SEC until a pass releases nothing or INV_TRIM_PASSES ran, then assert.
+local function _run_sanitization_pass(state, npc)
+    local pass = state.passes < INV_TRIM_PASSES and ag_inventory_guard.apply_policy(npc)
+    if not pass or pass.released == 0 then
+        _log_sanitization(state)
+        return true
+    end
+    local result = state.result
+    state.passes = state.passes + 1
+    result.released = result.released + pass.released
+    result.dt_ms = math_max(result.dt_ms, pass.dt_ms)
+    for cat, count in pairs(pass.released_by_category) do
+        result.released_by_category[cat] = (result.released_by_category[cat] or 0) + count
+    end
+    ResetTimeEvent(0, SANITIZATION_EVENT, INV_PASS_SEC)
+    return false
+end
+
 -- Diff two ordered released streams (each entry { id, cat, sec, unit }); nil on match, else a reason.
 local function _find_stream_diff(ref_stream, new_stream)
     if #ref_stream ~= #new_stream then
@@ -535,71 +628,25 @@ function run_sanitization_test()
     _log_info("[INJECT] medkit ids=%d (requested %d), %s ids=%d (requested 1 stack of %d rounds)",
         #medkit_ids, INJECT_MEDKIT, mismatched, #ammo_ids, INJECT_AMMO)
 
-    CreateTimeEvent(0, "ag_test_inv_sanit_phase2", 1, function()
+    local state
+    CreateTimeEvent(0, SANITIZATION_EVENT, INV_PASS_SEC, function()
         local npc2 = level.object_by_id(npc_id)
         if not npc2 then
-            _log_info("[FAIL] %s: npc went offline before phase 2", TEST)
+            _log_info("[FAIL] %s: npc went offline after %d passes", TEST, state and state.passes or 0)
             _notify_flow("[FAIL] " .. TEST .. ": npc offline")
             _release_ids(medkit_ids); _release_ids(ammo_ids)
             return true
         end
-
-        local opts2 = xinventory.get_category_opts(npc2)
-        local mid = xinventory.collect_policy_counts(npc2, opts2)
-        local mid_medkit = mid.medkit or 0
-        local mid_ammo = mid.ammo_not_equipped or 0
-        _log_info("[SNAPSHOT mid] medkit=%d ammo_not_equipped=%d", mid_medkit, mid_ammo)
-
-        local result = { released = 0, released_by_category = {}, dt_ms = 0 }
-        for _ = 1, INV_TRIM_PASSES do
-            local pass = ag_inventory_guard.apply_policy(npc2)
-            if not pass or pass.released == 0 then break end
-            result.released = result.released + pass.released
-            if pass.dt_ms > result.dt_ms then result.dt_ms = pass.dt_ms end
-            for cat, count in pairs(pass.released_by_category) do
-                result.released_by_category[cat] = (result.released_by_category[cat] or 0) + count
-            end
+        if not state then
+            local mid = xinventory.collect_policy_counts(npc2, xinventory.get_category_opts(npc2))
+            state = {
+                npc_id = npc_id, npc_name = npc_name, medkit_ids = medkit_ids, ammo_ids = ammo_ids,
+                mid_medkit = mid.medkit or 0, mid_ammo = mid.ammo_not_equipped or 0,
+                passes = 0, result = { released = 0, released_by_category = {}, dt_ms = 0 },
+            }
+            _log_info("[SNAPSHOT mid] medkit=%d ammo_not_equipped=%d", state.mid_medkit, state.mid_ammo)
         end
-        _log_info("[ACTION] apply_policy released=%d max_dt=%.2fms", result.released, result.dt_ms)
-        for cat, count in pairs(result.released_by_category) do
-            _log_info("[ACTION]   released %s = %d", cat, count)
-        end
-
-        local policy = xinventory.load_policy("alifeguard\\ag_inventory_policy.ltx", { "ag_inventory_policy" })
-        local MEDKIT_MAX = policy.ag_inventory_policy.rules.medkit.max
-        local expected_medkit_released = math_max(mid_medkit - MEDKIT_MAX, 0)
-        local actual_medkit_released = (result.released_by_category.medkit) or 0
-        local actual_ammo_released = (result.released_by_category.ammo_not_equipped) or 0
-        local expected_medkit_after = math_min(mid_medkit, MEDKIT_MAX)
-
-        local ok_medkit = (actual_medkit_released == expected_medkit_released)
-        local ok_ammo = (actual_ammo_released >= 1) and (mid_ammo > 0)
-
-        local summary = string_format(
-            "npc=%d %s | medkit %d->%d (released %d, cap %d) | ammo_neq %d (released %d stacks) | dt=%.2fms",
-            npc_id, npc_name,
-            mid_medkit, expected_medkit_after, actual_medkit_released, MEDKIT_MAX,
-            mid_ammo, actual_ammo_released, result.dt_ms)
-
-        _log_info("[SUMMARY] %s", summary)
-
-        if ok_medkit and ok_ammo then
-            _log_info("[PASS] %s | %s", TEST, summary)
-            _notify_flow(string_format("[PASS] %s\n%s", TEST, summary), 30000)
-        else
-            local reason = string_format(
-                "medkit released=%d expected=%d ok=%s | ammo released=%d expected>=1 (mid=%d) ok=%s",
-                actual_medkit_released, expected_medkit_released, tostring(ok_medkit),
-                actual_ammo_released, mid_ammo, tostring(ok_ammo))
-            _log_info("[FAIL] %s | %s | %s", TEST, summary, reason)
-            _notify_flow(string_format("[FAIL] %s\n%s\n%s", TEST, summary, reason), 30000)
-        end
-
-        local m_cleaned = _release_ids(medkit_ids)
-        local a_cleaned = _release_ids(ammo_ids)
-        _log_info("[TEARDOWN] released %d/%d medkit ids, %d/%d ammo ids (others already gone via trim)",
-            m_cleaned, #medkit_ids, a_cleaned, #ammo_ids)
-        return true
+        return _run_sanitization_pass(state, npc2)
     end)
 end
 
@@ -627,26 +674,7 @@ function run_cap_test()
     end
     _log_info("[INJECT] medkit x%d (ids=%d)", INJECT, #ids)
 
-    CreateTimeEvent(0, "ag_test_inventory_cap_phase2", 1, function()
-        local npc2 = level.object_by_id(npc_id)
-        if not npc2 then
-            _log_info("[FAIL] %s: npc offline before phase 2", TEST)
-            _notify_flow("[FAIL] " .. TEST .. ": npc offline")
-            _release_ids(ids)
-            return true
-        end
-
-        local before = _get_item_count(npc_id)
-        local r1 = ag_inventory_guard.apply_policy(npc2)
-        local mid = _get_item_count(npc_id)
-        local r2 = ag_inventory_guard.apply_policy(npc2)
-        local after = _get_item_count(npc_id)
-        _log_inventory_cap(before, mid, after, r1, r2)
-
-        local cleaned = _release_ids(ids)
-        _log_info("[TEARDOWN] released %d/%d injected ids (others already gone via trim)", cleaned, #ids)
-        return true
-    end)
+    CreateTimeEvent(0, CAP_EVENT, INV_PASS_SEC, _run_cap_step, { npc_id = npc_id, ids = ids, step = 0 })
 end
 
 --- Surplus-walk parity: assert xinventory.collect_surplus matches classify + iterate_surplus on the same inventory.
