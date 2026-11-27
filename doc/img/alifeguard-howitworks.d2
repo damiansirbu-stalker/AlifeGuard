@@ -24,7 +24,7 @@ queue: "Over budget - build a squad-aware release queue" {
   c: "round-robin across factions and mutants, farthest first, with hysteresis"
 }
 
-release: "Release frame-spread - xslice, 1 per frame\nentities fall back to offline simulation" {
+release: "Release frame-spread - xslice, 1 per frame\nreleased entities are deleted from A-Life" {
   style.stroke: "#c9d8b6"
 }
 
@@ -34,7 +34,7 @@ guards: "Four guards own the work" {
   og: "Online Guard\ncull to the online cap"
   fg: "Offline Guard\ncull offline density"
   ss: "Smart Sanitizer\nrespawn-counter hygiene"
-  ig: "Inventory Guard\nbound NPC inventories"
+  ig: "Inventory Guard\nbound NPC inventories,\noverride the offline cleaner"
 }
 
 sensor -> queue: "when over" { style: { stroke: "#c9d8b6"; font-color: "#c9d8b6" } }
