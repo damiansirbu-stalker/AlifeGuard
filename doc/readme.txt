@@ -46,30 +46,51 @@ You can help with a review, a rating, a proper bug report, or a coffee on Ko-fi:
 Every release is stable, and a new one can add whole systems or move their settings.
 After every update, open Development in MCM and reset every setting to its default.
 
-Late-game A-Life accumulates too many active entities. AI, physics, and pathfinding all run on the same thread, so performance degrades as the count grows.
-Population mods like ZCP and Redone amplify the problem by raising spawn rates. Zombie entities from broken releases, orphaned squad members, and engine memory leaks make it worse over time.
+AlifeGuard keeps the A-Life of Anomaly lean through a long game.
+Your late game stays fast, and your save stays clear of the 65k crash.
 
-AlifeGuard keeps the world's NPCs, creatures, and items in check, catching what would corrupt a save, break data, or drag performance before it does.
-Squads stay valid and smart terrains behave correctly, with no respawn loops. It reduces load without breaking the simulation.
+Summary
 
-Simple despawners remove individual NPCs without considering squad structure. This deletes entire squads and opens respawn slots.
-It leaves smart terrains unable to spawn and interferes with mods that script squads. AlifeGuard works at the squad level and accounts for the engine's spawn bookkeeping.
+- AlifeGuard caps the stalkers and mutants online near you and culls the surplus squad by squad.
+- When a cull runs, the farthest squads go first, and every squad keeps its commander.
+- Crowded parts of the map get thinned too, while they are still offline.
+- Every stalker's bag is trimmed to a limit per item type, and the loot can't pile up in the save.
+- If a smart terrain's respawn counter breaks, AlifeGuard sets it back to what is really alive.
+- Vanilla's offline cleaner, which empties the bags of stalkers on other maps, can be switched off.
+- We leave story and quest squads, companions, traders and task givers alone.
+- We spread all of it over frames through X-Ray's release path, and nothing goes into your save.
 
-Systems:
-- Online Guard - caps the online population near you: when the count crosses the trigger it culls back to the target, squad by squad.
-- Offline Guard - a staggered scan bins offline squads by region and thins the crowded ones, so a hub full of offline squads cannot spike the count when it wakes. Commanders always survive.
-- Smart Sanitizer - repairs corrupted respawn counters on smart terrains to the real live squad count, the kind of corruption that causes save crashes and infinite spawn loops.
-- Inventory Guard - bounds what NPCs hoard from looting. Vanilla looting stays on, but a long-lived stalker carries a believable load instead of a trader run.
-  Looted items stop drifting toward the engine's ~65000-object cap that crashes long saves.
-  He keeps the scope or silencer that fits his own pistol or rifle, plus 2 spare attachments.
+Online Guard
 
-Mechanisms (how the culling stays safe):
-- Squad-aware - thins non-commanders first, commanders last, so squads stay valid in SIMBOARD and no respawn loop starts. Mod-owned squads (AlifePlus, Warfare, Guards Spawner) go last.
-- Round-robin - removals spread across factions and mutant types, one per category per round, so no group is thinned disproportionately.
-- Hysteresis - separate trigger and target thresholds (default 80 down to 70), so cleanup runs in cycles, not on every small change.
-- Frame-spread - entities released one per frame via xslice, so a cleanup spreads over frames and never hitches the game.
-- Protection - story squads, traders, named NPCs, companions, task givers, quest/bounty/hostage targets, and scripted squads are never touched.
-  Toggle scripted protection off for the most aggressive culling.
+Online Guard keeps the crowd of stalkers and mutants near you under a limit.
+Vanilla has no such limit, which is why a late-game base can fill up without end.
+- When a cull runs, members go before commanders, the farthest squads go first, and every faction and every mutant type near you then takes a turn in the cut.
+  We do this because a squad that keeps its commander also keeps its spawn slot.
+- We never cull story characters, traders, named NPCs, companions, task NPCs or scripted squads.
+- Your PDA tells you when the Zone has thinned out.
+
+Offline Guard
+
+Offline Guard is how AlifeGuard thins a crowded region of the map before you get there.
+In vanilla a hub full of offline squads comes online all at once when you arrive.
+- Offline squads are scanned region by region, and a crowded region is thinned one squad per frame.
+- Every squad keeps its commander, and we take nothing from protected squads or named NPCs.
+
+Smart Sanitizer
+
+Smart Sanitizer is how AlifeGuard repairs the respawn counter of a smart terrain.
+In vanilla a respawn counter that goes negative makes its smart terrain spawn without end.
+The next save that holds this counter will crash while writing it out.
+- A broken counter is set back to the number of squads still alive, at load and every few minutes during play, but we never touch a counter that is healthy.
+
+Inventory Guard
+
+Inventory Guard is how AlifeGuard keeps what a stalker carries at a believable load.
+In vanilla a long-lived stalker loots every body he passes, for nothing trims his bag near you.
+- We trim each nearby stalker's bag to a limit per item type, a few items at a time.
+- We leave him the scope or silencer that fits his gun, and anything a quest needs.
+- Traders, companions and story characters are never trimmed.
+- Offline cleaner: vanilla can keep emptying bags of stalkers on other maps, or you can stop it.
 
 Requirements:
 Anomaly 1.5.3
