@@ -30,6 +30,7 @@ defaults = {
     -- Inventory Guard
     enabled_inventory = true,
     scan_cooldown_h = 12,
+    offline_cleaner = "vanilla",
 
     -- Development
     log_level = "WARN",
@@ -47,6 +48,7 @@ local _key_to_tab = {
     sanitize_interval = "smart_sanitizer",
     enabled_inventory = "inventory_guard",
     scan_cooldown_h = "inventory_guard",
+    offline_cleaner = "inventory_guard",
     log_level = "development",
     btn_reset_all = "development",
     btn_update_check = "development",
@@ -165,6 +167,12 @@ function on_mcm_load()
                     { id = "div_inventory", type = "line" },
                     { id = "enabled_inventory", type = "check", val = 1, def = true },
                     { id = "scan_cooldown_h", type = "track", val = 2, min = 1, max = 72, step = 1, def = 12 },
+                    { id = "offline_cleaner", type = "list", val = 0, def = "vanilla",
+                        content = {
+                            {"vanilla", "vanilla"},
+                            {"off", "off"},
+                        },
+                    },
                 },
             },
             {

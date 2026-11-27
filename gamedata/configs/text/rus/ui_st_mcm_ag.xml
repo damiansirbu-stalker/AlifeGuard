@@ -218,6 +218,18 @@
   <string id="ui_mcm_ag_inventory_guard_scan_cooldown_h_desc">
     <text>NPC не пересканируется, пока не прошло столько игровых часов с последнего визита. По умолчанию 12 (дважды в игровые сутки). Меньшие значения чистят агрессивнее против быстрых хабарщиков. Большие значения снижают общую нагрузку и позволяют NPC дольше держать умеренный запас между визитами. Этот откат - лимит скорости для всей функции.</text>
   </string>
+  <string id="ui_mcm_ag_inventory_guard_offline_cleaner">
+    <text>Офлайн-очистка</text>
+  </string>
+  <string id="ui_mcm_ag_inventory_guard_offline_cleaner_desc">
+    <text>Ванильная очистка удаляет у сталкеров на других картах всё, кроме оружия, патронов, гранат, артефактов и квестовых предметов, при загрузке сохранения раз в несколько игровых дней и урезает их запасные патроны. «Выкл» оставляет им всё, что они несут, кроме случаев, когда игра приближается к пределу объектов: тогда ванильная очистка всё равно срабатывает.</text>
+  </string>
+  <string id="ag_inventory_guard_offline_cleaner_lst_vanilla">
+    <text>Ванильная</text>
+  </string>
+  <string id="ag_inventory_guard_offline_cleaner_lst_off">
+    <text>Выкл</text>
+  </string>
   <string id="ui_mcm_ag_online_guard_protect_scripted">
     <text>Защищать скриптованных NPC</text>
   </string>

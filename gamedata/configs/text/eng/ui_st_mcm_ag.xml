@@ -185,6 +185,18 @@
     <string id="ui_mcm_ag_inventory_guard_scan_cooldown_h_desc">
         <text>An NPC is not rescanned until this many game-hours have passed since the last visit. Default 12 (twice per game-day). Lower values trim more aggressively against fast hoarders. Higher values reduce overall work and let NPCs hold a modest stash longer between visits. This cooldown is the rate limit on the whole feature.</text>
     </string>
+    <string id="ui_mcm_ag_inventory_guard_offline_cleaner">
+        <text>Offline cleaner</text>
+    </string>
+    <string id="ui_mcm_ag_inventory_guard_offline_cleaner_desc">
+        <text>Vanilla deletes everything but the weapons, ammo, grenades, artefacts and quest items of stalkers on other maps when you load a save, every few in-game days, and trims their spare ammo. Off lets them keep what they carry, except when the game nears its object limit, where the vanilla clean still runs.</text>
+    </string>
+    <string id="ag_inventory_guard_offline_cleaner_lst_vanilla">
+        <text>Vanilla</text>
+    </string>
+    <string id="ag_inventory_guard_offline_cleaner_lst_off">
+        <text>Off</text>
+    </string>
 
     <!-- ==================== DEVELOPMENT TAB ==================== -->
     <string id="ui_mcm_ag_development_desc">

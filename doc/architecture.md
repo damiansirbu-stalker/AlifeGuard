@@ -506,6 +506,19 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 | Unscriptable NPCs (`xcreature.is_unscriptable`) | Skipped at scheduler level for the trim pass. Covers story characters (Strider, Magpie, Sidorovich) via engine story_id, companions via `npcx_is_companion` info-portion, named NPCs (traders, medics, mechanics, guides, guards, bodyguards, leaders, quest-givers) via `xdata.unscriptable_npcs`, and members of story squads. These NPCs have scripted identities the rest of the game depends on, so trimming their inventories risks breaking quest scripts. Service NPCs (`xsmart.get_npc_roles` non-empty) are rejected by their own gate before this one: their stock is trade stock managed by the trade flow, never trimmed. |
 | Untouchables (`xinventory.get_section_category(sec) == "untouchable"`) | Never released regardless of category. Covers quest items (`quest_item=1` or `kind=i_quest`), animation props (`anim_item=1`), and sections in `xr_corpse_detection.ltx [ignore_sections]`. Resolved once per section by xinventory and cached. |
 
+### Offline cleaner
+
+Vanilla `release_npc_inventory.script` cleans stalkers the scanner never sees. On the first update after a save load, every 3 game days or at once when `alife_on_limit()` (`:17-36`), it walks every stalker squad off the actor's level and calls `clean_npc_inv` on each member (`:44-62`).
+`clean_npc_inv` releases every item but quest, anim, story-id, weapon, ammo, grenade and artefact items, then cuts ammo to one box per section (`:66-97`). A test kit of 32 items on an off-level squad came out at 10, every medkit, bandage, food, drink and antirad gone.
+
+The Offline cleaner setting decorates that function. `_register_offline_cleaner` captures `release_npc_inventory.clean_npc_inv` at `on_game_start`, checks it is a function, and installs `_apply_offline_cleaner` in its slot, the capture-check-replace shape of AlifeTactics `at_jam`.
+Vanilla's pass calls `clean_npc_inv` by bare name (`:58`), and a bare name resolves through the module table, since X-Ray runs every script under `setfenv(1, <namespace table>)` (`script_storage.cpp`, file header). That pass is the only caller in Anomaly, the overlay, and the GAMMA, ZONA and EFP mod lists.
+
+- `vanilla` (default) calls the captured original unchanged.
+- `off` returns before it, unless the ID count is critical: `alife_on_limit()` true runs vanilla's emergency clean anyway. Off also skips the ammo cut, which runs inside `clean_npc_inv`.
+- `_is_id_pressure` reads `alife_on_limit()` once per frame, keyed by `time_global()`. On the modded exes `alife_on_limit()` walks every server object once past 64000 (`_g_patches.script`), and vanilla's pass calls the wrapper once per stalker inside one frame.
+- The setting is read live on every call and is independent of `enabled_inventory`. Vanilla keeps writing `next_clean` under Off, so switching back resumes on its schedule.
+
 ### Performance (Inventory Guard)
 
 | Operation | Cost |
@@ -528,8 +541,8 @@ No persistence. The cooldown table is not saved, so on game load every NPC is fr
 | ag_offline_guard.script | 291 | Offline Guard: offline density scan per switch_distance cell, per-cell offline cull |
 | ag_queue.script | 133 | Release-queue strategy: 4 priority tiers, round-robin/linear fairness fill (pure Lua) |
 | ag_smart_sanitizer.script | 121 | Smart Sanitizer: repairs corrupted already_spawned respawn counters to the live count |
-| ag_inventory_guard.script | 274 | Inventory Guard: online inventory scanner, public `apply_policy`, xslice scheduler with per-NPC cooldown, full-bag walk with a per-visit release budget |
-| ag_mcm.script | 207 | MCM defaults, UI definition, button handlers |
+| ag_inventory_guard.script | 311 | Inventory Guard: online inventory scanner, public `apply_policy`, xslice scheduler with per-NPC cooldown, full-bag walk with a per-visit release budget, Offline cleaner decorator over vanilla `clean_npc_inv` |
+| ag_mcm.script | 212 | MCM defaults, UI definition, button handlers |
 | _ag_manifest.script | 8 | Identity data: name, version, required xlibs, moddb page |
 | _ag_init.script | 193 | xlibs + modded-exes/AOEngine dependency gate, platform status footer, update check |
 | ag_test.script | 755 | Dormant console tooling: offline-guard load/conformity driver, Inventory Guard flow + release-budget tests, and run_torture (toggle loop spawning squads online+offline and flooding/trimming every 5 seconds under a 50,000-object ceiling, exercising every guard under sustained load. Toggle off to tear down) |
@@ -561,4 +574,5 @@ Config: `gamedata/configs/alifeguard/ag_inventory_policy.ltx` holds the Inventor
 | sanitize_interval | 300 | Seconds between periodic sanitizer passes (60-1800) |
 | enabled_inventory | true | Inventory Guard scanner toggle. When off, no scheduler and no trims. |
 | scan_cooldown_h | 12 | Per-NPC rescan cooldown in game-hours (1-72) |
+| offline_cleaner | vanilla | Vanilla's offline inventory cleaner runs (vanilla) or is skipped (off); it runs either way when the ID count is critical |
 | log_level | WARN | Logger verbosity (ERROR/WARN/INFO/DEBUG) |

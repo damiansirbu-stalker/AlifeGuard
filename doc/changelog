@@ -2,7 +2,8 @@
   More performance, less risk of the 65k crash, and self-repairing respawns
     Inventory Guard now counts a stalker's whole inventory. Hoarding stays bounded, and long saves stay further from the 65k object crash.
     Smart Sanitizer repairs a corrupted respawn counter to the number of squads alive, which ends a runaway respawn on the next pass.
-    Other things you will notice. Attachments you hand a stalker stay on him, the guards cost less on busy levels, an offline cull crash is gone, and the mod checks for updates.
+    Other things you will notice. A new Offline cleaner setting can stop vanilla from emptying the bags of stalkers on other maps.
+    Attachments you hand a stalker stay on him, the guards cost less on busy levels, an offline cull crash is gone, and the mod checks for updates.
 
   Offline Guard
     - Fixed a rare crash when X-Ray gave a wiped squad's id to another object while a cull pass was still running.
@@ -20,6 +21,8 @@
     - Added a warning in the log for a stalker carrying more than 100 items.
     - Fixed Inventory Guard skipping its first trims in a new game.
     - Removed the NPCs per frame setting. Inventory Guard always trims one stalker per frame, and a cycle never stacks trims into one frame.
+    - Added Offline cleaner. Off stops vanilla's cleaner from deleting everything but the weapons, ammo, grenades and artefacts of stalkers on other maps. They keep their medkits, food and gear.
+      Vanilla keeps it as it was. On Off, the vanilla clean still runs when the game nears its object limit.
 
   Development
     - Added an update check. On the first save load of each launch the mod looks for a newer release, and a newer one shows with its moddb link at the foot of the MCM page and in a PDA message.
