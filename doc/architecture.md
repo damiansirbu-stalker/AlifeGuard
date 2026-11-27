@@ -20,14 +20,14 @@ AlifeGuard owns all release work for entities and items, and repairs alife state
 - **No steady-state per-frame work.** Ongoing work runs on a throttled interval or a discrete engine event (hit, shot, spawn, option change). It never runs continuously every frame.
   A per-frame callback (`npc_on_update`) is only a carrier that throttles before doing anything, and we never put our code on a path the engine runs every frame, such as a visibility or fire functor.
   Frame-spreading a bounded one-off batch (xslice, 1 item per frame) to avoid a single-frame spike is the one allowed use of the frame.
-  It completes and stops. Full rule: `doc/standards/stalker-code.md` "No Per-Frame Work".
+  It completes and stops. Full rule: `doc/standards/stalker-code.md`, Performance.
 - **Performance first.** Performance is the top priority and outranks features.
   A feature that cannot meet the budget moves its cost into the engine where the engine can carry it, otherwise we rework or remove it. It is never kept at the cost of the budget.
-  Only correctness and "never break base gameplay" rank above it. See `doc/standards/stalker-code.md` "Performance is the priority".
+  Only correctness and "never break base gameplay" rank above it. See `doc/standards/stalker-code.md`, Performance.
 - **Use the engine, don't work around it.** Every capability comes from the engine and the Anomaly layer first, always through xlibs.
   Our own code enters only where stock behavior falls short.
   It escalates from a nudge to a correction. We fix a defect in the engine or a performance cost in the engine, seam first. A full-file override is the last resort.
-  Never reimplement in script what the engine already does. See `doc/standards/stalker-code.md` "Use the engine, don't work around it".
+  Never reimplement in script what the engine already does. See `doc/standards/stalker-code.md`, Engine use.
 
 ---
 
